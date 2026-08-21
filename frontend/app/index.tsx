@@ -32,7 +32,7 @@ import {
   BleError,
   type BleStatus,
 } from "@/src/services/ble";
-import { geocodeZip, type Coords } from "@/src/services/geocode";
+import { geocodeZip, type GeoResult } from "@/src/services/geocode";
 
 const STORAGE_KEY = "matrix_settings_v2";
 const HERO_IMAGE =
@@ -79,6 +79,8 @@ export default function ControlPanel() {
     rssi: number | null;
   } | null>(null);
   const [flashing, setFlashing] = useState(false);
+  const [geo, setGeo] = useState<GeoResult | null>(null);
+  const [geoLoading, setGeoLoading] = useState(false);
 
   const bleSupported = useMemo(() => isBleSupported(), []);
 
@@ -126,6 +128,29 @@ export default function ControlPanel() {
     }, 5000);
     return () => clearInterval(id);
   }, [status]);
+
+  // Live zip -> coordinates lookup (debounced) for the preview under the field.
+  useEffect(() => {
+    const zip = settings.zipCode.trim();
+    if (!settings.showWeather || zip.length !== 5) {
+      setGeo(null);
+      setGeoLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setGeoLoading(true);
+    const t = setTimeout(async () => {
+      const res = await geocodeZip(zip);
+      if (!cancelled) {
+        setGeo(res);
+        setGeoLoading(false);
+      }
+    }, 500);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [settings.zipCode, settings.showWeather]);
 
   const setRadius = (v: number) =>
     setSettings((s) => ({ ...s, searchRadius: v }));
@@ -216,7 +241,7 @@ export default function ControlPanel() {
     setBusy(true);
     try {
       const zip = settings.zipCode.trim();
-      let coords: Coords | null = null;
+      let coords: GeoResult | null = null;
 
       // When weather is enabled, resolve the zip to lat/lon before syncing.
       if (settings.showWeather) {
@@ -271,6 +296,9 @@ export default function ControlPanel() {
   };
 
   const statusMeta = STATUS_META[status];
+  const zipTrimmed = settings.zipCode.trim();
+  const zipInvalid = zipTrimmed.length > 0 && zipTrimmed.length !== 5;
+  const zipComplete = zipTrimmed.length === 5;
 
   return (
     <View style={styles.root}>
@@ -473,6 +501,51 @@ export default function ControlPanel() {
             editable={settings.showWeather}
             onChangeText={setZip}
           />
+
+          {settings.showWeather && zipInvalid && (
+            <View style={styles.zipNoteRow} testID="zip-validation-warning">
+              <Ionicons
+                name="alert-circle"
+                size={14}
+                color={colors.warning}
+              />
+              <Text style={[styles.zipNoteText, { color: colors.warning }]}>
+                Zip code must be exactly 5 digits
+              </Text>
+            </View>
+          )}
+
+          {settings.showWeather && zipComplete && geoLoading && (
+            <View style={styles.zipNoteRow} testID="coord-resolving">
+              <ActivityIndicator size="small" color={colors.brand} />
+              <Text style={styles.zipNoteText}>Resolving location…</Text>
+            </View>
+          )}
+
+          {settings.showWeather && zipComplete && !geoLoading && geo && (
+            <View style={styles.coordPreview} testID="coord-preview">
+              <Ionicons name="navigate" size={16} color={colors.brand} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.coordCity} numberOfLines={1}>
+                  {geo.city}
+                  {geo.state ? `, ${geo.state}` : ""}
+                  {geo.cached ? "  (cached)" : ""}
+                </Text>
+                <Text style={styles.coordText} testID="coord-latlon">
+                  {geo.lat.toFixed(4)}, {geo.lon.toFixed(4)}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {settings.showWeather && zipComplete && !geoLoading && !geo && (
+            <View style={styles.zipNoteRow} testID="coord-error">
+              <Ionicons name="close-circle" size={14} color={colors.error} />
+              <Text style={[styles.zipNoteText, { color: colors.error }]}>
+                Couldn&apos;t resolve this zip code
+              </Text>
+            </View>
+          )}
         </Section>
 
         {/* Sports */}
@@ -937,6 +1010,41 @@ const styles = StyleSheet.create({
     fontFamily: fonts.text,
     fontSize: fontSize.sm,
     marginTop: 2,
+  },
+  zipNoteRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    marginTop: -spacing.sm,
+  },
+  zipNoteText: {
+    color: colors.info,
+    fontFamily: fonts.text,
+    fontSize: fontSize.sm,
+  },
+  coordPreview: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    marginTop: -spacing.sm,
+    backgroundColor: colors.surfaceTertiary,
+    borderRadius: radius.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.brand,
+  },
+  coordCity: {
+    color: colors.onSurface,
+    fontFamily: fonts.textMedium,
+    fontSize: fontSize.base,
+  },
+  coordText: {
+    color: colors.onSurfaceSecondary,
+    fontFamily: fonts.display,
+    fontSize: fontSize.base,
+    letterSpacing: 0.5,
+    marginTop: 1,
   },
   fieldLabel: {
     color: colors.onSurfaceSecondary,
