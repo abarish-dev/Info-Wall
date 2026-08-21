@@ -6,7 +6,7 @@
 // in Expo Go / web; only the live BLE connect/sync is unavailable there.
 
 import { Platform, PermissionsAndroid } from "react-native";
-import { encode as base64Encode } from "base-64";
+import { encode as base64Encode, decode as base64Decode } from "base-64";
 
 export const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
 export const CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
@@ -90,7 +90,8 @@ export class BleError extends Error {
  */
 export async function connectToMatrix(
   onStatus: (s: BleStatus) => void,
-): Promise<{ id: string; name: string }> {
+  onDisconnect?: () => void,
+): Promise<{ id: string; name: string; rssi: number | null }> {
   if (!isBleSupported()) {
     throw new BleError(
       "BLE_UNAVAILABLE",
@@ -160,10 +161,19 @@ export async function connectToMatrix(
 
           d.onDisconnected(() => {
             connectedDevice = null;
+            onDisconnect?.();
           });
 
+          let rssi: number | null = null;
+          try {
+            const withRssi = await d.readRSSI();
+            rssi = withRssi?.rssi ?? null;
+          } catch {
+            rssi = null;
+          }
+
           onStatus("connected");
-          resolve({ id: d.id, name: d.name ?? "LED Matrix" });
+          resolve({ id: d.id, name: d.name ?? "LED Matrix", rssi });
         } catch (e: any) {
           connectedDevice = null;
           reject(
@@ -182,7 +192,9 @@ export async function connectToMatrix(
  * Serialize the settings object to JSON, base64 encode it, and write it to the
  * characteristic. Falls back to write-without-response if needed.
  */
-export async function syncSettings(payload: Record<string, unknown>): Promise<void> {
+export async function syncSettings(
+  payload: Record<string, unknown>,
+): Promise<{ confirmed: boolean; readBack: unknown | null }> {
   if (!connectedDevice) {
     throw new BleError(
       "NOT_CONNECTED",
@@ -206,6 +218,63 @@ export async function syncSettings(payload: Record<string, unknown>): Promise<vo
       CHARACTERISTIC_UUID,
       base64Value,
     );
+  }
+
+  // Read the value back from the matrix to confirm it was applied.
+  const readBack = await readSettings();
+  const confirmed = readBack !== null;
+  return { confirmed, readBack };
+}
+
+/** Read the characteristic value back and decode it. Returns null on any error. */
+export async function readSettings(): Promise<unknown | null> {
+  if (!connectedDevice) return null;
+  try {
+    const ch = await connectedDevice.readCharacteristicForService(
+      SERVICE_UUID,
+      CHARACTERISTIC_UUID,
+    );
+    if (!ch?.value) return null;
+    const decoded = decodeURIComponent(escape(base64Decode(ch.value)));
+    return JSON.parse(decoded);
+  } catch {
+    return null;
+  }
+}
+
+/** Fire a one-off "flash test pattern" command to the matrix. */
+export async function flashTest(): Promise<void> {
+  if (!connectedDevice) {
+    throw new BleError(
+      "NOT_CONNECTED",
+      "Not connected. Tap Connect to Matrix first.",
+    );
+  }
+  const json = JSON.stringify({ command: "flash_test", ts: Date.now() });
+  const value = base64Encode(unescape(encodeURIComponent(json)));
+  try {
+    await connectedDevice.writeCharacteristicWithResponseForService(
+      SERVICE_UUID,
+      CHARACTERISTIC_UUID,
+      value,
+    );
+  } catch {
+    await connectedDevice.writeCharacteristicWithoutResponseForService(
+      SERVICE_UUID,
+      CHARACTERISTIC_UUID,
+      value,
+    );
+  }
+}
+
+/** Read current signal strength (RSSI, in dBm) of the connected device. */
+export async function readRssi(): Promise<number | null> {
+  if (!connectedDevice) return null;
+  try {
+    const d = await connectedDevice.readRSSI();
+    return d?.rssi ?? null;
+  } catch {
+    return null;
   }
 }
 
