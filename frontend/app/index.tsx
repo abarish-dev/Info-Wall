@@ -320,9 +320,16 @@ export default function ControlPanel() {
       ).catch(() => {});
 
       const nowIso = new Date().toISOString();
+      const teamCount = [
+        payload.team1, payload.team2, payload.team3, payload.team4,
+        payload.team5, payload.team6, payload.team7, payload.team8,
+      ].filter(Boolean).length;
+      const showCount = [
+        payload.tv1, payload.tv2, payload.tv3, payload.tv4,
+        payload.tv5, payload.tv6, payload.tv7, payload.tv8,
+      ].filter(Boolean).length;
       const summary =
-        `${payload.radius} mi · teams ${[payload.team1, payload.team2].filter(Boolean).join("/") || "—"} · ` +
-        `${[payload.tv1, payload.tv2, payload.tv3].filter(Boolean).length} shows · ` +
+        `${payload.radius} mi · ${teamCount} teams · ${showCount} shows · ` +
         `${payload.showWeather ? `wx ${payload.lat.toFixed(2)},${payload.lon.toFixed(2)}` : "wx off"} · ` +
         `${payload.trackFlight && payload.flightIdent ? `flight ${payload.flightIdent}` : "no flight"}`;
       const record = { at: nowIso, summary };
