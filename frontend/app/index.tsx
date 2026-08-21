@@ -201,6 +201,15 @@ export default function ControlPanel() {
       ...s,
       flightIdent: v.replace(/[^a-zA-Z0-9]/g, "").toUpperCase(),
     }));
+  const removeRecentZip = (z: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    setRecentZips((prev) => {
+      const next = prev.filter((x) => x !== z);
+      storage.setItem(RECENT_ZIPS_KEY, next);
+      return next;
+    });
+    toast.show(`Removed ${z} from recent`, "info");
+  };
 
   const editList = (key: "teams" | "shows", i: number, val: string) =>
     setSettings((s) => {
@@ -654,7 +663,7 @@ export default function ControlPanel() {
 
           {settings.showWeather && recentZips.length > 0 && (
             <View style={styles.recentWrap}>
-              <Text style={styles.recentLabel}>RECENT</Text>
+              <Text style={styles.recentLabel}>RECENT · HOLD TO REMOVE</Text>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -668,6 +677,8 @@ export default function ControlPanel() {
                       key={z}
                       testID={`recent-zip-${z}`}
                       onPress={() => setZip(z)}
+                      onLongPress={() => removeRecentZip(z)}
+                      delayLongPress={350}
                       style={[
                         styles.recentChip,
                         active && styles.recentChipActive,
