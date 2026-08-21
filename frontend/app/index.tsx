@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Switch,
   ScrollView,
+  Platform,
 } from "react-native";
 import Slider from "@react-native-community/slider";
 import { Image } from "expo-image";
@@ -34,6 +35,7 @@ import {
   type BleStatus,
 } from "@/src/services/ble";
 import { geocodeZip, type GeoResult } from "@/src/services/geocode";
+import { buildBlePayload } from "@/src/services/payload";
 
 const STORAGE_KEY = "matrix_settings_v2";
 const RECENT_ZIPS_KEY = "recent_zips_v1";
@@ -284,56 +286,38 @@ export default function ControlPanel() {
       const zip = settings.zipCode.trim();
       let coords: GeoResult | null = null;
 
-      // When weather is enabled, resolve the zip to lat/lon before syncing.
-      if (settings.showWeather) {
-        if (zip.length !== 5) {
-          toast.show("Enter a valid 5-digit zip code for weather", "error");
-          setBusy(false);
-          return;
-        }
+      // Always convert the zip to numeric lat/lon via the geocoding API before
+      // the Bluetooth write. When weather is on, a valid resolvable zip is
+      // required; otherwise coordinates default to 0 in the payload.
+      if (zip.length === 5) {
         coords = await geocodeZip(zip);
-        if (!coords) {
-          toast.show(
-            "Couldn't find that zip code. Check it and try again.",
-            "error",
-          );
-          setBusy(false);
-          return;
-        }
+      }
+      if (settings.showWeather && !coords) {
+        toast.show(
+          zip.length !== 5
+            ? "Enter a valid 5-digit zip code for weather"
+            : "Couldn't resolve that zip code. Check it and try again.",
+          "error",
+        );
+        setBusy(false);
+        return;
       }
 
-      const payload = {
-        flightTracking: { searchRadius: settings.searchRadius },
-        trackFlight: settings.trackFlight,
-        flightIdent: settings.flightIdent.trim(),
-        weather: {
-          showLocalWeather: settings.showWeather,
-          zipCode: zip,
-          lat: coords?.lat ?? null,
-          lon: coords?.lon ?? null,
-        },
-        sports: {
-          teams: settings.teams.map((t) => t.trim()).filter(Boolean),
-        },
-        tvShows: settings.shows.map((s) => s.trim()).filter(Boolean),
-        syncedAt: new Date().toISOString(),
-      };
+      // Flat payload matching the ESP32 firmware contract exactly.
+      const payload = buildBlePayload(settings, coords);
 
       const { confirmed } = await syncSettings(payload);
       Haptics.notificationAsync(
         Haptics.NotificationFeedbackType.Success,
       ).catch(() => {});
 
+      const nowIso = new Date().toISOString();
       const summary =
-        `${settings.searchRadius} mi · ${payload.sports.teams.length} teams · ` +
-        `${payload.tvShows.length} shows · ` +
-        `${settings.showWeather ? `wx ${zip}` : "wx off"} · ` +
-        `${
-          settings.trackFlight && payload.flightIdent
-            ? `flight ${payload.flightIdent}`
-            : "no flight"
-        }`;
-      const record = { at: payload.syncedAt, summary };
+        `${payload.radius} mi · teams ${[payload.team1, payload.team2].filter(Boolean).join("/") || "—"} · ` +
+        `${[payload.tv1, payload.tv2, payload.tv3].filter(Boolean).length} shows · ` +
+        `${payload.showWeather ? `wx ${payload.lat.toFixed(2)},${payload.lon.toFixed(2)}` : "wx off"} · ` +
+        `${payload.trackFlight && payload.flightIdent ? `flight ${payload.flightIdent}` : "no flight"}`;
+      const record = { at: nowIso, summary };
       setLastSync(record);
       storage.setItem(LAST_SYNC_KEY, record);
 
@@ -356,6 +340,7 @@ export default function ControlPanel() {
   const zipTrimmed = settings.zipCode.trim();
   const zipInvalid = zipTrimmed.length > 0 && zipTrimmed.length !== 5;
   const zipComplete = zipTrimmed.length === 5;
+  const previewPayload = buildBlePayload(settings, geo);
 
   return (
     <View style={styles.root}>
@@ -757,6 +742,13 @@ export default function ControlPanel() {
               No settings synced yet. Connect and tap Sync Settings.
             </Text>
           )}
+
+          <View style={styles.payloadBlock}>
+            <Text style={styles.payloadLabel}>PAYLOAD PREVIEW (JSON)</Text>
+            <Text style={styles.payloadJson} testID="payload-preview">
+              {JSON.stringify(previewPayload, null, 2)}
+            </Text>
+          </View>
         </Section>
       </KeyboardAwareScrollView>
 
@@ -1283,6 +1275,27 @@ const styles = StyleSheet.create({
     color: colors.info,
     fontFamily: fonts.text,
     fontSize: fontSize.base,
+  },
+  payloadBlock: {
+    marginTop: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  payloadLabel: {
+    color: colors.brand,
+    fontFamily: fonts.displayMedium,
+    fontSize: 10,
+    letterSpacing: 1.2,
+  },
+  payloadJson: {
+    color: colors.onSurfaceSecondary,
+    fontFamily: Platform.select({ ios: "Menlo", android: "monospace" }),
+    fontSize: 12,
+    lineHeight: 18,
   },
   fieldLabel: {
     color: colors.onSurfaceSecondary,
