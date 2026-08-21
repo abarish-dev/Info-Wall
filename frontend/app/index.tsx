@@ -32,6 +32,7 @@ import {
   BleError,
   type BleStatus,
 } from "@/src/services/ble";
+import { geocodeZip, type Coords } from "@/src/services/geocode";
 
 const STORAGE_KEY = "matrix_settings_v2";
 const HERO_IMAGE =
@@ -207,19 +208,6 @@ export default function ControlPanel() {
     // Always persist locally.
     await storage.setItem(STORAGE_KEY, settings);
 
-    const payload = {
-      flightTracking: { searchRadius: settings.searchRadius },
-      weather: {
-        showLocalWeather: settings.showWeather,
-        zipCode: settings.zipCode.trim(),
-      },
-      sports: {
-        teams: settings.teams.map((t) => t.trim()).filter(Boolean),
-      },
-      tvShows: settings.shows.map((s) => s.trim()).filter(Boolean),
-      syncedAt: new Date().toISOString(),
-    };
-
     if (!isConnected) {
       toast.show("Connect to the matrix first to sync", "error");
       return;
@@ -227,6 +215,42 @@ export default function ControlPanel() {
 
     setBusy(true);
     try {
+      const zip = settings.zipCode.trim();
+      let coords: Coords | null = null;
+
+      // When weather is enabled, resolve the zip to lat/lon before syncing.
+      if (settings.showWeather) {
+        if (zip.length !== 5) {
+          toast.show("Enter a valid 5-digit zip code for weather", "error");
+          setBusy(false);
+          return;
+        }
+        coords = await geocodeZip(zip);
+        if (!coords) {
+          toast.show(
+            "Couldn't find that zip code. Check it and try again.",
+            "error",
+          );
+          setBusy(false);
+          return;
+        }
+      }
+
+      const payload = {
+        flightTracking: { searchRadius: settings.searchRadius },
+        weather: {
+          showLocalWeather: settings.showWeather,
+          zipCode: zip,
+          lat: coords?.lat ?? null,
+          lon: coords?.lon ?? null,
+        },
+        sports: {
+          teams: settings.teams.map((t) => t.trim()).filter(Boolean),
+        },
+        tvShows: settings.shows.map((s) => s.trim()).filter(Boolean),
+        syncedAt: new Date().toISOString(),
+      };
+
       const { confirmed } = await syncSettings(payload);
       Haptics.notificationAsync(
         Haptics.NotificationFeedbackType.Success,
