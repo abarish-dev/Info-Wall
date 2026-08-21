@@ -1,0 +1,122 @@
+{
+  "app_name": "MatrixControl",
+  "personality": "7 Dark-First Utility",
+  "personality_one_liner": "A sleek, sharp, command-center interface designed for instant operational clarity and hardware integration.",
+  "color": {
+    "surface": "#121212",
+    "onSurface": "#F9FAFB",
+    "surfaceSecondary": "#1A1A1A",
+    "onSurfaceSecondary": "#E5E7EB",
+    "surfaceTertiary": "#262626",
+    "onSurfaceTertiary": "#D1D5DB",
+    "surfaceInverse": "#F9FAFB",
+    "onSurfaceInverse": "#111827",
+    "brand": "#FF6B00",
+    "brandPrimary": "#FF6B00",
+    "onBrandPrimary": "#111827",
+    "brandSecondary": "#E25A24",
+    "onBrandSecondary": "#111827",
+    "brandTertiary": "#4A2511",
+    "onBrandTertiary": "#FFB380",
+    "success": "#10B981",
+    "onSuccess": "#022C22",
+    "warning": "#F59E0B",
+    "onWarning": "#451A03",
+    "error": "#EF4444",
+    "onError": "#450A0A",
+    "info": "#9CA3AF",
+    "onInfo": "#111827",
+    "border": "#374151",
+    "borderStrong": "#FF6B00",
+    "divider": "#262626"
+  },
+  "typography": {
+    "displayFontFamily": "Rajdhani",
+    "textFontFamily": "IBM Plex Sans",
+    "scale": {
+      "sm": 12,
+      "base": 14,
+      "lg": 16,
+      "xl": 20,
+      "2xl": 24
+    }
+  },
+  "spacing": {
+    "rule": "Keep spacing tight and structural. Use md (12) for inner component padding and xl (24) between major sections.",
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "2xl": 32,
+    "3xl": 48
+  },
+  "radius_tokens": {
+    "sm": 6,
+    "md": 12,
+    "lg": 20,
+    "pill": 999
+  },
+  "shadow_tier": "0",
+  "navigation": "stack_only",
+  "icon_set": "Phosphor",
+  "glassmorphism": {
+    "enabled": "false",
+    "do's": [
+      "Use solid surface colors and sharp dividers to maintain high contrast and a hardware feel."
+    ],
+    "dont's": [
+      "No blur or glassmorphism on this app. Clarity and utility beat aesthetics here."
+    ]
+  },
+  "platform_libraries": {
+    "glass": {
+      "ios": "expo-glass-effect",
+      "android": "expo-blur",
+      "low_end_android_fallback": "solid surfaceSecondary"
+    },
+    "image": "expo-image",
+    "blur": "expo-blur",
+    "bottom_sheet": "@gorhom/bottom-sheet",
+    "animation": "react-native-reanimated",
+    "gesture": "react-native-gesture-handler"
+  },
+  "screens": [
+    {
+      "name": "ControlPanel",
+      "purpose": "A single command-center screen to connect to the matrix and sync configurations.",
+      "states": {
+        "loading": "Centered brandPrimary activity indicator with 'Initializing Device...' text in Rajdhani.",
+        "empty": "Not applicable as this is a static settings form with defaults.",
+        "error": "Full screen error state: 'Connection lost' with a Retry button."
+      },
+      "layout": "Root is a safe-area view. Top has an image-backed hero section with gradient scrim, housing the Connect button and status pill. Below is a ScrollView with three sections (Flight Tracking, Sports, TV Shows) separated by sharp dividers. The bottom has a sticky container for the Sync Settings button."
+    }
+  ],
+  "images": {
+    "hero_led_matrix": {
+      "url": "https://images.pexels.com/photos/29149453/pexels-photo-29149453.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "alt": "Abstract orange LED matrix honeycomb pattern"
+    }
+  },
+  "haptics": {
+    "events": {
+      "connect_press": "medium",
+      "slider_change": "selection",
+      "input_focus": "light",
+      "sync_success": "success"
+    }
+  },
+  "instructions_to_main_agent": [
+    "Strict Typography Weight: Never use font weights above 500 (no SemiBold, Bold, etc). Rely on Rajdhani's condensed nature and larger sizes (xl/2xl) for hierarchy.",
+    "Banned Colors: Under no circumstances should any blue, indigo, purple, or violet be used. We are strictly adhering to the Ember (brand) + Obsidian (surface) palette.",
+    "Hero Section Gradient Scrim: The hero_led_matrix image must have a vertical gradient scrim overlay (transparent at 0% -> surface at 100%) to ensure the Connect button and text have perfect contrast.",
+    "Connection Status Pill: Design a pill with a colored dot (success for Connected, warning for Scanning, error for Disconnected) and uppercase text. This lives prominently in the hero section.",
+    "Slider Component: Build or use a slider for Flight Tracking. The track is surfaceTertiary, fill is brandPrimary. Display the live value (e.g., '3 MI') prominently in Rajdhani next to or above the slider.",
+    "Text Input Styling: Inputs use surfaceTertiary background with no border. On focus, add a 1.5pt borderStrong outline. Labels must sit above the input, never floating.",
+    "Input Avatars / Logos: We attempted to fetch PNG logos for NYY, CAR, and Ted Lasso but standard searches returned stock photos instead of transparent graphics (original queries: 'New York Yankees logo transparent png', etc.). Use the Initials Avatar fallback for the leading visual inside these text inputs (e.g., a surfaceSecondary square box containing 'NY' in onSurface text). Keep the original queries noted in comments for future refetching.",
+    "Sticky Sync CTA: The 'Sync Settings' button must be fixed at the bottom of the screen (absolute position, background: surface, borderTop: divider). The ScrollView content must have enough bottom padding so it is not hidden by this sticky area.",
+    "Custom Toast: Implement a custom top or bottom toast for the 'Sync Settings' success message. Do not use default Alert. Use surfaceSecondary background with a success-colored icon.",
+    "No Emoji: Do not use emojis anywhere in the UI. Use Phosphor icons instead."
+  ]
+}

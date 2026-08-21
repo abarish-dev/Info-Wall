@@ -1,0 +1,33 @@
+{
+  "summary": "Frontend-only MVP smoke test for Smart LED Matrix Bluetooth Control app on Expo web preview. All 7 requested test cases PASSED: (1) header 'MATRIX CONTROL', DISCONNECTED status pill and connect-button render; (2) default values render correctly (radius 3 MI, NYY, CAR, Shrinking, Emily in Paris, Ted Lasso); (3) radius-slider updates radius-value when dragged/clicked (3 MI → 31 MI on click, 26 MI on drag); (4) team & show TextInputs update values AND leading initial avatars (LA appeared when team1 changed to LAD, SE when show1 changed to Severance); (5) settings persist across reload via AsyncStorage web-shim (team1=LAD, show1=Severance survived reload); (6) tapping Sync when not connected shows expected error toast 'Connect to the matrix first to sync' (testID app-toast); (7) tapping Connect in web preview shows graceful error toast 'Bluetooth needs a real device build. It doesn't run in Expo Go or web preview.' (no crash) and ble-unsupported-hint text renders under the button. No red-screen errors. Only minor non-blocking issues: (a) IBMPlexSans font files fail to decode ('OTS parsing error: invalid sfntVersion: 168430090') on web — rendering falls back OK but likely corrupted TTF; (b) Toast.tsx uses deprecated 'props.pointerEvents' prop (should move to style.pointerEvents).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "Toast.tsx", "issue": "Uses deprecated `pointerEvents=\"none\"` prop on Animated.View. Warning: 'props.pointerEvents is deprecated. Use style.pointerEvents'. Move it into the style prop. Reference: /app/frontend/src/components/Toast.tsx:98"},
+      {"component": "assets/fonts/IBMPlexSans-Regular.ttf & IBMPlexSans-Medium.ttf", "issue": "Font decoding fails on web preview: 'Failed to decode downloaded font ... OTS parsing error: invalid sfntVersion: 168430090'. sfntVersion 0x0A0A0A0A implies the file was saved as text/git-lfs pointer or corrupted TTF. Rajdhani fonts load fine. Reference: /app/frontend/assets/fonts/IBMPlexSans-*.ttf"}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Replace `pointerEvents=\"none\"` with `style={{ pointerEvents: 'none' }}` (or merge into existing style array) in /app/frontend/src/components/Toast.tsx around line 98 to remove the deprecation warning.",
+    "Re-add valid IBMPlexSans-Regular.ttf and IBMPlexSans-Medium.ttf binaries (current files fail OTS validation with sfntVersion 0x0A0A0A0A — likely corrupted or committed as text/git-lfs pointer). Verify assets are actual TTF binaries.",
+    "OPTIONAL: `StorageItemValue` in /app/frontend/src/utils/storage/storage-base.ts is typed as `string | number | boolean | null`, but index.tsx stores an object (`Settings`). Runtime is fine (JSON round-trip), but the type constraint is being bypassed — consider widening the type or narrowing the caller to strict TS."
+  ],
+  "critical_code_review_comments": [
+    "storage type mismatch: `storage.getItem<Settings>(STORAGE_KEY, DEFAULTS)` — Settings is an object, but StorageItemValue is `string|number|boolean|null`. Works at runtime because Storage JSON.stringifies, but violates the compile-time contract.",
+    "index.tsx is 680 lines; approaching the 700-line split threshold. Consider extracting Section/AvatarInput and styles into separate files."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (not tested — no backend feature in scope)", "frontend": "100% (7/7 requested scenarios pass)"},
+  "seed_data_creation": "None. App uses local AsyncStorage/IndexedDB only.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "MVP frontend fully verified via Playwright at 390x844 mobile viewport against https://bluetooth-led-sync.preview.emergentagent.com/. testIDs used: connect-button, connection-status-pill, ble-unsupported-hint, radius-value, radius-slider, team-1-input, team-2-input, show-1-input, show-2-input, show-3-input, sync-settings-button, app-toast. Slider does NOT respond to keyboard arrows (@react-native-community/slider web quirk) but does respond to mouse click/drag — use bounding_box + mouse.click/drag to change values. AsyncStorage persists to IndexedDB on web, so a page.reload() correctly restores values.",
+  "rca_of_issue": "N/A — no failing scenarios."
+}
