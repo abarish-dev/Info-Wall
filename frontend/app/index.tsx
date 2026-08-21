@@ -275,6 +275,15 @@ export default function ControlPanel() {
     // Always persist locally.
     await storage.setItem(STORAGE_KEY, settings);
 
+    // Guard: Track Flight on but no ident entered.
+    if (settings.trackFlight && !settings.flightIdent.trim()) {
+      toast.show(
+        "Enter a flight number to track, or turn off Track Specific Flight",
+        "error",
+      );
+      return;
+    }
+
     if (!isConnected) {
       toast.show("Connect to the matrix first to sync", "error");
       return;
@@ -340,6 +349,7 @@ export default function ControlPanel() {
   const zipInvalid = zipTrimmed.length > 0 && zipTrimmed.length !== 5;
   const zipComplete = zipTrimmed.length === 5;
   const previewPayload = buildBlePayload(settings, geo);
+  const flightMissing = settings.trackFlight && !settings.flightIdent.trim();
 
   return (
     <View style={styles.root}>
@@ -542,6 +552,18 @@ export default function ControlPanel() {
             editable={settings.trackFlight}
             onChangeText={setFlightIdent}
           />
+          {flightMissing && (
+            <View style={styles.zipNoteRow} testID="flight-validation-warning">
+              <Ionicons
+                name="alert-circle"
+                size={14}
+                color={colors.warning}
+              />
+              <Text style={[styles.zipNoteText, { color: colors.warning }]}>
+                Enter a flight number, or turn off Track Specific Flight
+              </Text>
+            </View>
+          )}
         </Section>
 
         {/* Weather */}
