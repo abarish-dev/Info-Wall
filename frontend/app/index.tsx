@@ -7,6 +7,7 @@ import {
   TextInput,
   ActivityIndicator,
   Switch,
+  ScrollView,
 } from "react-native";
 import Slider from "@react-native-community/slider";
 import { Image } from "expo-image";
@@ -35,11 +36,15 @@ import {
 import { geocodeZip, type GeoResult } from "@/src/services/geocode";
 
 const STORAGE_KEY = "matrix_settings_v2";
+const RECENT_ZIPS_KEY = "recent_zips_v1";
+const LAST_SYNC_KEY = "last_sync_v1";
 const HERO_IMAGE =
   "https://images.pexels.com/photos/29149453/pexels-photo-29149453.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940";
 
 const DEFAULTS = {
   searchRadius: 3,
+  trackFlight: false,
+  flightIdent: "",
   showWeather: true,
   zipCode: "28117",
   teams: ["NYY", "CAR"],
@@ -48,6 +53,8 @@ const DEFAULTS = {
 
 type Settings = {
   searchRadius: number;
+  trackFlight: boolean;
+  flightIdent: string;
   showWeather: boolean;
   zipCode: string;
   teams: string[];
@@ -81,6 +88,11 @@ export default function ControlPanel() {
   const [flashing, setFlashing] = useState(false);
   const [geo, setGeo] = useState<GeoResult | null>(null);
   const [geoLoading, setGeoLoading] = useState(false);
+  const [recentZips, setRecentZips] = useState<string[]>([]);
+  const [lastSync, setLastSync] = useState<{
+    at: string;
+    summary: string;
+  } | null>(null);
 
   const bleSupported = useMemo(() => isBleSupported(), []);
 
@@ -119,6 +131,21 @@ export default function ControlPanel() {
     storage.setItem(STORAGE_KEY, settings);
   }, [settings, hydrated]);
 
+  // Load recent zips + last sync record once.
+  useEffect(() => {
+    (async () => {
+      const rz = (await storage.getItem<any>(RECENT_ZIPS_KEY, null)) as
+        | string[]
+        | null;
+      if (Array.isArray(rz)) setRecentZips(rz);
+      const ls = (await storage.getItem<any>(LAST_SYNC_KEY, null)) as {
+        at: string;
+        summary: string;
+      } | null;
+      if (ls) setLastSync(ls);
+    })();
+  }, []);
+
   // Poll signal strength while connected.
   useEffect(() => {
     if (status !== "connected") return;
@@ -144,6 +171,13 @@ export default function ControlPanel() {
       if (!cancelled) {
         setGeo(res);
         setGeoLoading(false);
+        if (res) {
+          setRecentZips((prev) => {
+            const next = [zip, ...prev.filter((z) => z !== zip)].slice(0, 6);
+            storage.setItem(RECENT_ZIPS_KEY, next);
+            return next;
+          });
+        }
       }
     }, 500);
     return () => {
@@ -159,6 +193,13 @@ export default function ControlPanel() {
     setSettings((s) => ({ ...s, showWeather: v }));
   const setZip = (v: string) =>
     setSettings((s) => ({ ...s, zipCode: v.replace(/[^0-9]/g, "") }));
+  const setTrackFlight = (v: boolean) =>
+    setSettings((s) => ({ ...s, trackFlight: v }));
+  const setFlightIdent = (v: string) =>
+    setSettings((s) => ({
+      ...s,
+      flightIdent: v.replace(/[^a-zA-Z0-9]/g, "").toUpperCase(),
+    }));
 
   const editList = (key: "teams" | "shows", i: number, val: string) =>
     setSettings((s) => {
@@ -263,6 +304,8 @@ export default function ControlPanel() {
 
       const payload = {
         flightTracking: { searchRadius: settings.searchRadius },
+        trackFlight: settings.trackFlight,
+        flightIdent: settings.flightIdent.trim(),
         weather: {
           showLocalWeather: settings.showWeather,
           zipCode: zip,
@@ -280,6 +323,20 @@ export default function ControlPanel() {
       Haptics.notificationAsync(
         Haptics.NotificationFeedbackType.Success,
       ).catch(() => {});
+
+      const summary =
+        `${settings.searchRadius} mi · ${payload.sports.teams.length} teams · ` +
+        `${payload.tvShows.length} shows · ` +
+        `${settings.showWeather ? `wx ${zip}` : "wx off"} · ` +
+        `${
+          settings.trackFlight && payload.flightIdent
+            ? `flight ${payload.flightIdent}`
+            : "no flight"
+        }`;
+      const record = { at: payload.syncedAt, summary };
+      setLastSync(record);
+      storage.setItem(LAST_SYNC_KEY, record);
+
       toast.show(
         confirmed
           ? "Settings applied — confirmed by matrix"
@@ -468,6 +525,41 @@ export default function ControlPanel() {
           </View>
         </Section>
 
+        {/* Pinned Flight */}
+        <Section
+          icon="navigate"
+          title="PINNED FLIGHT"
+          subtitle="Follow one flight live"
+        >
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleTextWrap}>
+              <Text style={styles.fieldLabel}>Track Specific Flight</Text>
+              <Text style={styles.toggleHint}>
+                Pin a single flight by its ident
+              </Text>
+            </View>
+            <Switch
+              testID="track-flight-toggle"
+              value={settings.trackFlight}
+              onValueChange={setTrackFlight}
+              trackColor={{ false: colors.surfaceTertiary, true: colors.brand }}
+              thumbColor={colors.onSurface}
+              ios_backgroundColor={colors.surfaceTertiary}
+            />
+          </View>
+          <IconInput
+            testID="flight-ident-input"
+            label="Flight Number / Ident"
+            icon="airplane"
+            value={settings.flightIdent}
+            placeholder="AA1234 or DAL520"
+            autoCapitalize="characters"
+            maxLength={8}
+            editable={settings.trackFlight}
+            onChangeText={setFlightIdent}
+          />
+        </Section>
+
         {/* Weather */}
         <Section
           icon="partly-sunny"
@@ -546,6 +638,42 @@ export default function ControlPanel() {
               </Text>
             </View>
           )}
+
+          {settings.showWeather && recentZips.length > 0 && (
+            <View style={styles.recentWrap}>
+              <Text style={styles.recentLabel}>RECENT</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.recentRow}
+                keyboardShouldPersistTaps="handled"
+              >
+                {recentZips.map((z) => {
+                  const active = z === zipTrimmed;
+                  return (
+                    <Pressable
+                      key={z}
+                      testID={`recent-zip-${z}`}
+                      onPress={() => setZip(z)}
+                      style={[
+                        styles.recentChip,
+                        active && styles.recentChipActive,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.recentChipText,
+                          active && styles.recentChipTextActive,
+                        ]}
+                      >
+                        {z}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          )}
         </Section>
 
         {/* Sports */}
@@ -602,6 +730,33 @@ export default function ControlPanel() {
             disabled={settings.shows.length >= MAX_ROWS}
             onPress={() => addRow("shows")}
           />
+        </Section>
+
+        {/* Sync Status / History */}
+        <Section
+          icon="time"
+          title="SYNC STATUS"
+          subtitle="Last push to the matrix"
+        >
+          {lastSync ? (
+            <View style={styles.syncHistory} testID="sync-history">
+              <View style={styles.syncTimeRow}>
+                <Ionicons
+                  name="checkmark-circle"
+                  size={16}
+                  color={colors.success}
+                />
+                <Text style={styles.syncTime}>
+                  {formatSyncTime(lastSync.at)}
+                </Text>
+              </View>
+              <Text style={styles.syncSummary}>{lastSync.summary}</Text>
+            </View>
+          ) : (
+            <Text style={styles.syncEmpty} testID="sync-history-empty">
+              No settings synced yet. Connect and tap Sync Settings.
+            </Text>
+          )}
         </Section>
       </KeyboardAwareScrollView>
 
@@ -771,6 +926,7 @@ function IconInput({
   keyboardType,
   maxLength,
   editable,
+  autoCapitalize,
   testID,
 }: {
   label: string;
@@ -781,6 +937,7 @@ function IconInput({
   keyboardType?: "default" | "number-pad";
   maxLength?: number;
   editable?: boolean;
+  autoCapitalize?: "none" | "characters" | "words" | "sentences";
   testID: string;
 }) {
   const [focused, setFocused] = useState(false);
@@ -807,6 +964,7 @@ function IconInput({
           keyboardType={keyboardType ?? "default"}
           maxLength={maxLength}
           editable={editable}
+          autoCapitalize={autoCapitalize ?? "sentences"}
           autoCorrect={false}
           returnKeyType="done"
         />
@@ -820,6 +978,24 @@ function signalColor(rssi: number | null): string {
   if (rssi >= -60) return colors.success;
   if (rssi >= -80) return colors.warning;
   return colors.error;
+}
+
+function formatSyncTime(iso: string): string {
+  const d = new Date(iso);
+  const diffMs = Date.now() - d.getTime();
+  const mins = Math.round(diffMs / 60000);
+  let rel: string;
+  if (mins < 1) rel = "just now";
+  else if (mins < 60) rel = `${mins}m ago`;
+  else if (mins < 1440) rel = `${Math.round(mins / 60)}h ago`;
+  else rel = `${Math.round(mins / 1440)}d ago`;
+  const abs = d.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  return `${abs} · ${rel}`;
 }
 
 /* ------------------------------------------------------------------ */
@@ -1045,6 +1221,68 @@ const styles = StyleSheet.create({
     fontSize: fontSize.base,
     letterSpacing: 0.5,
     marginTop: 1,
+  },
+  recentWrap: {
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  recentLabel: {
+    color: colors.info,
+    fontFamily: fonts.displayMedium,
+    fontSize: 10,
+    letterSpacing: 1.2,
+  },
+  recentRow: {
+    gap: spacing.sm,
+    paddingRight: spacing.sm,
+  },
+  recentChip: {
+    height: 36,
+    flexShrink: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surfaceTertiary,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  recentChipActive: {
+    backgroundColor: colors.brandTertiary,
+    borderColor: colors.brand,
+  },
+  recentChipText: {
+    color: colors.onSurfaceSecondary,
+    fontFamily: fonts.displayMedium,
+    fontSize: fontSize.base,
+    letterSpacing: 0.5,
+  },
+  recentChipTextActive: {
+    color: colors.brand,
+  },
+  syncHistory: {
+    gap: spacing.xs,
+  },
+  syncTimeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  syncTime: {
+    color: colors.onSurface,
+    fontFamily: fonts.textMedium,
+    fontSize: fontSize.base,
+  },
+  syncSummary: {
+    color: colors.onSurfaceSecondary,
+    fontFamily: fonts.text,
+    fontSize: fontSize.sm,
+    lineHeight: 20,
+  },
+  syncEmpty: {
+    color: colors.info,
+    fontFamily: fonts.text,
+    fontSize: fontSize.base,
   },
   fieldLabel: {
     color: colors.onSurfaceSecondary,
