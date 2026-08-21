@@ -45,6 +45,7 @@ export const fonts = {
   displayMedium: "Rajdhani-Medium",
   text: "IBMPlexSans",
   textMedium: "IBMPlexSans-Medium",
+  mono: "SpaceMono",
 } as const;
 
 export const fontSize = {

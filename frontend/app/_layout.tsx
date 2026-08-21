@@ -28,6 +28,7 @@ export default function RootLayout() {
     "Rajdhani-Medium": require("../assets/fonts/Rajdhani-Medium.ttf"),
     IBMPlexSans: require("../assets/fonts/IBMPlexSans-Regular.ttf"),
     "IBMPlexSans-Medium": require("../assets/fonts/IBMPlexSans-Medium.ttf"),
+    SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
 
   const iconsReady = iconsLoaded || iconsError;

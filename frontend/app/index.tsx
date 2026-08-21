@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   Switch,
   ScrollView,
-  Platform,
 } from "react-native";
 import Slider from "@react-native-community/slider";
 import { Image } from "expo-image";
@@ -1293,7 +1292,7 @@ const styles = StyleSheet.create({
   },
   payloadJson: {
     color: colors.onSurfaceSecondary,
-    fontFamily: Platform.select({ ios: "Menlo", android: "monospace" }),
+    fontFamily: fonts.mono,
     fontSize: 12,
     lineHeight: 18,
   },
