@@ -2,12 +2,14 @@
 // in an ember sweep (top-left → bottom-right), the wordmark fades in, then the
 // whole overlay fades out and calls onDone(). Mounted over the app in _layout
 // so the native (black) splash transitions into this seamlessly.
+// Tap anywhere to skip the intro instantly.
 
-import React, { useEffect, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   StyleSheet,
   View,
   Text,
+  Pressable,
   useWindowDimensions,
 } from "react-native";
 import Animated, {
@@ -65,6 +67,7 @@ export default function AnimatedSplash({ onDone }: { onDone: () => void }) {
 
   const progress = useSharedValue(0);
   const fade = useSharedValue(1);
+  const dondone = useRef(false);
 
   const pixels = useMemo(() => {
     const total = ROWS * COLS;
@@ -74,6 +77,20 @@ export default function AnimatedSplash({ onDone }: { onDone: () => void }) {
     }));
   }, []);
 
+  const finish = useCallback(() => {
+    if (dondone.current) return;
+    dondone.current = true;
+    onDone();
+  }, [onDone]);
+
+  const skip = useCallback(() => {
+    if (dondone.current) return;
+    fade.value = withTiming(0, { duration: 220 }, (done) => {
+      if (done) runOnJS(finish)();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finish]);
+
   useEffect(() => {
     progress.value = withTiming(1, {
       duration: 1100,
@@ -81,8 +98,8 @@ export default function AnimatedSplash({ onDone }: { onDone: () => void }) {
     });
     fade.value = withDelay(
       1600,
-      withTiming(0, { duration: 450 }, (finished) => {
-        if (finished) runOnJS(onDone)();
+      withTiming(0, { duration: 450 }, (done) => {
+        if (done) runOnJS(finish)();
       }),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -92,26 +109,40 @@ export default function AnimatedSplash({ onDone }: { onDone: () => void }) {
 
   return (
     <Animated.View
-      pointerEvents="none"
       style={[StyleSheet.absoluteFill, styles.root, containerStyle]}
     >
-      <View style={[styles.board, { width: boardW }]}>
-        {pixels.map((p) => (
-          <Pixel
-            key={p.idx}
-            threshold={p.threshold}
-            progress={progress}
-            size={cell}
-          />
-        ))}
-      </View>
-      <Animated.View
-        entering={FadeIn.delay(850).duration(500)}
-        style={styles.wordmarkWrap}
+      <Pressable
+        testID="splash-skip"
+        onPress={skip}
+        style={StyleSheet.absoluteFill}
+        android_disableSound
       >
-        <Ionicons name="grid" size={22} color={colors.brand} />
-        <Text style={styles.wordmark}>INFO WALL</Text>
-      </Animated.View>
+        <View style={styles.center}>
+          <View style={[styles.board, { width: boardW }]}>
+            {pixels.map((p) => (
+              <Pixel
+                key={p.idx}
+                threshold={p.threshold}
+                progress={progress}
+                size={cell}
+              />
+            ))}
+          </View>
+          <Animated.View
+            entering={FadeIn.delay(850).duration(500)}
+            style={styles.wordmarkWrap}
+          >
+            <Ionicons name="grid" size={22} color={colors.brand} />
+            <Text style={styles.wordmark}>INFO WALL</Text>
+          </Animated.View>
+          <Animated.Text
+            entering={FadeIn.delay(1200).duration(400)}
+            style={styles.skipHint}
+          >
+            Tap to skip
+          </Animated.Text>
+        </View>
+      </Pressable>
     </Animated.View>
   );
 }
@@ -119,9 +150,12 @@ export default function AnimatedSplash({ onDone }: { onDone: () => void }) {
 const styles = StyleSheet.create({
   root: {
     backgroundColor: "#000000",
+    zIndex: 1000,
+  },
+  center: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 1000,
   },
   board: {
     flexDirection: "row",
@@ -139,5 +173,12 @@ const styles = StyleSheet.create({
     fontFamily: fonts.displayMedium,
     fontSize: 26,
     letterSpacing: 4,
+  },
+  skipHint: {
+    color: colors.info,
+    fontFamily: fonts.text,
+    fontSize: 12,
+    letterSpacing: 1,
+    marginTop: 40,
   },
 });

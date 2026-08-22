@@ -37,11 +37,14 @@ import {
   readRssi,
   flashTest,
   writeLive,
+  monitorMatrix,
+  stopMonitor,
   BleError,
   type BleStatus,
 } from "@/src/services/ble";
 import { geocodeZip, type GeoResult } from "@/src/services/geocode";
 import { buildBlePayload } from "@/src/services/payload";
+import { getTeamBadge } from "@/src/utils/teamColors";
 import { SettingsSheet } from "@/src/components/SettingsSheet";
 import * as Clipboard from "expo-clipboard";
 
@@ -162,6 +165,10 @@ export default function ControlPanel() {
   >([]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [lastSsid, setLastSsid] = useState("");
+  const [wifiStatus, setWifiStatus] = useState<{
+    state: "idle" | "waiting" | "connected" | "failed";
+    ip?: string;
+  }>({ state: "idle" });
   const [lastSync, setLastSync] = useState<{
     at: string;
     summary: string;
@@ -357,11 +364,23 @@ export default function ControlPanel() {
     }
     try {
       await writeLive({ command: "wifi", ssid: ssid.trim(), password });
+      setWifiStatus({ state: "waiting" });
+      // Listen for the firmware to report the join result. Format expected:
+      // {"wifiStatus":"connected","ip":"192.168.1.42"} or {"wifiStatus":"failed"}
+      monitorMatrix((obj) => {
+        const ws = obj?.wifiStatus ?? obj?.wifi_status;
+        if (ws === "connected" || ws === true) {
+          setWifiStatus({ state: "connected", ip: obj?.ip });
+        } else if (ws === "failed" || ws === false) {
+          setWifiStatus({ state: "failed" });
+        }
+      });
       toast.show(
         "Wi-Fi credentials sent. Matrix is rebooting and connecting...",
         "success",
       );
     } catch {
+      setWifiStatus({ state: "idle" });
       toast.show("Couldn't send Wi-Fi credentials", "error");
     }
   };
@@ -524,6 +543,7 @@ export default function ControlPanel() {
       await disconnect();
       setStatus("disconnected");
       setDevice(null);
+      setWifiStatus({ state: "idle" });
       storage.removeItem(LAST_DEVICE_KEY);
       toast.show("Disconnected from matrix", "info");
       return;
@@ -561,6 +581,7 @@ export default function ControlPanel() {
       const info = await connectToKnownDevice(id, setStatus, () => {
         setStatus("disconnected");
         setDevice(null);
+        setWifiStatus({ state: "idle" });
         toast.show("Matrix disconnected", "error");
       });
       setDevice({ name: info.name, rssi: info.rssi });
@@ -1185,6 +1206,7 @@ export default function ControlPanel() {
               placeholder="NYY"
               autoCapitalize="characters"
               maxLength={5}
+              badge={getTeamBadge(team)}
               onChangeText={(t) => editList("teams", i, t)}
               onRemove={
                 settings.teams.length > 1
@@ -1640,6 +1662,7 @@ export default function ControlPanel() {
         onSaveWifi={handleSaveWifi}
         initialSsid={lastSsid}
         liveEnabled={isConnected}
+        wifiStatus={wifiStatus}
       />
 
       {/* Device picker (multiple FlightWall- boards nearby) */}
@@ -1742,6 +1765,7 @@ function AvatarInput({
   maxLength,
   testID,
   onRemove,
+  badge,
 }: {
   label: string;
   value: string;
@@ -1751,19 +1775,34 @@ function AvatarInput({
   maxLength?: number;
   testID: string;
   onRemove?: () => void;
+  badge?: { bg: string; fg: string; known: boolean };
 }) {
   const [focused, setFocused] = useState(false);
   const initials = (value.trim() || placeholder)
     .replace(/[^a-zA-Z0-9]/g, "")
     .slice(0, 2)
     .toUpperCase();
+  const hasValue = value.trim().length > 0;
 
   return (
     <View style={styles.field}>
       <Text style={styles.fieldLabel}>{label}</Text>
       <View style={[styles.inputRow, focused && styles.inputRowFocused]}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{initials || "--"}</Text>
+        <View
+          style={[
+            styles.avatar,
+            badge && hasValue && { backgroundColor: badge.bg },
+          ]}
+          testID={`${testID}-badge`}
+        >
+          <Text
+            style={[
+              styles.avatarText,
+              badge && hasValue && { color: badge.fg },
+            ]}
+          >
+            {initials || "--"}
+          </Text>
         </View>
         <TextInput
           testID={testID}

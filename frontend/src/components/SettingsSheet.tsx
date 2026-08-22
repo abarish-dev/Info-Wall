@@ -11,6 +11,7 @@ import {
   StyleSheet,
   ScrollView,
   TextInput,
+  ActivityIndicator,
 } from "react-native";
 import Slider from "@react-native-community/slider";
 import { Ionicons } from "@expo/vector-icons";
@@ -102,6 +103,7 @@ export function SettingsSheet({
   onSaveWifi,
   initialSsid,
   liveEnabled,
+  wifiStatus,
 }: {
   visible: boolean;
   onClose: () => void;
@@ -131,6 +133,10 @@ export function SettingsSheet({
   onSaveWifi?: (ssid: string, password: string) => void;
   initialSsid?: string;
   liveEnabled?: boolean;
+  wifiStatus?: {
+    state: "idle" | "waiting" | "connected" | "failed";
+    ip?: string;
+  };
 }) {
   const insets = useSafeAreaInsets();
   const [wifiSsid, setWifiSsid] = useState(initialSsid ?? "");
@@ -465,6 +471,43 @@ export function SettingsSheet({
                   : "Connect to the matrix first to send"}
               </Text>
             </View>
+            {wifiStatus && wifiStatus.state !== "idle" && (
+              <View
+                testID="wifi-status"
+                style={[
+                  styles.wifiStatus,
+                  wifiStatus.state === "connected" && styles.wifiStatusOk,
+                  wifiStatus.state === "failed" && styles.wifiStatusFail,
+                ]}
+              >
+                {wifiStatus.state === "waiting" ? (
+                  <ActivityIndicator size="small" color={colors.brand} />
+                ) : (
+                  <Ionicons
+                    name={
+                      wifiStatus.state === "connected"
+                        ? "checkmark-circle"
+                        : "close-circle"
+                    }
+                    size={18}
+                    color={
+                      wifiStatus.state === "connected"
+                        ? colors.success
+                        : colors.error
+                    }
+                  />
+                )}
+                <Text style={styles.wifiStatusText}>
+                  {wifiStatus.state === "waiting"
+                    ? "Sent · waiting for the matrix to join…"
+                    : wifiStatus.state === "connected"
+                      ? wifiStatus.ip
+                        ? `Matrix joined · ${wifiStatus.ip}`
+                        : "Matrix joined the network"
+                      : "Couldn't join — check the password"}
+                </Text>
+              </View>
+            )}
           </View>
         </ScrollView>
       </View>
@@ -566,6 +609,30 @@ const styles = StyleSheet.create({
     fontFamily: fonts.displayMedium,
     fontSize: fontSize.lg,
     letterSpacing: 1.2,
+  },
+  wifiStatus: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surfaceTertiary,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  wifiStatusOk: {
+    borderColor: colors.success,
+  },
+  wifiStatusFail: {
+    borderColor: colors.error,
+  },
+  wifiStatusText: {
+    flex: 1,
+    color: colors.onSurface,
+    fontFamily: fonts.text,
+    fontSize: fontSize.sm,
   },
   profileRow: {
     gap: spacing.sm,

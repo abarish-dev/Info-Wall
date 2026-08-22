@@ -55,3 +55,8 @@ Build a mobile app to control a smart LED matrix via Bluetooth. UI: prominent "C
 - [x] Sync payload parity: added `stock1..stock8` to the flat `buildBlePayload` contract so a full Sync now carries financial tickers (previously only Live Push did).
 - [x] Wi-Fi: typed SSID is now remembered immediately on Save (before the connect check) so it's never lost if the matrix isn't connected yet.
 
+## Updates (2026-06, fork · round 2)
+- [x] Wi-Fi status read-back: after sending credentials the app subscribes to characteristic notifications (`monitorMatrix` in `ble.ts`) and shows a live banner in the Wi-Fi panel — "Sent · waiting…" → "Matrix joined · <ip>" / "Couldn't join". Firmware contract: send `{"wifiStatus":"connected","ip":"..."}` or `{"wifiStatus":"failed"}` on the same characteristic. (Firmware update pending on user side; until then it stays on "waiting".)
+- [x] Team badges: each team abbreviation shows a colored badge in its official team color (`src/utils/teamColors.ts`, ~120 NFL/MLB/NBA/NHL teams mapped; unknown abbrevs get a deterministic color). Applied via a new `badge` prop on `AvatarInput`.
+- [x] Splash skip: tap anywhere on the LED intro to dismiss it instantly ("Tap to skip" hint).
+

@@ -375,7 +375,50 @@ export async function readRssi(): Promise<number | null> {
   }
 }
 
+let statusSubscription: any = null;
+
+/**
+ * Subscribe to characteristic notifications from the matrix and forward any
+ * decoded JSON object to onData. Used to receive async status updates the
+ * firmware pushes back (e.g. Wi-Fi connection result). Safe no-op if the
+ * device/firmware doesn't notify.
+ */
+export function monitorMatrix(onData: (obj: any) => void): void {
+  if (!connectedDevice) return;
+  stopMonitor();
+  try {
+    statusSubscription = connectedDevice.monitorCharacteristicForService(
+      SERVICE_UUID,
+      CHARACTERISTIC_UUID,
+      (error: any, ch: any) => {
+        if (error || !ch?.value) return;
+        try {
+          const decoded = decodeURIComponent(escape(base64Decode(ch.value)));
+          onData(JSON.parse(decoded));
+        } catch {
+          // ignore non-JSON / partial frames
+        }
+      },
+    );
+  } catch {
+    statusSubscription = null;
+  }
+}
+
+/** Stop listening for matrix notifications. */
+export function stopMonitor(): void {
+  if (statusSubscription) {
+    try {
+      statusSubscription.remove();
+    } catch {
+      // ignore
+    }
+    statusSubscription = null;
+  }
+}
+
 export async function disconnect(): Promise<void> {
+  stopMonitor();
   if (connectedDevice) {
     try {
       await connectedDevice.cancelConnection();
