@@ -38,6 +38,7 @@ import {
 } from "@/src/services/ble";
 import { geocodeZip, type GeoResult } from "@/src/services/geocode";
 import { buildBlePayload } from "@/src/services/payload";
+import { SettingsSheet } from "@/src/components/SettingsSheet";
 
 const STORAGE_KEY = "matrix_settings_v2";
 const RECENT_ZIPS_KEY = "recent_zips_v1";
@@ -51,6 +52,11 @@ const DEFAULTS = {
   flightIdent: "",
   showWeather: true,
   zipCode: "28117",
+  brightness: 80,
+  scheduleEnabled: false,
+  scheduleStart: "19:00",
+  scheduleEnd: "07:00",
+  scheduleBrightness: 40,
   teams: ["NYY", "CAR"],
   shows: ["Shrinking", "Emily in Paris", "Ted Lasso"],
 };
@@ -61,6 +67,11 @@ type Settings = {
   flightIdent: string;
   showWeather: boolean;
   zipCode: string;
+  brightness: number;
+  scheduleEnabled: boolean;
+  scheduleStart: string;
+  scheduleEnd: string;
+  scheduleBrightness: number;
   teams: string[];
   shows: string[];
 };
@@ -95,6 +106,8 @@ export default function ControlPanel() {
   const [geoLoading, setGeoLoading] = useState(false);
   const [recentZips, setRecentZips] = useState<string[]>([]);
   const [mapOpen, setMapOpen] = useState(false);
+  const [mapZoom, setMapZoom] = useState(11);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [lastSync, setLastSync] = useState<{
     at: string;
     summary: string;
@@ -194,6 +207,8 @@ export default function ControlPanel() {
 
   const setRadius = (v: number) =>
     setSettings((s) => ({ ...s, searchRadius: v }));
+  const patchSettings = (p: Partial<Settings>) =>
+    setSettings((s) => ({ ...s, ...p }));
 
   const setWeather = (v: boolean) =>
     setSettings((s) => ({ ...s, showWeather: v }));
@@ -409,6 +424,15 @@ export default function ControlPanel() {
                 {statusMeta.label}
               </Text>
             </View>
+
+            <Pressable
+              testID="settings-button"
+              onPress={() => setSettingsOpen(true)}
+              hitSlop={8}
+              style={({ pressed }) => [styles.gearBtn, pressed && styles.pressed]}
+            >
+              <Ionicons name="settings-sharp" size={18} color={colors.onSurface} />
+            </Pressable>
           </View>
 
           <Text style={styles.heroSubtitle}>
@@ -878,7 +902,58 @@ export default function ControlPanel() {
 
             {geo && (
               <View style={styles.mapImageWrap}>
-                <TileMap lat={geo.lat} lon={geo.lon} size={mapSize} />
+                <View style={{ width: mapSize, height: mapSize }}>
+                  <TileMap
+                    lat={geo.lat}
+                    lon={geo.lon}
+                    size={mapSize}
+                    zoom={mapZoom}
+                    radiusMiles={settings.searchRadius}
+                  />
+                  <View style={styles.zoomControls}>
+                    <Pressable
+                      testID="map-zoom-in"
+                      onPress={() => setMapZoom((z) => Math.min(15, z + 1))}
+                      style={({ pressed }) => [
+                        styles.zoomBtn,
+                        pressed && styles.pressed,
+                      ]}
+                    >
+                      <Ionicons name="add" size={22} color={colors.onSurface} />
+                    </Pressable>
+                    <Pressable
+                      testID="map-zoom-out"
+                      onPress={() => setMapZoom((z) => Math.max(8, z - 1))}
+                      style={({ pressed }) => [
+                        styles.zoomBtn,
+                        pressed && styles.pressed,
+                      ]}
+                    >
+                      <Ionicons
+                        name="remove"
+                        size={22}
+                        color={colors.onSurface}
+                      />
+                    </Pressable>
+                  </View>
+                  <View style={styles.radiusOverlay}>
+                    <Text style={styles.radiusOverlayLabel}>
+                      Radius: {settings.searchRadius} mi
+                    </Text>
+                    <Slider
+                      testID="map-radius-slider"
+                      style={{ width: "100%", height: 32 }}
+                      minimumValue={1}
+                      maximumValue={50}
+                      step={1}
+                      value={settings.searchRadius}
+                      onValueChange={(v) => setRadius(Math.round(v))}
+                      minimumTrackTintColor={colors.brand}
+                      maximumTrackTintColor="rgba(255,255,255,0.35)"
+                      thumbTintColor={colors.brand}
+                    />
+                  </View>
+                </View>
               </View>
             )}
             <Text style={styles.mapAttribution}>Map data © OpenStreetMap</Text>
@@ -897,6 +972,17 @@ export default function ControlPanel() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      <SettingsSheet
+        visible={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        brightness={settings.brightness}
+        scheduleEnabled={settings.scheduleEnabled}
+        scheduleStart={settings.scheduleStart}
+        scheduleEnd={settings.scheduleEnd}
+        scheduleBrightness={settings.scheduleBrightness}
+        onChange={patchSettings}
+      />
     </View>
   );
 }
@@ -1105,12 +1191,16 @@ function TileMap({
   lat,
   lon,
   size,
+  zoom,
+  radiusMiles,
 }: {
   lat: number;
   lon: number;
   size: number;
+  zoom: number;
+  radiusMiles?: number;
 }) {
-  const z = 11;
+  const z = zoom;
   const { x, y } = lonLatToTileFrac(lon, lat, z);
   const xt = Math.floor(x);
   const yt = Math.floor(y);
@@ -1132,6 +1222,15 @@ function TileMap({
   }
   const markerLeft = S + fracX * S;
   const markerTop = S + fracY * S;
+
+  // Radius circle: convert miles -> pixels at this zoom/latitude.
+  const latRad = (lat * Math.PI) / 180;
+  const metersPerPixel =
+    (156543.03392 * Math.cos(latRad)) / Math.pow(2, z);
+  const radiusPx =
+    radiusMiles && metersPerPixel > 0
+      ? (radiusMiles * 1609.34) / metersPerPixel
+      : 0;
 
   return (
     <View
@@ -1159,6 +1258,23 @@ function TileMap({
           transition={150}
         />
       ))}
+      {radiusPx > 0 && (
+        <View
+          pointerEvents="none"
+          testID="radius-overlay-circle"
+          style={{
+            position: "absolute",
+            left: markerLeft - radiusPx,
+            top: markerTop - radiusPx,
+            width: radiusPx * 2,
+            height: radiusPx * 2,
+            borderRadius: radiusPx,
+            backgroundColor: "rgba(255,107,0,0.22)",
+            borderWidth: 2,
+            borderColor: colors.brand,
+          }}
+        />
+      )}
       <View
         pointerEvents="none"
         style={{
@@ -1222,6 +1338,51 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  gearBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: radius.sm,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.45)",
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  zoomControls: {
+    position: "absolute",
+    top: spacing.sm,
+    right: spacing.sm,
+    gap: spacing.sm,
+  },
+  zoomBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.sm,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(18,18,18,0.85)",
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  radiusOverlay: {
+    position: "absolute",
+    left: spacing.sm,
+    right: spacing.sm,
+    bottom: spacing.sm,
+    backgroundColor: "rgba(18,18,18,0.82)",
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  radiusOverlayLabel: {
+    color: colors.onSurface,
+    fontFamily: fonts.displayMedium,
+    fontSize: fontSize.lg,
+    letterSpacing: 0.5,
+    marginBottom: 2,
   },
   brandTitle: {
     flex: 1,

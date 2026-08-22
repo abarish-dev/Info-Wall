@@ -8,6 +8,11 @@ export type BlePayload = {
   showWeather: boolean; // boolean
   lat: number; // number
   lon: number; // number
+  brightness: number; // number 0-100
+  scheduleEnabled: boolean; // boolean
+  scheduleStart: string; // "HH:MM"
+  scheduleEnd: string; // "HH:MM"
+  scheduleBrightness: number; // number 0-100 (0 = display off)
   team1: string;
   team2: string;
   team3: string;
@@ -31,6 +36,11 @@ type SettingsShape = {
   trackFlight: boolean;
   flightIdent: string;
   showWeather: boolean;
+  brightness: number;
+  scheduleEnabled: boolean;
+  scheduleStart: string;
+  scheduleEnd: string;
+  scheduleBrightness: number;
   teams: string[];
   shows: string[];
 };
@@ -48,6 +58,11 @@ export function buildBlePayload(
     showWeather: s.showWeather,
     lat: coords?.lat ?? 0,
     lon: coords?.lon ?? 0,
+    brightness: s.brightness,
+    scheduleEnabled: s.scheduleEnabled,
+    scheduleStart: s.scheduleStart,
+    scheduleEnd: s.scheduleEnd,
+    scheduleBrightness: s.scheduleBrightness,
     team1: teams[0] ?? "",
     team2: teams[1] ?? "",
     team3: teams[2] ?? "",
