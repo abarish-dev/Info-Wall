@@ -40,6 +40,7 @@ import {
 import { geocodeZip, type GeoResult } from "@/src/services/geocode";
 import { buildBlePayload } from "@/src/services/payload";
 import { SettingsSheet } from "@/src/components/SettingsSheet";
+import * as Clipboard from "expo-clipboard";
 
 const STORAGE_KEY = "matrix_settings_v2";
 const RECENT_ZIPS_KEY = "recent_zips_v1";
@@ -48,6 +49,7 @@ const HERO_IMAGE =
   "https://images.pexels.com/photos/29149453/pexels-photo-29149453.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940";
 
 const DEFAULTS = {
+  wallName: "Info Wall",
   searchRadius: 3,
   trackFlight: false,
   flightIdent: "",
@@ -63,6 +65,7 @@ const DEFAULTS = {
 };
 
 type Settings = {
+  wallName: string;
   searchRadius: number;
   trackFlight: boolean;
   flightIdent: string;
@@ -108,6 +111,7 @@ export default function ControlPanel() {
   const [recentZips, setRecentZips] = useState<string[]>([]);
   const [mapOpen, setMapOpen] = useState(false);
   const [mapZoom, setMapZoom] = useState(11);
+  const [mapType, setMapType] = useState<"streets" | "satellite">("streets");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [lastSync, setLastSync] = useState<{
     at: string;
@@ -316,6 +320,22 @@ export default function ControlPanel() {
     }
   };
 
+  const handleLiveRadius = async (value: number) => {
+    if (!isConnected) return;
+    try {
+      await writeLive({ command: "radius", radius: value });
+      toast.show(`Radius → ${value} mi`, "success");
+    } catch {
+      toast.show("Couldn't update radius live", "error");
+    }
+  };
+
+  const copyPayload = async () => {
+    await Clipboard.setStringAsync(JSON.stringify(previewPayload, null, 2));
+    Haptics.selectionAsync().catch(() => {});
+    toast.show("Payload JSON copied", "success");
+  };
+
   const handleFlash = async () => {
     if (flashing || !isConnected) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
@@ -440,7 +460,9 @@ export default function ControlPanel() {
             <View style={styles.logoBox}>
               <Ionicons name="grid" size={18} color={colors.brand} />
             </View>
-            <Text style={styles.brandTitle}>INFO WALL</Text>
+            <Text style={styles.brandTitle} numberOfLines={1}>
+              {(settings.wallName || "Info Wall").toUpperCase()}
+            </Text>
 
             <View style={styles.statusPill} testID="connection-status-pill">
               <View
@@ -584,9 +606,10 @@ export default function ControlPanel() {
             step={1}
             value={settings.searchRadius}
             onValueChange={(v) => setRadius(Math.round(v))}
-            onSlidingComplete={() =>
-              Haptics.selectionAsync().catch(() => {})
-            }
+            onSlidingComplete={(v) => {
+              Haptics.selectionAsync().catch(() => {});
+              handleLiveRadius(Math.round(v));
+            }}
             minimumTrackTintColor={colors.brand}
             maximumTrackTintColor={colors.surfaceTertiary}
             thumbTintColor={colors.brand}
@@ -853,7 +876,21 @@ export default function ControlPanel() {
           )}
 
           <View style={styles.payloadBlock}>
-            <Text style={styles.payloadLabel}>PAYLOAD PREVIEW (JSON)</Text>
+            <View style={styles.payloadHeader}>
+              <Text style={styles.payloadLabel}>PAYLOAD PREVIEW (JSON)</Text>
+              <Pressable
+                testID="copy-payload-button"
+                onPress={copyPayload}
+                hitSlop={8}
+                style={({ pressed }) => [
+                  styles.copyBtn,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Ionicons name="copy-outline" size={14} color={colors.brand} />
+                <Text style={styles.copyBtnText}>COPY</Text>
+              </Pressable>
+            </View>
             <Text style={styles.payloadJson} testID="payload-preview">
               {JSON.stringify(previewPayload, null, 2)}
             </Text>
@@ -935,6 +972,7 @@ export default function ControlPanel() {
                     size={mapSize}
                     zoom={mapZoom}
                     radiusMiles={settings.searchRadius}
+                    mapType={mapType}
                   />
                   <View style={styles.zoomControls}>
                     <Pressable
@@ -962,6 +1000,27 @@ export default function ControlPanel() {
                       />
                     </Pressable>
                   </View>
+                  <Pressable
+                    testID="map-type-toggle"
+                    onPress={() =>
+                      setMapType((t) =>
+                        t === "streets" ? "satellite" : "streets",
+                      )
+                    }
+                    style={({ pressed }) => [
+                      styles.mapTypeBtn,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <Ionicons
+                      name={mapType === "streets" ? "globe" : "map"}
+                      size={16}
+                      color={colors.onSurface}
+                    />
+                    <Text style={styles.mapTypeText}>
+                      {mapType === "streets" ? "SATELLITE" : "STREETS"}
+                    </Text>
+                  </Pressable>
                   <View style={styles.radiusOverlay}>
                     <Text style={styles.radiusOverlayLabel}>
                       Radius: {settings.searchRadius} mi
@@ -974,6 +1033,7 @@ export default function ControlPanel() {
                       step={1}
                       value={settings.searchRadius}
                       onValueChange={(v) => setRadius(Math.round(v))}
+                      onSlidingComplete={(v) => handleLiveRadius(Math.round(v))}
                       minimumTrackTintColor={colors.brand}
                       maximumTrackTintColor="rgba(255,255,255,0.35)"
                       thumbTintColor={colors.brand}
@@ -1002,6 +1062,7 @@ export default function ControlPanel() {
       <SettingsSheet
         visible={settingsOpen}
         onClose={() => setSettingsOpen(false)}
+        wallName={settings.wallName}
         brightness={settings.brightness}
         scheduleEnabled={settings.scheduleEnabled}
         scheduleStart={settings.scheduleStart}
@@ -1222,12 +1283,14 @@ function TileMap({
   size,
   zoom,
   radiusMiles,
+  mapType,
 }: {
   lat: number;
   lon: number;
   size: number;
   zoom: number;
   radiusMiles?: number;
+  mapType?: "streets" | "satellite";
 }) {
   const z = zoom;
   const { x, y } = lonLatToTileFrac(lon, lat, z);
@@ -1237,16 +1300,15 @@ function TileMap({
   const fracY = y - yt;
   const S = size / 3;
 
+  const tileUrl = (tx: number, ty: number) =>
+    mapType === "satellite"
+      ? `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${ty}/${tx}`
+      : `https://tile.openstreetmap.org/${z}/${tx}/${ty}.png`;
+
   const tiles: { i: number; j: number; uri: string }[] = [];
   for (let j = 0; j < 3; j++) {
     for (let i = 0; i < 3; i++) {
-      const tx = xt - 1 + i;
-      const ty = yt - 1 + j;
-      tiles.push({
-        i,
-        j,
-        uri: `https://tile.openstreetmap.org/${z}/${tx}/${ty}.png`,
-      });
+      tiles.push({ i, j, uri: tileUrl(xt - 1 + i, yt - 1 + j) });
     }
   }
   const markerLeft = S + fracX * S;
@@ -1676,6 +1738,48 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: spacing.md,
     gap: spacing.sm,
+  },
+  payloadHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  copyBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.brand,
+  },
+  copyBtnText: {
+    color: colors.brand,
+    fontFamily: fonts.displayMedium,
+    fontSize: 11,
+    letterSpacing: 1,
+  },
+  mapTypeBtn: {
+    position: "absolute",
+    top: spacing.sm,
+    left: spacing.sm,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    backgroundColor: "rgba(18,18,18,0.85)",
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    height: 34,
+  },
+  mapTypeText: {
+    color: colors.onSurface,
+    fontFamily: fonts.displayMedium,
+    fontSize: 11,
+    letterSpacing: 1,
   },
   payloadLabel: {
     color: colors.brand,

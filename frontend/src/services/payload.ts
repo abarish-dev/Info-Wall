@@ -2,6 +2,7 @@
 // Keys and data types must match precisely — do not nest or rename.
 
 export type BlePayload = {
+  name: string; // wall label
   radius: number; // number
   trackFlight: boolean; // boolean
   flightIdent: string; // string
@@ -32,6 +33,7 @@ export type BlePayload = {
 };
 
 type SettingsShape = {
+  wallName: string;
   searchRadius: number;
   trackFlight: boolean;
   flightIdent: string;
@@ -52,6 +54,7 @@ export function buildBlePayload(
   const teams = s.teams.map((t) => t.trim());
   const shows = s.shows.map((v) => v.trim());
   return {
+    name: s.wallName.trim(),
     radius: s.searchRadius,
     trackFlight: s.trackFlight,
     flightIdent: s.flightIdent.trim(),

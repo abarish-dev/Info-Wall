@@ -10,6 +10,7 @@ import {
   Pressable,
   StyleSheet,
   ScrollView,
+  TextInput,
 } from "react-native";
 import Slider from "@react-native-community/slider";
 import { Ionicons } from "@expo/vector-icons";
@@ -18,6 +19,7 @@ import * as Haptics from "expo-haptics";
 import { colors, spacing, radius, fonts, fontSize } from "@/src/theme";
 
 export type DisplayPatch = {
+  wallName?: string;
   brightness?: number;
   scheduleEnabled?: boolean;
   scheduleStart?: string;
@@ -79,6 +81,7 @@ function TimeStepper({
 export function SettingsSheet({
   visible,
   onClose,
+  wallName,
   brightness,
   scheduleEnabled,
   scheduleStart,
@@ -91,6 +94,7 @@ export function SettingsSheet({
 }: {
   visible: boolean;
   onClose: () => void;
+  wallName: string;
   brightness: number;
   scheduleEnabled: boolean;
   scheduleStart: string;
@@ -152,6 +156,22 @@ export function SettingsSheet({
           }}
           showsVerticalScrollIndicator={false}
         >
+          {/* Wall name */}
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>WALL NAME</Text>
+            <TextInput
+              testID="wall-name-input"
+              style={styles.nameInput}
+              value={wallName}
+              onChangeText={(t) => onChange({ wallName: t.slice(0, 24) })}
+              placeholder="Info Wall"
+              placeholderTextColor={colors.info}
+              maxLength={24}
+              returnKeyType="done"
+            />
+            <Text style={styles.hint}>Shown at the top of the app.</Text>
+          </View>
+
           {/* Brightness */}
           <View style={styles.card}>
             <View style={styles.rowBetween}>
@@ -345,6 +365,15 @@ const styles = StyleSheet.create({
   slider: {
     width: "100%",
     height: 36,
+  },
+  nameInput: {
+    backgroundColor: colors.surfaceTertiary,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    color: colors.onSurface,
+    fontFamily: fonts.text,
+    fontSize: fontSize.lg,
   },
   hint: {
     color: colors.info,
