@@ -65,5 +65,10 @@ Build a mobile app to control a smart LED matrix via Bluetooth. UI: prominent "C
 - [x] Team-code validation: entering a code not in the built-in ~120 NFL/MLB/NBA/NHL abbreviation set shows an inline "Unrecognized code" warning (soft, non-blocking). Source: `src/utils/teamColors.ts` `getTeamBadge().known`.
 - [x] Full live sync (option B): added debounced live pushes for the remaining fields so the matrix always stays in sync while connected — `{command:"flight"}` (trackFlight + flightIdent), `{command:"weather"}` (showWeather + lat/lon), `{command:"zone"}` (trackingMode + polygon). Firmware must handle these commands.
 - [x] Sync button demoted to a smaller outlined "SYNC & CONFIRM" (it now mainly does the full write + read-back confirmation, since everything else pushes live).
-- [x] Accent themes: Settings → APPEARANCE lets the user pick Ember (orange), Azure (blue), Crimson (red), or Slate (gray). Implemented via runtime mutation of `colors` accent fields + a style-rebuild registry (`applyAccent`/`onAccentChange` in `theme.ts`); persisted as `theme_id_v1`. Applies app-wide (icons, sliders, toggles, buttons, borders).
+- [x] Accent themes: Settings → APPEARANCE lets the user pick Ember (orange), Azure (blue), Crimson (red), or Slate (gray).
+
+## Updates (2026-06, fork · round 4)
+- [x] Refactor: split the ~3000-line `app/index.tsx` (now ~2540). Extracted `src/components/FormControls.tsx` (Section, TextField [was AvatarInput], IconInput, AddRowButton), `src/components/MatrixMap.tsx` (TileMap, PolyOverlay, PolyEditor, signalColor, lonLatToTileFrac), and a `src/hooks/useThemedStyles.ts` hook. Theming now uses the hook in both index and SettingsSheet (replaced the module-level style-rebuild hack). Behavior identical; regression-tested (iteration_7, all pass).
+- [x] Removed the redundant hero subtitle "Configure and push live settings to your LED matrix." (status pill + title already convey this; frees vertical space).
+- [x] Added `/app/FIRMWARE_BLE_SPEC.md` — the exact ESP32/VS Code BLE contract (full sync payload keys, all live commands, and the new Wi-Fi status notification format). Implemented via runtime mutation of `colors` accent fields + a style-rebuild registry (`applyAccent`/`onAccentChange` in `theme.ts`); persisted as `theme_id_v1`. Applies app-wide (icons, sliders, toggles, buttons, borders).
 

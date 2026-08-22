@@ -1,17 +1,15 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   Pressable,
-  TextInput,
   ActivityIndicator,
   Switch,
   ScrollView,
   Modal,
   Linking,
   useWindowDimensions,
-  PanResponder,
 } from "react-native";
 import Slider from "@react-native-community/slider";
 import { Image } from "expo-image";
@@ -31,13 +29,25 @@ import {
   fonts,
   fontSize,
   applyAccent,
-  onAccentChange,
   ACCENTS,
   type AccentId,
 } from "@/src/theme";
 import { storage } from "@/src/utils/storage";
 import { useToast } from "@/src/components/Toast";
-import Svg, { Polygon as SvgPolygon } from "react-native-svg";
+import { useThemedStyles } from "@/src/hooks/useThemedStyles";
+import {
+  Section,
+  TextField,
+  IconInput,
+  AddRowButton,
+} from "@/src/components/FormControls";
+import {
+  TileMap,
+  PolyOverlay,
+  PolyEditor,
+  signalColor,
+  lonLatToTileFrac,
+} from "@/src/components/MatrixMap";
 import {
   connectToKnownDevice,
   scanForDevices,
@@ -146,6 +156,7 @@ const STATUS_META: Record<
 };
 
 export default function ControlPanel() {
+  const styles = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const { width: winW } = useWindowDimensions();
   const toast = useToast();
@@ -988,10 +999,6 @@ export default function ControlPanel() {
 
           </View>
 
-          <Text style={styles.heroSubtitle}>
-            Configure and push live settings to your LED matrix.
-          </Text>
-
           {!bleSupported && !isConnected && (
             <Text style={styles.bleHint} testID="ble-unsupported-hint">
               Bluetooth needs a real device build — it won&apos;t connect in
@@ -1272,7 +1279,7 @@ export default function ControlPanel() {
           subtitle="Track your teams"
         >
           {settings.teams.map((team, i) => (
-            <AvatarInput
+            <TextField
               key={`team-${i}`}
               testID={`team-${i + 1}-input`}
               label={`Team ${i + 1}`}
@@ -1304,7 +1311,7 @@ export default function ControlPanel() {
         {/* TV Shows */}
         <Section icon="tv" title="TV SHOWS" subtitle="Your watchlist">
           {settings.shows.map((show, i) => (
-            <AvatarInput
+            <TextField
               key={`show-${i}`}
               testID={`show-${i + 1}-input`}
               label={`Show ${i + 1}`}
@@ -1333,7 +1340,7 @@ export default function ControlPanel() {
           subtitle="Up to 8 stock / ETF symbols"
         >
           {settings.stocks.map((sym, i) => (
-            <AvatarInput
+            <TextField
               key={`stock-${i}`}
               testID={`stock-${i + 1}-input`}
               label={`Slot ${i + 1}`}
@@ -1368,21 +1375,21 @@ export default function ControlPanel() {
               ios_backgroundColor={colors.surfaceTertiary}
             />
           </View>
-          <AvatarInput
+          <TextField
             testID="msg-line-1-input"
             label="Line 1"
             value={settings.msgLine1}
             placeholder="Happy Birthday"
             onChangeText={(t) => patchSettings({ msgLine1: t })}
           />
-          <AvatarInput
+          <TextField
             testID="msg-line-2-input"
             label="Line 2"
             value={settings.msgLine2}
             placeholder="Kimberley"
             onChangeText={(t) => patchSettings({ msgLine2: t })}
           />
-          <AvatarInput
+          <TextField
             testID="msg-line-3-input"
             label="Line 3"
             value={settings.msgLine3}
@@ -1801,476 +1808,6 @@ export default function ControlPanel() {
           </Pressable>
         </Pressable>
       </Modal>
-    </View>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Sub-components                                                      */
-/* ------------------------------------------------------------------ */
-
-function Section({
-  icon,
-  title,
-  subtitle,
-  children,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  title: string;
-  subtitle: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <View style={styles.sectionIcon}>
-          <Ionicons name={icon} size={18} color={colors.brand} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.sectionTitle}>{title}</Text>
-          <Text style={styles.sectionSubtitle}>{subtitle}</Text>
-        </View>
-      </View>
-      <View style={styles.sectionBody}>{children}</View>
-    </View>
-  );
-}
-
-function AvatarInput({
-  label,
-  value,
-  placeholder,
-  onChangeText,
-  autoCapitalize,
-  maxLength,
-  testID,
-  onRemove,
-  warning,
-}: {
-  label: string;
-  value: string;
-  placeholder: string;
-  onChangeText: (t: string) => void;
-  autoCapitalize?: "none" | "characters" | "words" | "sentences";
-  maxLength?: number;
-  testID: string;
-  onRemove?: () => void;
-  warning?: string;
-}) {
-  const [focused, setFocused] = useState(false);
-
-  return (
-    <View style={styles.field}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      <View style={[styles.inputRow, focused && styles.inputRowFocused]}>
-        <TextInput
-          testID={testID}
-          style={styles.input}
-          value={value}
-          placeholder={placeholder}
-          placeholderTextColor={colors.info}
-          onChangeText={onChangeText}
-          onFocus={() => {
-            setFocused(true);
-            Haptics.selectionAsync().catch(() => {});
-          }}
-          onBlur={() => setFocused(false)}
-          autoCapitalize={autoCapitalize ?? "sentences"}
-          maxLength={maxLength}
-          autoCorrect={false}
-          returnKeyType="done"
-        />
-        {onRemove && (
-          <Pressable
-            testID={`${testID}-remove`}
-            onPress={onRemove}
-            hitSlop={8}
-            style={({ pressed }) => [
-              styles.removeBtn,
-              pressed && styles.pressed,
-            ]}
-          >
-            <Ionicons name="close" size={16} color={colors.info} />
-          </Pressable>
-        )}
-      </View>
-      {warning ? (
-        <View style={styles.warnRow} testID={`${testID}-warning`}>
-          <Ionicons
-            name="alert-circle-outline"
-            size={13}
-            color={colors.warning}
-          />
-          <Text style={styles.warnText}>{warning}</Text>
-        </View>
-      ) : null}
-    </View>
-  );
-}
-
-function AddRowButton({
-  label,
-  onPress,
-  disabled,
-  testID,
-}: {
-  label: string;
-  onPress: () => void;
-  disabled?: boolean;
-  testID: string;
-}) {
-  return (
-    <Pressable
-      testID={testID}
-      onPress={onPress}
-      disabled={disabled}
-      style={({ pressed }) => [
-        styles.addRow,
-        pressed && styles.pressed,
-        disabled && styles.addRowDisabled,
-      ]}
-    >
-      <Ionicons name="add" size={18} color={colors.brand} />
-      <Text style={styles.addRowText}>{label}</Text>
-    </Pressable>
-  );
-}
-
-function IconInput({
-  label,
-  value,
-  placeholder,
-  onChangeText,
-  icon,
-  keyboardType,
-  maxLength,
-  editable,
-  autoCapitalize,
-  testID,
-}: {
-  label: string;
-  value: string;
-  placeholder: string;
-  onChangeText: (t: string) => void;
-  icon: keyof typeof Ionicons.glyphMap;
-  keyboardType?: "default" | "number-pad";
-  maxLength?: number;
-  editable?: boolean;
-  autoCapitalize?: "none" | "characters" | "words" | "sentences";
-  testID: string;
-}) {
-  const [focused, setFocused] = useState(false);
-  const disabled = editable === false;
-  return (
-    <View style={[styles.field, disabled && styles.fieldDisabled]}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      <View style={[styles.inputRow, focused && styles.inputRowFocused]}>
-        <View style={styles.avatar}>
-          <Ionicons name={icon} size={18} color={colors.brand} />
-        </View>
-        <TextInput
-          testID={testID}
-          style={styles.input}
-          value={value}
-          placeholder={placeholder}
-          placeholderTextColor={colors.info}
-          onChangeText={onChangeText}
-          onFocus={() => {
-            setFocused(true);
-            Haptics.selectionAsync().catch(() => {});
-          }}
-          onBlur={() => setFocused(false)}
-          keyboardType={keyboardType ?? "default"}
-          maxLength={maxLength}
-          editable={editable}
-          autoCapitalize={autoCapitalize ?? "sentences"}
-          autoCorrect={false}
-          returnKeyType="done"
-        />
-      </View>
-    </View>
-  );
-}
-
-function signalColor(rssi: number | null): string {
-  if (rssi == null) return colors.info;
-  if (rssi >= -60) return colors.success;
-  if (rssi >= -80) return colors.warning;
-  return colors.error;
-}
-
-function PolyOverlay({
-  lat,
-  lon,
-  zoom,
-  size,
-  polygon,
-}: {
-  lat: number;
-  lon: number;
-  zoom: number;
-  size: number;
-  polygon: number[][];
-}) {
-  if (!polygon.length) return null;
-  const z = zoom;
-  const c = lonLatToTileFrac(lon, lat, z);
-  const xt = Math.floor(c.x);
-  const yt = Math.floor(c.y);
-  const S = size / 3;
-  const pts = polygon.map(([vlat, vlon]) => {
-    const p = lonLatToTileFrac(vlon, vlat, z);
-    return { x: (p.x - (xt - 1)) * S, y: (p.y - (yt - 1)) * S };
-  });
-  const pointsStr = pts.map((p) => `${p.x},${p.y}`).join(" ");
-  return (
-    <Svg
-      width={size}
-      height={size}
-      style={{ position: "absolute", left: 0, top: 0 }}
-      pointerEvents="none"
-    >
-      {pts.length >= 2 && (
-        <SvgPolygon
-          points={pointsStr}
-          fill="rgba(255,107,0,0.22)"
-          stroke={colors.brand}
-          strokeWidth={2}
-        />
-      )}
-    </Svg>
-  );
-}
-
-function VertexHandle({
-  x,
-  y,
-  index,
-  onMove,
-  toLatLon,
-}: {
-  x: number;
-  y: number;
-  index: number;
-  onMove: (i: number, lat: number, lon: number) => void;
-  toLatLon: (px: number, py: number) => { lat: number; lon: number };
-}) {
-  const posRef = useRef({ x, y });
-  posRef.current = { x, y };
-  const startRef = useRef({ x, y });
-  const cbRef = useRef({ onMove, toLatLon });
-  cbRef.current = { onMove, toLatLon };
-  const pan = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {
-        startRef.current = posRef.current;
-      },
-      onPanResponderMove: (_e, g) => {
-        const nx = startRef.current.x + g.dx;
-        const ny = startRef.current.y + g.dy;
-        const { lat, lon } = cbRef.current.toLatLon(nx, ny);
-        cbRef.current.onMove(index, lat, lon);
-      },
-    }),
-  ).current;
-
-  return (
-    <View
-      testID={`poly-vertex-${index}`}
-      {...pan.panHandlers}
-      style={{
-        position: "absolute",
-        left: x - 16,
-        top: y - 16,
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <View
-        style={{
-          width: 16,
-          height: 16,
-          borderRadius: 8,
-          backgroundColor: colors.brand,
-          borderWidth: 2,
-          borderColor: colors.onSurface,
-        }}
-      />
-    </View>
-  );
-}
-
-function PolyEditor({
-  lat,
-  lon,
-  zoom,
-  size,
-  polygon,
-  onMove,
-}: {
-  lat: number;
-  lon: number;
-  zoom: number;
-  size: number;
-  polygon: number[][];
-  onMove: (i: number, lat: number, lon: number) => void;
-}) {
-  const z = zoom;
-  const n = Math.pow(2, z);
-  const c = lonLatToTileFrac(lon, lat, z);
-  const xt = Math.floor(c.x);
-  const yt = Math.floor(c.y);
-  const S = size / 3;
-  const toLatLon = (px: number, py: number) => {
-    const tileX = xt - 1 + px / S;
-    const tileY = yt - 1 + py / S;
-    return {
-      lon: (tileX / n) * 360 - 180,
-      lat:
-        (Math.atan(Math.sinh(Math.PI * (1 - (2 * tileY) / n))) * 180) /
-        Math.PI,
-    };
-  };
-  return (
-    <View
-      pointerEvents="box-none"
-      style={{ position: "absolute", left: 0, top: 0, width: size, height: size }}
-    >
-      {polygon.map(([vlat, vlon], i) => {
-        const p = lonLatToTileFrac(vlon, vlat, z);
-        const x = (p.x - (xt - 1)) * S;
-        const y = (p.y - (yt - 1)) * S;
-        return (
-          <VertexHandle
-            key={i}
-            x={x}
-            y={y}
-            index={i}
-            onMove={onMove}
-            toLatLon={toLatLon}
-          />
-        );
-      })}
-    </View>
-  );
-}
-
-// Renders a small OpenStreetMap tile grid (3x3) centered on lat/lon with an
-// accurate pin. Uses raw OSM tiles (key-less) instead of a static-map service.
-function lonLatToTileFrac(lon: number, lat: number, z: number) {
-  const n = Math.pow(2, z);
-  const x = ((lon + 180) / 360) * n;
-  const latRad = (lat * Math.PI) / 180;
-  const y =
-    ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n;
-  return { x, y };
-}
-
-function TileMap({
-  lat,
-  lon,
-  size,
-  zoom,
-  radiusMiles,
-  mapType,
-}: {
-  lat: number;
-  lon: number;
-  size: number;
-  zoom: number;
-  radiusMiles?: number;
-  mapType?: "streets" | "satellite";
-}) {
-  const z = zoom;
-  const { x, y } = lonLatToTileFrac(lon, lat, z);
-  const xt = Math.floor(x);
-  const yt = Math.floor(y);
-  const fracX = x - xt;
-  const fracY = y - yt;
-  const S = size / 3;
-
-  const tileUrl = (tx: number, ty: number) =>
-    mapType === "satellite"
-      ? `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${ty}/${tx}`
-      : `https://tile.openstreetmap.org/${z}/${tx}/${ty}.png`;
-
-  const tiles: { i: number; j: number; uri: string }[] = [];
-  for (let j = 0; j < 3; j++) {
-    for (let i = 0; i < 3; i++) {
-      tiles.push({ i, j, uri: tileUrl(xt - 1 + i, yt - 1 + j) });
-    }
-  }
-  const markerLeft = S + fracX * S;
-  const markerTop = S + fracY * S;
-
-  // Radius circle: convert miles -> pixels at this zoom/latitude.
-  const latRad = (lat * Math.PI) / 180;
-  const metersPerPixel =
-    (156543.03392 * Math.cos(latRad)) / Math.pow(2, z);
-  const radiusPx =
-    radiusMiles && metersPerPixel > 0
-      ? (radiusMiles * 1609.34) / metersPerPixel
-      : 0;
-
-  return (
-    <View
-      testID="map-image"
-      style={{
-        width: size,
-        height: size,
-        borderRadius: radius.md,
-        overflow: "hidden",
-        backgroundColor: colors.surfaceTertiary,
-      }}
-    >
-      {tiles.map((t) => (
-        <Image
-          key={`${t.i}-${t.j}`}
-          source={{ uri: t.uri }}
-          style={{
-            position: "absolute",
-            left: t.i * S,
-            top: t.j * S,
-            width: S,
-            height: S,
-          }}
-          contentFit="cover"
-          transition={150}
-        />
-      ))}
-      {radiusPx > 0 && (
-        <View
-          pointerEvents="none"
-          testID="radius-overlay-circle"
-          style={{
-            position: "absolute",
-            left: markerLeft - radiusPx,
-            top: markerTop - radiusPx,
-            width: radiusPx * 2,
-            height: radiusPx * 2,
-            borderRadius: radiusPx,
-            backgroundColor: "rgba(255,107,0,0.22)",
-            borderWidth: 2,
-            borderColor: colors.brand,
-          }}
-        />
-      )}
-      <View
-        pointerEvents="none"
-        style={{
-          position: "absolute",
-          left: markerLeft,
-          top: markerTop,
-          transform: [{ translateX: -14 }, { translateY: -26 }],
-        }}
-      >
-        <Ionicons name="location" size={28} color={colors.brand} />
-      </View>
     </View>
   );
 }
@@ -3000,8 +2537,3 @@ const makeStyles = () =>
     fontSize: fontSize.base,
   },
   });
-
-let styles = makeStyles();
-onAccentChange(() => {
-  styles = makeStyles();
-});

@@ -1,0 +1,26 @@
+{
+  "summary": "Post-refactor regression PASS. All 8 requested flows verified on mobile viewport (390x844) against the public Expo web preview. Hero subtitle 'Configure and push live settings...' is GONE (confirmed by grep of source AND live body text). All sections render (Flight Tracking, Pinned Flight, Weather, Sports, TV Shows, Financial Tickers, Custom Message, Sync Status) with expected testIDs. Team validation still works (NYY -> no warning, ZZZ -> team-1-input-warning shown). Add/remove rows still work (add-team-button adds team-3-input, team-2-input-remove removes it). Map peek functions end-to-end after MatrixMap extraction: tap coord-preview opens modal with map-image, zoom-in/out, map-type-toggle (streets↔satellite), mode-radius/mode-polygon chips all interactive. Theme switching via new useThemedStyles hook propagates through the extracted Section/FormControls: radius-value color went orange (255,107,0) → blue rgb(47,111,237) → red rgb(229,72,77). Theme persistence verified: localStorage.theme_id_v1='red' after selecting red, and after in-session reload radius-value color remained rgb(229,72,77). payload-preview updates live on weather-toggle and contains stock1..stock8 keys as required. Only console noise is a pointerEvents deprecation warning that originates from a dependency (not app code); non-blocking, same as iteration_6. BLE connect/live-push not flagged (native-only, per instructions).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "pointerEvents deprecation", "issue": "Console warning 'props.pointerEvents is deprecated. Use style.pointerEvents' emitted by a dependency (RN Web internal); no direct source usage of the deprecated prop found in the refactored files. Cosmetic, non-blocking — carried over from iteration_6."}
+    ]
+  },
+  "test_report_links": ["/app/test_reports/iteration_7.json"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "index.tsx is now 2539 lines (down from 3008). Refactor extracted FormControls (306 lines) and MatrixMap (291 lines). Still over the 700-line guideline — consider extracting per-section components (FlightSection, WeatherSection, SportsSection, MessageSection, SyncStatus) in a follow-up. Not blocking.",
+    "SettingsSheet.tsx still uses the OLD module-level pattern: `let styles = makeStyles(); onAccentChange(() => { styles = makeStyles(); });` (lines 852-855) instead of the new useThemedStyles hook. It works here only because the parent (index.tsx) re-renders SettingsSheet via themeId prop change, which happens to re-read the mutated `styles` reference. For consistency with the refactor's stated goal, SettingsSheet should also adopt useThemedStyles. Non-blocking (verified visually working) but flagged for main agent.",
+    "useThemedStyles factory dependency is only [version] via eslint-disable — factory identity change would not trigger a rebuild. Fine for the current call sites which pass stable module-level factories."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped per request)", "frontend": "100% (10/10 assertions incl. map-peek)"},
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Refactor is behavior-equivalent to iteration_6. useThemedStyles works: verified color propagation from Settings sheet to home screen radius-value across orange/blue/red. Persistence key = localStorage 'theme_id_v1'. Map coord-preview needs ~5-8s for geocode to resolve on cold load; wait or poll for the element before clicking.",
+  "rca_of_issue": "N/A — no issues found."
+}

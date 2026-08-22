@@ -18,7 +18,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { colors, spacing, radius, fonts, fontSize } from "@/src/theme";
-import { onAccentChange, ACCENTS, type AccentId } from "@/src/theme";
+import { ACCENTS, type AccentId } from "@/src/theme";
+import { useThemedStyles } from "@/src/hooks/useThemedStyles";
 
 export type DisplayPatch = {
   wallName?: string;
@@ -143,6 +144,7 @@ export function SettingsSheet({
   themeId?: AccentId;
   onSetTheme?: (id: AccentId) => void;
 }) {
+  const styles = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const [wifiSsid, setWifiSsid] = useState(initialSsid ?? "");
   const [wifiPassword, setWifiPassword] = useState("");
@@ -848,8 +850,3 @@ const makeStyles = () =>
     fontFamily: fonts.textMedium,
   },
   });
-
-let styles = makeStyles();
-onAccentChange(() => {
-  styles = makeStyles();
-});
