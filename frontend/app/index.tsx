@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   Modal,
   Linking,
   useWindowDimensions,
+  PanResponder,
 } from "react-native";
 import Slider from "@react-native-community/slider";
 import { Image } from "expo-image";
@@ -26,7 +27,7 @@ import {
 import { colors, spacing, radius, fonts, fontSize } from "@/src/theme";
 import { storage } from "@/src/utils/storage";
 import { useToast } from "@/src/components/Toast";
-import Svg, { Polygon as SvgPolygon, Circle as SvgCircle } from "react-native-svg";
+import Svg, { Polygon as SvgPolygon } from "react-native-svg";
 import {
   connectToMatrix,
   connectToKnownDevice,
@@ -51,7 +52,23 @@ const PROFILES_KEY = "wall_profiles_v1";
 const ACTIVE_KEY = "active_wall_v1";
 const LAST_DEVICE_KEY = "last_device_v1";
 
-type Profile = { id: string; name: string; settings: Settings };
+type Profile = {
+  id: string;
+  name: string;
+  color?: string;
+  settings: Settings;
+};
+
+const PALETTE = [
+  "#FF6B00",
+  "#10B981",
+  "#3B82F6",
+  "#F59E0B",
+  "#A855F7",
+  "#EF4444",
+  "#14B8A6",
+  "#EC4899",
+];
 const HERO_IMAGE =
   "https://images.pexels.com/photos/29149453/pexels-photo-29149453.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940";
 
@@ -123,6 +140,7 @@ export default function ControlPanel() {
   const [geoLoading, setGeoLoading] = useState(false);
   const [recentZips, setRecentZips] = useState<string[]>([]);
   const [reconnecting, setReconnecting] = useState(false);
+  const [reconnectFailed, setReconnectFailed] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
   const [mapZoom, setMapZoom] = useState(11);
   const [mapType, setMapType] = useState<"streets" | "satellite">("streets");
@@ -161,7 +179,12 @@ export default function ControlPanel() {
             : DEFAULTS;
         const id = String(Date.now());
         const prof: Profile[] = [
-          { id, name: base.wallName || "Info Wall", settings: base },
+          {
+            id,
+            name: base.wallName || "Info Wall",
+            color: PALETTE[0],
+            settings: base,
+          },
         ];
         setProfiles(prof);
         setActiveId(id);
@@ -214,27 +237,31 @@ export default function ControlPanel() {
   }, [status]);
 
   // Auto-reconnect to the last known matrix on app open.
-  useEffect(() => {
+  const attemptReconnect = async () => {
     if (!bleSupported) return;
-    (async () => {
-      const lastId = (await storage.getItem<any>(LAST_DEVICE_KEY, null)) as
-        | string
-        | null;
-      if (!lastId) return;
-      setReconnecting(true);
-      try {
-        const info = await connectToKnownDevice(lastId, setStatus, () => {
-          setStatus("disconnected");
-          setDevice(null);
-        });
-        setDevice({ name: info.name, rssi: info.rssi });
-        toast.show(`Reconnected to ${info.name}`, "success");
-      } catch {
+    const lastId = (await storage.getItem<any>(LAST_DEVICE_KEY, null)) as
+      | string
+      | null;
+    if (!lastId) return;
+    setReconnecting(true);
+    setReconnectFailed(false);
+    try {
+      const info = await connectToKnownDevice(lastId, setStatus, () => {
         setStatus("disconnected");
-      } finally {
-        setReconnecting(false);
-      }
-    })();
+        setDevice(null);
+      });
+      setDevice({ name: info.name, rssi: info.rssi });
+      toast.show(`Reconnected to ${info.name}`, "success");
+    } catch {
+      setStatus("disconnected");
+      setReconnectFailed(true);
+    } finally {
+      setReconnecting(false);
+    }
+  };
+
+  useEffect(() => {
+    attemptReconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bleSupported]);
 
@@ -300,7 +327,8 @@ export default function ControlPanel() {
   const addProfile = () => {
     const id = String(Date.now());
     const base = { ...DEFAULTS, wallName: "New Wall" };
-    const next = [...profiles, { id, name: "New Wall", settings: base }];
+    const color = PALETTE[profiles.length % PALETTE.length];
+    const next = [...profiles, { id, name: "New Wall", color, settings: base }];
     setProfiles(next);
     storage.setItem(PROFILES_KEY, next);
     setActiveId(id);
@@ -308,6 +336,37 @@ export default function ControlPanel() {
     storage.setItem(ACTIVE_KEY, id);
     toast.show("New wall added", "success");
   };
+  const duplicateProfile = () => {
+    const active = profiles.find((p) => p.id === activeId);
+    if (!active) return;
+    const id = String(Date.now());
+    const name = `${settings.wallName || active.name} Copy`;
+    const base = { ...settings, wallName: name };
+    const color = PALETTE[profiles.length % PALETTE.length];
+    const next = [...profiles, { id, name, color, settings: base }];
+    setProfiles(next);
+    storage.setItem(PROFILES_KEY, next);
+    setActiveId(id);
+    setSettings(base);
+    storage.setItem(ACTIVE_KEY, id);
+    toast.show("Wall duplicated", "success");
+  };
+  const setProfileColor = (color: string) => {
+    setProfiles((prev) => {
+      const next = prev.map((p) =>
+        p.id === activeId ? { ...p, color } : p,
+      );
+      storage.setItem(PROFILES_KEY, next);
+      return next;
+    });
+    Haptics.selectionAsync().catch(() => {});
+  };
+  const movePolyPoint = (i: number, lat: number, lon: number) =>
+    setSettings((s) => {
+      const poly = [...s.polygon];
+      poly[i] = [Number(lat.toFixed(5)), Number(lon.toFixed(5))];
+      return { ...s, polygon: poly };
+    });
   const deleteProfile = (id: string) => {
     if (profiles.length <= 1) {
       toast.show("Keep at least one wall", "error");
@@ -552,6 +611,8 @@ export default function ControlPanel() {
   const flightMissing = settings.trackFlight && !settings.flightIdent.trim();
   const mapSize = Math.min(winW - spacing.lg * 4, 360);
   const polyMode = settings.trackingMode === "polygon";
+  const activeColor =
+    profiles.find((p) => p.id === activeId)?.color ?? colors.brand;
 
   const handleMapPress = (e: any) => {
     if (!polyMode || !geo) return;
@@ -593,8 +654,8 @@ export default function ControlPanel() {
         />
         <View style={[styles.heroContent, { paddingTop: insets.top + spacing.md }]}>
           <View style={styles.brandRow}>
-            <View style={styles.logoBox}>
-              <Ionicons name="grid" size={18} color={colors.brand} />
+            <View style={[styles.logoBox, { borderColor: activeColor }]}>
+              <Ionicons name="grid" size={18} color={activeColor} />
             </View>
             <Text style={styles.brandTitle} numberOfLines={1}>
               {(settings.wallName || "Info Wall").toUpperCase()}
@@ -625,6 +686,25 @@ export default function ControlPanel() {
                   Reconnecting to last matrix…
                 </Text>
               </View>
+            )}
+            {!reconnecting && reconnectFailed && (
+              <Pressable
+                testID="reconnect-retry"
+                onPress={attemptReconnect}
+                style={({ pressed }) => [
+                  styles.reconnectBanner,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Ionicons
+                  name="refresh"
+                  size={13}
+                  color={colors.warning}
+                />
+                <Text style={[styles.reconnectText, { color: colors.warning }]}>
+                  Reconnect failed · Retry
+                </Text>
+              </Pressable>
             )}
           </View>
 
@@ -1128,6 +1208,16 @@ export default function ControlPanel() {
                     size={mapSize}
                     polygon={settings.polygon}
                   />
+                  {polyMode && (
+                    <PolyEditor
+                      lat={geo.lat}
+                      lon={geo.lon}
+                      zoom={mapZoom}
+                      size={mapSize}
+                      polygon={settings.polygon}
+                      onMove={movePolyPoint}
+                    />
+                  )}
                   <View style={styles.zoomControls}>
                     <Pressable
                       testID="map-zoom-in"
@@ -1309,11 +1399,19 @@ export default function ControlPanel() {
         visible={settingsOpen}
         onClose={() => setSettingsOpen(false)}
         wallName={settings.wallName}
-        profiles={profiles.map((p) => ({ id: p.id, name: p.name }))}
+        profiles={profiles.map((p) => ({
+          id: p.id,
+          name: p.name,
+          color: p.color,
+        }))}
         activeId={activeId}
+        activeColor={activeColor}
+        palette={PALETTE}
         onSwitchProfile={switchProfile}
         onAddProfile={addProfile}
+        onDuplicateProfile={duplicateProfile}
         onDeleteProfile={deleteProfile}
+        onSetColor={setProfileColor}
         brightness={settings.brightness}
         scheduleEnabled={settings.scheduleEnabled}
         scheduleStart={settings.scheduleStart}
@@ -1556,18 +1654,125 @@ function PolyOverlay({
           strokeWidth={2}
         />
       )}
-      {pts.map((p, i) => (
-        <SvgCircle
-          key={i}
-          cx={p.x}
-          cy={p.y}
-          r={5}
-          fill={colors.brand}
-          stroke={colors.onSurface}
-          strokeWidth={1.5}
-        />
-      ))}
     </Svg>
+  );
+}
+
+function VertexHandle({
+  x,
+  y,
+  index,
+  onMove,
+  toLatLon,
+}: {
+  x: number;
+  y: number;
+  index: number;
+  onMove: (i: number, lat: number, lon: number) => void;
+  toLatLon: (px: number, py: number) => { lat: number; lon: number };
+}) {
+  const posRef = useRef({ x, y });
+  posRef.current = { x, y };
+  const startRef = useRef({ x, y });
+  const cbRef = useRef({ onMove, toLatLon });
+  cbRef.current = { onMove, toLatLon };
+  const pan = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        startRef.current = posRef.current;
+      },
+      onPanResponderMove: (_e, g) => {
+        const nx = startRef.current.x + g.dx;
+        const ny = startRef.current.y + g.dy;
+        const { lat, lon } = cbRef.current.toLatLon(nx, ny);
+        cbRef.current.onMove(index, lat, lon);
+      },
+    }),
+  ).current;
+
+  return (
+    <View
+      testID={`poly-vertex-${index}`}
+      {...pan.panHandlers}
+      style={{
+        position: "absolute",
+        left: x - 16,
+        top: y - 16,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <View
+        style={{
+          width: 16,
+          height: 16,
+          borderRadius: 8,
+          backgroundColor: colors.brand,
+          borderWidth: 2,
+          borderColor: colors.onSurface,
+        }}
+      />
+    </View>
+  );
+}
+
+function PolyEditor({
+  lat,
+  lon,
+  zoom,
+  size,
+  polygon,
+  onMove,
+}: {
+  lat: number;
+  lon: number;
+  zoom: number;
+  size: number;
+  polygon: number[][];
+  onMove: (i: number, lat: number, lon: number) => void;
+}) {
+  const z = zoom;
+  const n = Math.pow(2, z);
+  const c = lonLatToTileFrac(lon, lat, z);
+  const xt = Math.floor(c.x);
+  const yt = Math.floor(c.y);
+  const S = size / 3;
+  const toLatLon = (px: number, py: number) => {
+    const tileX = xt - 1 + px / S;
+    const tileY = yt - 1 + py / S;
+    return {
+      lon: (tileX / n) * 360 - 180,
+      lat:
+        (Math.atan(Math.sinh(Math.PI * (1 - (2 * tileY) / n))) * 180) /
+        Math.PI,
+    };
+  };
+  return (
+    <View
+      pointerEvents="box-none"
+      style={{ position: "absolute", left: 0, top: 0, width: size, height: size }}
+    >
+      {polygon.map(([vlat, vlon], i) => {
+        const p = lonLatToTileFrac(vlon, vlat, z);
+        const x = (p.x - (xt - 1)) * S;
+        const y = (p.y - (yt - 1)) * S;
+        return (
+          <VertexHandle
+            key={i}
+            x={x}
+            y={y}
+            index={i}
+            onMove={onMove}
+            toLatLon={toLatLon}
+          />
+        );
+      })}
+    </View>
   );
 }
 

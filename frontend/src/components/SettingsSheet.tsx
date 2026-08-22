@@ -84,9 +84,13 @@ export function SettingsSheet({
   wallName,
   profiles,
   activeId,
+  activeColor,
+  palette,
   onSwitchProfile,
   onAddProfile,
+  onDuplicateProfile,
   onDeleteProfile,
+  onSetColor,
   brightness,
   scheduleEnabled,
   scheduleStart,
@@ -100,11 +104,15 @@ export function SettingsSheet({
   visible: boolean;
   onClose: () => void;
   wallName: string;
-  profiles: { id: string; name: string }[];
+  profiles: { id: string; name: string; color?: string }[];
   activeId: string;
+  activeColor: string;
+  palette: string[];
   onSwitchProfile: (id: string) => void;
   onAddProfile: () => void;
+  onDuplicateProfile: () => void;
   onDeleteProfile: (id: string) => void;
+  onSetColor: (color: string) => void;
   brightness: number;
   scheduleEnabled: boolean;
   scheduleStart: string;
@@ -189,13 +197,12 @@ export function SettingsSheet({
                       active && styles.profileChipActive,
                     ]}
                   >
-                    {active && (
-                      <Ionicons
-                        name="checkmark-circle"
-                        size={14}
-                        color={colors.brand}
-                      />
-                    )}
+                    <View
+                      style={[
+                        styles.profileDot,
+                        { backgroundColor: p.color ?? colors.brand },
+                      ]}
+                    />
                     <Text
                       style={[
                         styles.profileChipText,
@@ -209,6 +216,14 @@ export function SettingsSheet({
                 );
               })}
               <Pressable
+                testID="duplicate-profile-button"
+                onPress={onDuplicateProfile}
+                style={[styles.profileChip, styles.addProfileChip]}
+              >
+                <Ionicons name="copy-outline" size={15} color={colors.brand} />
+                <Text style={styles.profileChipTextActive}>Duplicate</Text>
+              </Pressable>
+              <Pressable
                 testID="add-profile-button"
                 onPress={onAddProfile}
                 style={[styles.profileChip, styles.addProfileChip]}
@@ -218,6 +233,20 @@ export function SettingsSheet({
               </Pressable>
             </ScrollView>
             <Text style={styles.hint}>Tap to switch · hold to delete</Text>
+            <View style={styles.swatchRow}>
+              {palette.map((col) => (
+                <Pressable
+                  key={col}
+                  testID={`swatch-${col}`}
+                  onPress={() => onSetColor(col)}
+                  style={[
+                    styles.swatch,
+                    { backgroundColor: col },
+                    activeColor === col && styles.swatchActive,
+                  ]}
+                />
+              ))}
+            </View>
           </View>
 
           {/* Wall name */}
@@ -472,6 +501,27 @@ const styles = StyleSheet.create({
     color: colors.brand,
     fontFamily: fonts.textMedium,
     fontSize: fontSize.base,
+  },
+  profileDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  swatchRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+    flexWrap: "wrap",
+  },
+  swatch: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  swatchActive: {
+    borderColor: colors.onSurface,
   },
   hint: {
     color: colors.info,
