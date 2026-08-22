@@ -31,6 +31,14 @@ export type BlePayload = {
   tv6: string;
   tv7: string;
   tv8: string;
+  stock1: string;
+  stock2: string;
+  stock3: string;
+  stock4: string;
+  stock5: string;
+  stock6: string;
+  stock7: string;
+  stock8: string;
 };
 
 type SettingsShape = {
@@ -47,6 +55,7 @@ type SettingsShape = {
   scheduleBrightness: number;
   teams: string[];
   shows: string[];
+  stocks: string[];
 };
 
 export function buildBlePayload(
@@ -55,6 +64,7 @@ export function buildBlePayload(
 ): BlePayload {
   const teams = s.teams.map((t) => t.trim());
   const shows = s.shows.map((v) => v.trim());
+  const stocks = s.stocks.map((v) => v.trim());
   return {
     radius: s.searchRadius,
     trackFlight: s.trackFlight,
@@ -85,5 +95,13 @@ export function buildBlePayload(
     tv6: shows[5] ?? "",
     tv7: shows[6] ?? "",
     tv8: shows[7] ?? "",
+    stock1: stocks[0] ?? "",
+    stock2: stocks[1] ?? "",
+    stock3: stocks[2] ?? "",
+    stock4: stocks[3] ?? "",
+    stock5: stocks[4] ?? "",
+    stock6: stocks[5] ?? "",
+    stock7: stocks[6] ?? "",
+    stock8: stocks[7] ?? "",
   };
 }

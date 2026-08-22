@@ -29,8 +29,8 @@ import { storage } from "@/src/utils/storage";
 import { useToast } from "@/src/components/Toast";
 import Svg, { Polygon as SvgPolygon } from "react-native-svg";
 import {
-  connectToMatrix,
   connectToKnownDevice,
+  scanForDevices,
   syncSettings,
   disconnect,
   isBleSupported,
@@ -82,6 +82,12 @@ const DEFAULTS = {
   trackingMode: "radius",
   polygon: [] as number[][],
   brightness: 80,
+  pinned: false,
+  stocks: ["AAPL", "MSFT", "", "", "", "", "", ""],
+  showCustomMessage: false,
+  msgLine1: "",
+  msgLine2: "",
+  msgLine3: "",
   scheduleEnabled: false,
   scheduleStart: "19:00",
   scheduleEnd: "07:00",
@@ -100,6 +106,12 @@ type Settings = {
   trackingMode: string;
   polygon: number[][];
   brightness: number;
+  pinned: boolean;
+  stocks: string[];
+  showCustomMessage: boolean;
+  msgLine1: string;
+  msgLine2: string;
+  msgLine3: string;
   scheduleEnabled: boolean;
   scheduleStart: string;
   scheduleEnd: string;
@@ -145,6 +157,11 @@ export default function ControlPanel() {
   const [mapZoom, setMapZoom] = useState(11);
   const [mapType, setMapType] = useState<"streets" | "satellite">("streets");
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [pickerDevices, setPickerDevices] = useState<
+    { id: string; name: string }[]
+  >([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [lastSsid, setLastSsid] = useState("");
   const [lastSync, setLastSync] = useState<{
     at: string;
     summary: string;
@@ -281,6 +298,74 @@ export default function ControlPanel() {
     return () => clearTimeout(t);
   }, [settings.teams, settings.shows, status]);
 
+  // Live push of stock tickers (debounced).
+  useEffect(() => {
+    if (status !== "connected") return;
+    const t = setTimeout(() => {
+      const cmd: Record<string, unknown> = { command: "stocks" };
+      settings.stocks.forEach((s, i) => {
+        cmd[`stock${i + 1}`] = s.trim();
+      });
+      writeLive(cmd).catch(() => {});
+    }, 800);
+    return () => clearTimeout(t);
+  }, [settings.stocks, status]);
+
+  // Live push of the custom 3-line message (debounced).
+  useEffect(() => {
+    if (status !== "connected") return;
+    const t = setTimeout(() => {
+      writeLive({
+        command: "message",
+        showCustomMessage: settings.showCustomMessage,
+        line1: settings.msgLine1.trim(),
+        line2: settings.msgLine2.trim(),
+        line3: settings.msgLine3.trim(),
+      }).catch(() => {});
+    }, 800);
+    return () => clearTimeout(t);
+  }, [
+    settings.showCustomMessage,
+    settings.msgLine1,
+    settings.msgLine2,
+    settings.msgLine3,
+    status,
+  ]);
+
+  // Load remembered Wi-Fi SSID (password never stored).
+  useEffect(() => {
+    (async () => {
+      const s = (await storage.getItem<any>("last_ssid_v1", null)) as
+        | string
+        | null;
+      if (s) setLastSsid(s);
+    })();
+  }, []);
+
+  const handleSaveWifi = async (ssid: string, password: string) => {
+    if (!ssid.trim()) {
+      toast.show("Enter a Wi-Fi SSID", "error");
+      return;
+    }
+    // Remember the typed SSID immediately so it's never lost, even if the
+    // matrix isn't connected yet.
+    storage.setItem("last_ssid_v1", ssid.trim());
+    setLastSsid(ssid.trim());
+    if (!isConnected) {
+      toast.show("Connect to the matrix first", "error");
+      return;
+    }
+    try {
+      await writeLive({ command: "wifi", ssid: ssid.trim(), password });
+      toast.show(
+        "Wi-Fi credentials sent. Matrix is rebooting and connecting...",
+        "success",
+      );
+    } catch {
+      toast.show("Couldn't send Wi-Fi credentials", "error");
+    }
+  };
+
   // Live zip -> coordinates lookup (debounced) for the preview under the field.
   useEffect(() => {
     const zip = settings.zipCode.trim();
@@ -367,6 +452,13 @@ export default function ControlPanel() {
       poly[i] = [Number(lat.toFixed(5)), Number(lon.toFixed(5))];
       return { ...s, polygon: poly };
     });
+
+  const editStock = (i: number, val: string) =>
+    setSettings((s) => {
+      const arr = [...s.stocks];
+      arr[i] = val.toUpperCase();
+      return { ...s, stocks: arr };
+    });
   const deleteProfile = (id: string) => {
     if (profiles.length <= 1) {
       toast.show("Keep at least one wall", "error");
@@ -438,7 +530,35 @@ export default function ControlPanel() {
     }
 
     try {
-      const info = await connectToMatrix(setStatus, () => {
+      setStatus("scanning");
+      const devices = await scanForDevices(4000);
+      if (devices.length === 0) {
+        setStatus("disconnected");
+        toast.show("No FlightWall matrix found nearby", "error");
+        return;
+      }
+      if (devices.length === 1) {
+        await connectById(devices[0].id);
+      } else {
+        setPickerDevices(devices);
+        setPickerOpen(true);
+        setStatus("disconnected");
+      }
+    } catch (e) {
+      setStatus("disconnected");
+      setDevice(null);
+      const msg =
+        e instanceof BleError
+          ? e.message
+          : "Could not connect. Please try again.";
+      toast.show(msg, "error");
+    }
+  };
+
+  const connectById = async (id: string) => {
+    setPickerOpen(false);
+    try {
+      const info = await connectToKnownDevice(id, setStatus, () => {
         setStatus("disconnected");
         setDevice(null);
         toast.show("Matrix disconnected", "error");
@@ -452,11 +572,19 @@ export default function ControlPanel() {
     } catch (e) {
       setStatus("disconnected");
       setDevice(null);
-      const msg =
-        e instanceof BleError
-          ? e.message
-          : "Could not connect. Please try again.";
+      const msg = e instanceof BleError ? e.message : "Failed to connect.";
       toast.show(msg, "error");
+    }
+  };
+
+  const setPinned = async (v: boolean) => {
+    patchSettings({ pinned: v });
+    if (!isConnected) return;
+    try {
+      await writeLive({ command: "pin", isPinned: v });
+      toast.show(v ? "Screen pinned" : "Screen unpinned", "success");
+    } catch {
+      toast.show("Couldn't update pin state", "error");
     }
   };
 
@@ -505,26 +633,6 @@ export default function ControlPanel() {
     await Clipboard.setStringAsync(JSON.stringify(previewPayload, null, 2));
     Haptics.selectionAsync().catch(() => {});
     toast.show("Payload JSON copied", "success");
-  };
-
-  const handleSaveWifi = async (ssid: string, password: string) => {
-    if (!isConnected) {
-      toast.show("Connect to the matrix first", "error");
-      return;
-    }
-    if (!ssid.trim()) {
-      toast.show("Enter a Wi-Fi SSID", "error");
-      return;
-    }
-    try {
-      await writeLive({ command: "wifi", ssid: ssid.trim(), password });
-      toast.show(
-        "Wi-Fi credentials sent. Matrix is rebooting and connecting...",
-        "success",
-      );
-    } catch {
-      toast.show("Couldn't send Wi-Fi credentials", "error");
-    }
   };
 
   const handleFlash = async () => {
@@ -691,14 +799,53 @@ export default function ControlPanel() {
           </View>
 
           <View style={styles.statusRow}>
-            <View style={styles.statusPill} testID="connection-status-pill">
+            <Pressable
+              testID="connect-button"
+              onPress={handleConnect}
+              disabled={isBusy}
+              style={({ pressed }) => [
+                styles.statusPill,
+                isConnected && styles.statusPillConnected,
+                pressed && styles.pressed,
+              ]}
+            >
               <View
-                style={[styles.statusDot, { backgroundColor: statusMeta.color }]}
+                style={styles.statusPillInner}
+                testID="connection-status-pill"
+              >
+                {isBusy ? (
+                  <ActivityIndicator size="small" color={statusMeta.color} />
+                ) : (
+                  <View
+                    style={[
+                      styles.statusDot,
+                      { backgroundColor: statusMeta.color },
+                    ]}
+                  />
+                )}
+                <Text style={[styles.statusText, { color: statusMeta.color }]}>
+                  {statusMeta.label}
+                </Text>
+              </View>
+              <View style={styles.statusDivider} />
+              <Ionicons
+                name={isConnected ? "bluetooth" : "bluetooth-outline"}
+                size={13}
+                color={isConnected ? colors.success : colors.brand}
               />
-              <Text style={[styles.statusText, { color: statusMeta.color }]}>
-                {statusMeta.label}
+              <Text
+                style={[
+                  styles.statusAction,
+                  { color: isConnected ? colors.success : colors.brand },
+                ]}
+              >
+                {isConnected
+                  ? "TAP TO DISCONNECT"
+                  : isBusy
+                    ? "…"
+                    : "TAP TO CONNECT"}
               </Text>
-            </View>
+            </Pressable>
             {reconnecting && (
               <View style={styles.reconnectBanner} testID="reconnect-banner">
                 <ActivityIndicator size="small" color={colors.brand} />
@@ -726,44 +873,29 @@ export default function ControlPanel() {
                 </Text>
               </Pressable>
             )}
+            <View style={styles.pinPill}>
+              <Ionicons
+                name={settings.pinned ? "lock-closed" : "lock-open"}
+                size={13}
+                color={settings.pinned ? colors.brand : colors.info}
+              />
+              <Text style={styles.pinLabel}>PIN</Text>
+              <Switch
+                testID="pin-toggle"
+                value={settings.pinned}
+                onValueChange={setPinned}
+                trackColor={{ false: colors.surfaceTertiary, true: colors.brand }}
+                thumbColor={colors.onSurface}
+                ios_backgroundColor={colors.surfaceTertiary}
+                style={{ transform: [{ scale: 0.75 }] }}
+              />
+            </View>
+
           </View>
 
           <Text style={styles.heroSubtitle}>
             Configure and push live settings to your LED matrix.
           </Text>
-
-          <Pressable
-            testID="connect-button"
-            onPress={handleConnect}
-            disabled={isBusy}
-            style={({ pressed }) => [
-              styles.connectBtn,
-              isConnected && styles.connectBtnConnected,
-              pressed && styles.pressed,
-            ]}
-          >
-            {isBusy ? (
-              <ActivityIndicator color={colors.onBrand} />
-            ) : (
-              <Ionicons
-                name={isConnected ? "bluetooth" : "bluetooth-outline"}
-                size={20}
-                color={isConnected ? colors.success : colors.onBrand}
-              />
-            )}
-            <Text
-              style={[
-                styles.connectBtnText,
-                isConnected && styles.connectBtnTextConnected,
-              ]}
-            >
-              {isConnected
-                ? "DISCONNECT"
-                : isBusy
-                  ? statusMeta.label
-                  : "CONNECT TO MATRIX"}
-            </Text>
-          </Pressable>
 
           {!bleSupported && !isConnected && (
             <Text style={styles.bleHint} testID="ble-unsupported-hint">
@@ -1091,6 +1223,71 @@ export default function ControlPanel() {
             label="Add Show"
             disabled={settings.shows.length >= MAX_ROWS}
             onPress={() => addRow("shows")}
+          />
+        </Section>
+
+        {/* Financial Tickers */}
+        <Section
+          icon="trending-up"
+          title="FINANCIAL TICKERS"
+          subtitle="Up to 8 stock / ETF symbols"
+        >
+          {settings.stocks.map((sym, i) => (
+            <AvatarInput
+              key={`stock-${i}`}
+              testID={`stock-${i + 1}-input`}
+              label={`Slot ${i + 1}`}
+              value={sym}
+              placeholder="AAPL"
+              autoCapitalize="characters"
+              maxLength={6}
+              onChangeText={(t) => editStock(i, t)}
+            />
+          ))}
+        </Section>
+
+        {/* Custom Message */}
+        <Section
+          icon="chatbox-ellipses"
+          title="CUSTOM MESSAGE"
+          subtitle="Show a 3-line note on the matrix"
+        >
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleTextWrap}>
+              <Text style={styles.fieldLabel}>Show Custom Message</Text>
+              <Text style={styles.toggleHint}>
+                Overrides other content while on
+              </Text>
+            </View>
+            <Switch
+              testID="message-toggle"
+              value={settings.showCustomMessage}
+              onValueChange={(v) => patchSettings({ showCustomMessage: v })}
+              trackColor={{ false: colors.surfaceTertiary, true: colors.brand }}
+              thumbColor={colors.onSurface}
+              ios_backgroundColor={colors.surfaceTertiary}
+            />
+          </View>
+          <AvatarInput
+            testID="msg-line-1-input"
+            label="Line 1"
+            value={settings.msgLine1}
+            placeholder="Happy Birthday"
+            onChangeText={(t) => patchSettings({ msgLine1: t })}
+          />
+          <AvatarInput
+            testID="msg-line-2-input"
+            label="Line 2"
+            value={settings.msgLine2}
+            placeholder="Kimberley"
+            onChangeText={(t) => patchSettings({ msgLine2: t })}
+          />
+          <AvatarInput
+            testID="msg-line-3-input"
+            label="Line 3"
+            value={settings.msgLine3}
+            placeholder="Love, Adam"
+            onChangeText={(t) => patchSettings({ msgLine3: t })}
           />
         </Section>
 
@@ -1441,8 +1638,66 @@ export default function ControlPanel() {
         onLiveBrightness={handleLiveBrightness}
         onLiveSchedule={handleLiveSchedule}
         onSaveWifi={handleSaveWifi}
+        initialSsid={lastSsid}
         liveEnabled={isConnected}
       />
+
+      {/* Device picker (multiple FlightWall- boards nearby) */}
+      <Modal
+        visible={pickerOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPickerOpen(false)}
+      >
+        <Pressable
+          style={styles.mapBackdrop}
+          onPress={() => setPickerOpen(false)}
+          testID="picker-backdrop"
+        >
+          <Pressable
+            style={[styles.mapCard, { paddingBottom: insets.bottom + spacing.lg }]}
+            onPress={() => {}}
+          >
+            <View style={styles.mapHeader}>
+              <Text style={styles.mapTitle}>CHOOSE A MATRIX</Text>
+              <Pressable
+                testID="picker-close"
+                onPress={() => setPickerOpen(false)}
+                hitSlop={8}
+                style={styles.mapCloseBtn}
+              >
+                <Ionicons name="close" size={20} color={colors.onSurface} />
+              </Pressable>
+            </View>
+            {pickerDevices.map((d) => (
+              <Pressable
+                key={d.id}
+                testID={`picker-device-${d.id}`}
+                onPress={() => connectById(d.id)}
+                style={({ pressed }) => [
+                  styles.deviceRow,
+                  pressed && styles.pressed,
+                  { marginTop: 0 },
+                ]}
+              >
+                <View style={styles.deviceLeft}>
+                  <Ionicons
+                    name="hardware-chip"
+                    size={16}
+                    color={colors.brand}
+                  />
+                  <Text style={styles.deviceName}>{d.name}</Text>
+                </View>
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={colors.info}
+                />
+              </Pressable>
+            ))}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -2069,6 +2324,7 @@ const styles = StyleSheet.create({
   statusRow: {
     flexDirection: "row",
     alignItems: "center",
+    flexWrap: "wrap",
     gap: spacing.sm,
     marginTop: spacing.md,
   },
@@ -2088,16 +2344,52 @@ const styles = StyleSheet.create({
     fontFamily: fonts.text,
     fontSize: fontSize.sm,
   },
+  pinPill: {
+    marginLeft: "auto",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    borderRadius: radius.pill,
+    paddingLeft: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  pinLabel: {
+    color: colors.onSurfaceSecondary,
+    fontFamily: fonts.displayMedium,
+    fontSize: 10,
+    letterSpacing: 1,
+  },
   statusPill: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.xs,
     backgroundColor: "rgba(0,0,0,0.45)",
     borderRadius: radius.pill,
-    paddingVertical: 5,
+    paddingVertical: 6,
     paddingHorizontal: spacing.sm,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  statusPillConnected: {
+    borderColor: colors.success,
+  },
+  statusPillInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+  },
+  statusDivider: {
+    width: 1,
+    height: 12,
+    backgroundColor: colors.border,
+    marginHorizontal: 2,
+  },
+  statusAction: {
+    fontFamily: fonts.displayMedium,
+    fontSize: 10,
+    letterSpacing: 1,
   },
   statusDot: {
     width: 8,
@@ -2114,30 +2406,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.text,
     fontSize: fontSize.base,
     marginTop: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  connectBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.sm,
-    backgroundColor: colors.brand,
-    borderRadius: radius.md,
-    paddingVertical: spacing.lg,
-  },
-  connectBtnConnected: {
-    backgroundColor: colors.surfaceSecondary,
-    borderWidth: 1,
-    borderColor: colors.success,
-  },
-  connectBtnText: {
-    color: colors.onBrand,
-    fontFamily: fonts.displayMedium,
-    fontSize: fontSize.lg,
-    letterSpacing: 1.5,
-  },
-  connectBtnTextConnected: {
-    color: colors.success,
+    marginBottom: spacing.md,
   },
   bleHint: {
     color: colors.info,

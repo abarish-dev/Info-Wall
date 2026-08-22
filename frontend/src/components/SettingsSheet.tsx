@@ -100,6 +100,7 @@ export function SettingsSheet({
   onLiveBrightness,
   onLiveSchedule,
   onSaveWifi,
+  initialSsid,
   liveEnabled,
 }: {
   visible: boolean;
@@ -128,11 +129,13 @@ export function SettingsSheet({
     scheduleBrightness: number;
   }) => void;
   onSaveWifi?: (ssid: string, password: string) => void;
+  initialSsid?: string;
   liveEnabled?: boolean;
 }) {
   const insets = useSafeAreaInsets();
-  const [wifiSsid, setWifiSsid] = useState("");
+  const [wifiSsid, setWifiSsid] = useState(initialSsid ?? "");
   const [wifiPassword, setWifiPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
   const dimLabel =
     scheduleBrightness === 0 ? "Display off" : `Dimmed to ${scheduleBrightness}%`;
 
@@ -416,17 +419,31 @@ export function SettingsSheet({
               autoCapitalize="none"
               autoCorrect={false}
             />
-            <TextInput
-              testID="wifi-password-input"
-              style={styles.nameInput}
-              value={wifiPassword}
-              onChangeText={setWifiPassword}
-              placeholder="Wi-Fi Password"
-              placeholderTextColor={colors.info}
-              secureTextEntry
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
+            <View style={styles.pwRow}>
+              <TextInput
+                testID="wifi-password-input"
+                style={[styles.nameInput, { flex: 1 }]}
+                value={wifiPassword}
+                onChangeText={setWifiPassword}
+                placeholder="Wi-Fi Password"
+                placeholderTextColor={colors.info}
+                secureTextEntry={!showPw}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              <Pressable
+                testID="wifi-show-password"
+                onPress={() => setShowPw((v) => !v)}
+                hitSlop={8}
+                style={styles.pwEye}
+              >
+                <Ionicons
+                  name={showPw ? "eye-off" : "eye"}
+                  size={20}
+                  color={colors.info}
+                />
+              </Pressable>
+            </View>
             <Pressable
               testID="save-wifi-button"
               onPress={() => onSaveWifi?.(wifiSsid, wifiPassword)}
@@ -530,6 +547,19 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingVertical: spacing.lg,
     marginTop: spacing.xs,
+  },
+  pwRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  pwEye: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: radius.sm,
+    backgroundColor: colors.surfaceTertiary,
   },
   wifiBtnText: {
     color: colors.onBrand,

@@ -271,6 +271,45 @@ export async function flashTest(): Promise<void> {
   }
 }
 
+/** Scan for all nearby FlightWall- devices for a fixed duration. */
+export async function scanForDevices(
+  durationMs = 4000,
+): Promise<{ id: string; name: string }[]> {
+  if (!isBleSupported()) {
+    throw new BleError(
+      "BLE_UNAVAILABLE",
+      "Bluetooth needs a real device build.",
+    );
+  }
+  const hasPerms = await requestAndroidPermissions();
+  if (!hasPerms) {
+    throw new BleError("PERMISSION_DENIED", "Bluetooth permission denied.");
+  }
+  const m = getManager();
+  const st = await m.state();
+  if (st !== "PoweredOn") {
+    throw new BleError("BLUETOOTH_OFF", "Bluetooth is off.");
+  }
+  return new Promise((resolve, reject) => {
+    const found = new Map<string, { id: string; name: string }>();
+    m.startDeviceScan([SERVICE_UUID], null, (err: any, device: any) => {
+      if (err) {
+        m.stopDeviceScan();
+        reject(new BleError("SCAN_ERROR", err.message ?? "Scan failed."));
+        return;
+      }
+      if (!device) return;
+      const nm = device.name ?? device.localName ?? "";
+      if (!nm.startsWith("FlightWall-")) return;
+      found.set(device.id, { id: device.id, name: nm });
+    });
+    setTimeout(() => {
+      m.stopDeviceScan();
+      resolve([...found.values()]);
+    }, durationMs);
+  });
+}
+
 /** Reconnect to a previously known device by id (no scan). */
 export async function connectToKnownDevice(
   deviceId: string,

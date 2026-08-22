@@ -48,3 +48,10 @@ Build a mobile app to control a smart LED matrix via Bluetooth. UI: prominent "C
 - **P2:** "Test pattern" quick action to flash the matrix on connect.
 - **P2:** Allow add/remove of team/show rows (currently fixed).
 - **P2:** Read-back / confirm characteristic value after write.
+
+## Updates (2026-06, fork)
+- [x] Home screen: removed the large "Connect to Matrix" button — the status pill is now the tappable connect/disconnect control ("TAP TO CONNECT" / "TAP TO DISCONNECT"), freeing vertical space.
+- [x] Animated LED-panel splash (`src/components/AnimatedSplash.tsx`): ember pixels sweep-fill a grid, "INFO WALL" wordmark fades in, then the overlay fades into the app. Mounted in `_layout.tsx` over the (black) native splash for a seamless transition.
+- [x] Sync payload parity: added `stock1..stock8` to the flat `buildBlePayload` contract so a full Sync now carries financial tickers (previously only Live Push did).
+- [x] Wi-Fi: typed SSID is now remembered immediately on Save (before the connect check) so it's never lost if the matrix isn't connected yet.
+

@@ -1,6 +1,6 @@
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { LogBox, StatusBar } from "react-native";
 import { useFonts } from "expo-font";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -9,6 +9,7 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 
 import { useIconFonts } from "@/src/hooks/use-icon-fonts";
 import { ToastProvider } from "@/src/components/Toast";
+import AnimatedSplash from "@/src/components/AnimatedSplash";
 import { colors } from "@/src/theme";
 
 // Disable logbox errors etc so that users can see the app
@@ -22,6 +23,7 @@ LogBox.ignoreAllLogs(true);
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  const [splashDone, setSplashDone] = useState(false);
   const [iconsLoaded, iconsError] = useIconFonts();
   const [fontsLoaded, fontsError] = useFonts({
     Rajdhani: require("../assets/fonts/Rajdhani-Regular.ttf"),
@@ -51,6 +53,9 @@ export default function RootLayout() {
           <ToastProvider>
             <StatusBar barStyle="light-content" backgroundColor={colors.surface} />
             <Stack screenOptions={{ headerShown: false }} />
+            {!splashDone && (
+              <AnimatedSplash onDone={() => setSplashDone(true)} />
+            )}
           </ToastProvider>
         </KeyboardProvider>
       </SafeAreaProvider>
