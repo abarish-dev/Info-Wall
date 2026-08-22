@@ -86,6 +86,7 @@ export function SettingsSheet({
   scheduleBrightness,
   onChange,
   onLiveBrightness,
+  onLiveSchedule,
   liveEnabled,
 }: {
   visible: boolean;
@@ -97,11 +98,31 @@ export function SettingsSheet({
   scheduleBrightness: number;
   onChange: (patch: DisplayPatch) => void;
   onLiveBrightness?: (value: number) => void;
+  onLiveSchedule?: (sched: {
+    scheduleEnabled: boolean;
+    scheduleStart: string;
+    scheduleEnd: string;
+    scheduleBrightness: number;
+  }) => void;
   liveEnabled?: boolean;
 }) {
   const insets = useSafeAreaInsets();
   const dimLabel =
     scheduleBrightness === 0 ? "Display off" : `Dimmed to ${scheduleBrightness}%`;
+
+  const pushSchedule = (override: {
+    enabled?: boolean;
+    start?: string;
+    end?: string;
+    brightness?: number;
+  }) => {
+    onLiveSchedule?.({
+      scheduleEnabled: override.enabled ?? scheduleEnabled,
+      scheduleStart: override.start ?? scheduleStart,
+      scheduleEnd: override.end ?? scheduleEnd,
+      scheduleBrightness: override.brightness ?? scheduleBrightness,
+    });
+  };
 
   return (
     <Modal
@@ -181,7 +202,9 @@ export function SettingsSheet({
                 testID="schedule-toggle"
                 onPress={() => {
                   Haptics.selectionAsync().catch(() => {});
-                  onChange({ scheduleEnabled: !scheduleEnabled });
+                  const next = !scheduleEnabled;
+                  onChange({ scheduleEnabled: next });
+                  pushSchedule({ enabled: next });
                 }}
                 style={[
                   styles.switchTrack,
@@ -203,13 +226,19 @@ export function SettingsSheet({
                   testID="schedule-start"
                   label="Start"
                   value={scheduleStart}
-                  onChange={(v) => onChange({ scheduleStart: v })}
+                  onChange={(v) => {
+                    onChange({ scheduleStart: v });
+                    pushSchedule({ start: v });
+                  }}
                 />
                 <TimeStepper
                   testID="schedule-end"
                   label="End"
                   value={scheduleEnd}
-                  onChange={(v) => onChange({ scheduleEnd: v })}
+                  onChange={(v) => {
+                    onChange({ scheduleEnd: v });
+                    pushSchedule({ end: v });
+                  }}
                 />
                 <View style={styles.divider} />
                 <View style={styles.rowBetween}>
@@ -226,18 +255,31 @@ export function SettingsSheet({
                   onValueChange={(v) =>
                     onChange({ scheduleBrightness: Math.round(v) })
                   }
-                  onSlidingComplete={() =>
-                    Haptics.selectionAsync().catch(() => {})
-                  }
+                  onSlidingComplete={(v) => {
+                    Haptics.selectionAsync().catch(() => {});
+                    pushSchedule({ brightness: Math.round(v) });
+                  }}
                   minimumTrackTintColor={colors.brand}
                   maximumTrackTintColor={colors.surfaceTertiary}
                   thumbTintColor={colors.brand}
                 />
-                <Text style={styles.hint}>
-                  {scheduleEnabled
-                    ? `Every day · ${scheduleStart} – ${scheduleEnd} · ${dimLabel}`
-                    : ""}
-                </Text>
+                <View style={styles.liveRow}>
+                  <View
+                    style={[
+                      styles.liveDot,
+                      {
+                        backgroundColor: liveEnabled
+                          ? colors.success
+                          : colors.info,
+                      },
+                    ]}
+                  />
+                  <Text style={styles.hint}>
+                    {liveEnabled
+                      ? `Live · Every day · ${scheduleStart} – ${scheduleEnd} · ${dimLabel}`
+                      : `Every day · ${scheduleStart} – ${scheduleEnd} · ${dimLabel}`}
+                  </Text>
+                </View>
               </View>
             )}
           </View>

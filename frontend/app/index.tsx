@@ -301,6 +301,21 @@ export default function ControlPanel() {
     }
   };
 
+  const handleLiveSchedule = async (sched: {
+    scheduleEnabled: boolean;
+    scheduleStart: string;
+    scheduleEnd: string;
+    scheduleBrightness: number;
+  }) => {
+    if (!isConnected) return;
+    try {
+      await writeLive({ command: "schedule", ...sched });
+      toast.show("Schedule pushed to matrix", "success");
+    } catch {
+      toast.show("Couldn't update schedule live", "error");
+    }
+  };
+
   const handleFlash = async () => {
     if (flashing || !isConnected) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
@@ -994,6 +1009,7 @@ export default function ControlPanel() {
         scheduleBrightness={settings.scheduleBrightness}
         onChange={patchSettings}
         onLiveBrightness={handleLiveBrightness}
+        onLiveSchedule={handleLiveSchedule}
         liveEnabled={isConnected}
       />
     </View>
