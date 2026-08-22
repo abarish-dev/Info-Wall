@@ -122,6 +122,7 @@ export default function ControlPanel() {
   const [geo, setGeo] = useState<GeoResult | null>(null);
   const [geoLoading, setGeoLoading] = useState(false);
   const [recentZips, setRecentZips] = useState<string[]>([]);
+  const [reconnecting, setReconnecting] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
   const [mapZoom, setMapZoom] = useState(11);
   const [mapType, setMapType] = useState<"streets" | "satellite">("streets");
@@ -220,6 +221,7 @@ export default function ControlPanel() {
         | string
         | null;
       if (!lastId) return;
+      setReconnecting(true);
       try {
         const info = await connectToKnownDevice(lastId, setStatus, () => {
           setStatus("disconnected");
@@ -229,6 +231,8 @@ export default function ControlPanel() {
         toast.show(`Reconnected to ${info.name}`, "success");
       } catch {
         setStatus("disconnected");
+      } finally {
+        setReconnecting(false);
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -595,16 +599,6 @@ export default function ControlPanel() {
             <Text style={styles.brandTitle} numberOfLines={1}>
               {(settings.wallName || "Info Wall").toUpperCase()}
             </Text>
-
-            <View style={styles.statusPill} testID="connection-status-pill">
-              <View
-                style={[styles.statusDot, { backgroundColor: statusMeta.color }]}
-              />
-              <Text style={[styles.statusText, { color: statusMeta.color }]}>
-                {statusMeta.label}
-              </Text>
-            </View>
-
             <Pressable
               testID="settings-button"
               onPress={() => setSettingsOpen(true)}
@@ -613,6 +607,25 @@ export default function ControlPanel() {
             >
               <Ionicons name="settings-sharp" size={18} color={colors.onSurface} />
             </Pressable>
+          </View>
+
+          <View style={styles.statusRow}>
+            <View style={styles.statusPill} testID="connection-status-pill">
+              <View
+                style={[styles.statusDot, { backgroundColor: statusMeta.color }]}
+              />
+              <Text style={[styles.statusText, { color: statusMeta.color }]}>
+                {statusMeta.label}
+              </Text>
+            </View>
+            {reconnecting && (
+              <View style={styles.reconnectBanner} testID="reconnect-banner">
+                <ActivityIndicator size="small" color={colors.brand} />
+                <Text style={styles.reconnectText}>
+                  Reconnecting to last matrix…
+                </Text>
+              </View>
+            )}
           </View>
 
           <Text style={styles.heroSubtitle}>
@@ -1208,12 +1221,36 @@ export default function ControlPanel() {
                             ? "Tap map to add points"
                             : `Polygon: ${settings.polygon.length} pts`}
                         </Text>
+                      <View style={styles.polyBtnRow}>
                         <Pressable
-                          testID="poly-clear"
-                          onPress={() => patchSettings({ polygon: [] })}
+                          testID="poly-undo"
+                          onPress={() =>
+                            patchSettings({
+                              polygon: settings.polygon.slice(0, -1),
+                            })
+                          }
+                          disabled={settings.polygon.length === 0}
                           style={({ pressed }) => [
                             styles.polyClearBtn,
                             pressed && styles.pressed,
+                            settings.polygon.length === 0 && { opacity: 0.4 },
+                          ]}
+                        >
+                          <Ionicons
+                            name="arrow-undo"
+                            size={14}
+                            color={colors.brand}
+                          />
+                          <Text style={styles.polyClearText}>UNDO</Text>
+                        </Pressable>
+                        <Pressable
+                          testID="poly-clear"
+                          onPress={() => patchSettings({ polygon: [] })}
+                          disabled={settings.polygon.length === 0}
+                          style={({ pressed }) => [
+                            styles.polyClearBtn,
+                            pressed && styles.pressed,
+                            settings.polygon.length === 0 && { opacity: 0.4 },
                           ]}
                         >
                           <Ionicons
@@ -1223,6 +1260,7 @@ export default function ControlPanel() {
                           />
                           <Text style={styles.polyClearText}>CLEAR</Text>
                         </Pressable>
+                      </View>
                       </View>
                     ) : (
                       <>
@@ -1775,6 +1813,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
+  polyBtnRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
   polyClearBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -1797,6 +1839,28 @@ const styles = StyleSheet.create({
     fontFamily: fonts.displayMedium,
     fontSize: fontSize.xl,
     letterSpacing: 1.5,
+  },
+  statusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  reconnectBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    borderRadius: radius.pill,
+    paddingVertical: 4,
+    paddingHorizontal: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  reconnectText: {
+    color: colors.onSurfaceSecondary,
+    fontFamily: fonts.text,
+    fontSize: fontSize.sm,
   },
   statusPill: {
     flexDirection: "row",
