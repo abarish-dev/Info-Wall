@@ -267,6 +267,39 @@ export async function flashTest(): Promise<void> {
   }
 }
 
+/** Reconnect to a previously known device by id (no scan). */
+export async function connectToKnownDevice(
+  deviceId: string,
+  onStatus: (s: BleStatus) => void,
+  onDisconnect?: () => void,
+): Promise<{ id: string; name: string; rssi: number | null }> {
+  if (!isBleSupported()) {
+    throw new BleError("BLE_UNAVAILABLE", "Bluetooth not available.");
+  }
+  const bleManager = getManager();
+  const state = await bleManager.state();
+  if (state !== "PoweredOn") {
+    throw new BleError("BLUETOOTH_OFF", "Bluetooth is off.");
+  }
+  onStatus("connecting");
+  const d = await bleManager.connectToDevice(deviceId);
+  await d.discoverAllServicesAndCharacteristics();
+  connectedDevice = d;
+  d.onDisconnected(() => {
+    connectedDevice = null;
+    onDisconnect?.();
+  });
+  let rssi: number | null = null;
+  try {
+    const withRssi = await d.readRSSI();
+    rssi = withRssi?.rssi ?? null;
+  } catch {
+    rssi = null;
+  }
+  onStatus("connected");
+  return { id: d.id, name: d.name ?? "LED Matrix", rssi };
+}
+
 /** Write a lightweight live command (no read-back) to the matrix. */
 export async function writeLive(obj: Record<string, unknown>): Promise<void> {
   if (!connectedDevice) {

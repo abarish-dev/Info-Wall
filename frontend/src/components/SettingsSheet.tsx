@@ -82,6 +82,11 @@ export function SettingsSheet({
   visible,
   onClose,
   wallName,
+  profiles,
+  activeId,
+  onSwitchProfile,
+  onAddProfile,
+  onDeleteProfile,
   brightness,
   scheduleEnabled,
   scheduleStart,
@@ -95,6 +100,11 @@ export function SettingsSheet({
   visible: boolean;
   onClose: () => void;
   wallName: string;
+  profiles: { id: string; name: string }[];
+  activeId: string;
+  onSwitchProfile: (id: string) => void;
+  onAddProfile: () => void;
+  onDeleteProfile: (id: string) => void;
   brightness: number;
   scheduleEnabled: boolean;
   scheduleStart: string;
@@ -156,6 +166,60 @@ export function SettingsSheet({
           }}
           showsVerticalScrollIndicator={false}
         >
+          {/* Wall profiles */}
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>WALL PROFILES</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.profileRow}
+              keyboardShouldPersistTaps="handled"
+            >
+              {profiles.map((p) => {
+                const active = p.id === activeId;
+                return (
+                  <Pressable
+                    key={p.id}
+                    testID={`profile-${p.id}`}
+                    onPress={() => onSwitchProfile(p.id)}
+                    onLongPress={() => onDeleteProfile(p.id)}
+                    delayLongPress={400}
+                    style={[
+                      styles.profileChip,
+                      active && styles.profileChipActive,
+                    ]}
+                  >
+                    {active && (
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={14}
+                        color={colors.brand}
+                      />
+                    )}
+                    <Text
+                      style={[
+                        styles.profileChipText,
+                        active && styles.profileChipTextActive,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {p.name || "Wall"}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+              <Pressable
+                testID="add-profile-button"
+                onPress={onAddProfile}
+                style={[styles.profileChip, styles.addProfileChip]}
+              >
+                <Ionicons name="add" size={16} color={colors.brand} />
+                <Text style={styles.profileChipTextActive}>Add</Text>
+              </Pressable>
+            </ScrollView>
+            <Text style={styles.hint}>Tap to switch · hold to delete</Text>
+          </View>
+
           {/* Wall name */}
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>WALL NAME</Text>
@@ -374,6 +438,40 @@ const styles = StyleSheet.create({
     color: colors.onSurface,
     fontFamily: fonts.text,
     fontSize: fontSize.lg,
+  },
+  profileRow: {
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  profileChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    height: 40,
+    flexShrink: 0,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surfaceTertiary,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  profileChipActive: {
+    backgroundColor: colors.brandTertiary,
+    borderColor: colors.brand,
+  },
+  addProfileChip: {
+    borderStyle: "dashed",
+  },
+  profileChipText: {
+    color: colors.onSurfaceSecondary,
+    fontFamily: fonts.textMedium,
+    fontSize: fontSize.base,
+    maxWidth: 140,
+  },
+  profileChipTextActive: {
+    color: colors.brand,
+    fontFamily: fonts.textMedium,
+    fontSize: fontSize.base,
   },
   hint: {
     color: colors.info,

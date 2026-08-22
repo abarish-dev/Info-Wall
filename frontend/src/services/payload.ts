@@ -8,6 +8,8 @@ export type BlePayload = {
   showWeather: boolean; // boolean
   lat: number; // number
   lon: number; // number
+  trackingMode: string; // "radius" | "polygon"
+  polygon: number[][]; // [[lat,lon], ...]
   brightness: number; // number 0-100
   scheduleEnabled: boolean; // boolean
   scheduleStart: string; // "HH:MM"
@@ -36,6 +38,8 @@ type SettingsShape = {
   trackFlight: boolean;
   flightIdent: string;
   showWeather: boolean;
+  trackingMode: string;
+  polygon: number[][];
   brightness: number;
   scheduleEnabled: boolean;
   scheduleStart: string;
@@ -58,6 +62,8 @@ export function buildBlePayload(
     showWeather: s.showWeather,
     lat: coords?.lat ?? 0,
     lon: coords?.lon ?? 0,
+    trackingMode: s.trackingMode,
+    polygon: s.polygon,
     brightness: s.brightness,
     scheduleEnabled: s.scheduleEnabled,
     scheduleStart: s.scheduleStart,

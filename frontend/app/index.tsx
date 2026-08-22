@@ -26,8 +26,10 @@ import {
 import { colors, spacing, radius, fonts, fontSize } from "@/src/theme";
 import { storage } from "@/src/utils/storage";
 import { useToast } from "@/src/components/Toast";
+import Svg, { Polygon as SvgPolygon, Circle as SvgCircle } from "react-native-svg";
 import {
   connectToMatrix,
+  connectToKnownDevice,
   syncSettings,
   disconnect,
   isBleSupported,
@@ -45,6 +47,11 @@ import * as Clipboard from "expo-clipboard";
 const STORAGE_KEY = "matrix_settings_v2";
 const RECENT_ZIPS_KEY = "recent_zips_v1";
 const LAST_SYNC_KEY = "last_sync_v1";
+const PROFILES_KEY = "wall_profiles_v1";
+const ACTIVE_KEY = "active_wall_v1";
+const LAST_DEVICE_KEY = "last_device_v1";
+
+type Profile = { id: string; name: string; settings: Settings };
 const HERO_IMAGE =
   "https://images.pexels.com/photos/29149453/pexels-photo-29149453.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940";
 
@@ -55,6 +62,8 @@ const DEFAULTS = {
   flightIdent: "",
   showWeather: true,
   zipCode: "28117",
+  trackingMode: "radius",
+  polygon: [] as number[][],
   brightness: 80,
   scheduleEnabled: false,
   scheduleStart: "19:00",
@@ -71,6 +80,8 @@ type Settings = {
   flightIdent: string;
   showWeather: boolean;
   zipCode: string;
+  trackingMode: string;
+  polygon: number[][];
   brightness: number;
   scheduleEnabled: boolean;
   scheduleStart: string;
@@ -99,6 +110,8 @@ export default function ControlPanel() {
 
   const [settings, setSettings] = useState<Settings>(DEFAULTS);
   const [hydrated, setHydrated] = useState(false);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [activeId, setActiveId] = useState<string>("");
   const [status, setStatus] = useState<BleStatus>("disconnected");
   const [busy, setBusy] = useState(false);
   const [device, setDevice] = useState<{
@@ -120,40 +133,59 @@ export default function ControlPanel() {
 
   const bleSupported = useMemo(() => isBleSupported(), []);
 
-  // Load persisted settings once (with migration from the old v1 format).
+  // Load wall profiles once (migrating any legacy single-settings blob).
   useEffect(() => {
     (async () => {
-      const saved = (await storage.getItem<any>(STORAGE_KEY, null)) as
-        | Settings
+      const savedProfiles = (await storage.getItem<any>(
+        PROFILES_KEY,
+        null,
+      )) as Profile[] | null;
+      const savedActive = (await storage.getItem<any>(ACTIVE_KEY, null)) as
+        | string
         | null;
-      if (saved && Array.isArray(saved.teams)) {
-        setSettings({ ...DEFAULTS, ...saved });
+      if (Array.isArray(savedProfiles) && savedProfiles.length) {
+        const active =
+          savedProfiles.find((p) => p.id === savedActive) ?? savedProfiles[0];
+        setProfiles(savedProfiles);
+        setActiveId(active.id);
+        setSettings({ ...DEFAULTS, ...active.settings });
       } else {
         const legacy = (await storage.getItem<any>(
-          "matrix_settings_v1",
+          STORAGE_KEY,
           null,
-        )) as any;
-        if (legacy && (legacy.team1 || legacy.show1)) {
-          setSettings({
-            searchRadius: legacy.searchRadius ?? DEFAULTS.searchRadius,
-            teams: [legacy.team1, legacy.team2].filter(
-              (x) => x != null,
-            ) as string[],
-            shows: [legacy.show1, legacy.show2, legacy.show3].filter(
-              (x) => x != null,
-            ) as string[],
-          });
-        }
+        )) as Settings | null;
+        const base =
+          legacy && Array.isArray(legacy.teams)
+            ? { ...DEFAULTS, ...legacy }
+            : DEFAULTS;
+        const id = String(Date.now());
+        const prof: Profile[] = [
+          { id, name: base.wallName || "Info Wall", settings: base },
+        ];
+        setProfiles(prof);
+        setActiveId(id);
+        setSettings(base);
+        storage.setItem(PROFILES_KEY, prof);
+        storage.setItem(ACTIVE_KEY, id);
       }
       setHydrated(true);
     })();
   }, []);
 
-  // Persist whenever settings change (after hydration).
+  // Persist active settings + mirror into its profile.
   useEffect(() => {
     if (!hydrated) return;
     storage.setItem(STORAGE_KEY, settings);
-  }, [settings, hydrated]);
+    setProfiles((prev) => {
+      const next = prev.map((p) =>
+        p.id === activeId
+          ? { ...p, name: settings.wallName || p.name, settings }
+          : p,
+      );
+      storage.setItem(PROFILES_KEY, next);
+      return next;
+    });
+  }, [settings, hydrated, activeId]);
 
   // Load recent zips + last sync record once.
   useEffect(() => {
@@ -179,6 +211,44 @@ export default function ControlPanel() {
     }, 5000);
     return () => clearInterval(id);
   }, [status]);
+
+  // Auto-reconnect to the last known matrix on app open.
+  useEffect(() => {
+    if (!bleSupported) return;
+    (async () => {
+      const lastId = (await storage.getItem<any>(LAST_DEVICE_KEY, null)) as
+        | string
+        | null;
+      if (!lastId) return;
+      try {
+        const info = await connectToKnownDevice(lastId, setStatus, () => {
+          setStatus("disconnected");
+          setDevice(null);
+        });
+        setDevice({ name: info.name, rssi: info.rssi });
+        toast.show(`Reconnected to ${info.name}`, "success");
+      } catch {
+        setStatus("disconnected");
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bleSupported]);
+
+  // Auto-push team/show edits live (debounced) so no manual Sync is needed.
+  useEffect(() => {
+    if (status !== "connected") return;
+    const t = setTimeout(() => {
+      writeLive({
+        command: "teams",
+        teams: settings.teams.map((x) => x.trim()).filter(Boolean),
+      }).catch(() => {});
+      writeLive({
+        command: "shows",
+        shows: settings.shows.map((x) => x.trim()).filter(Boolean),
+      }).catch(() => {});
+    }, 800);
+    return () => clearTimeout(t);
+  }, [settings.teams, settings.shows, status]);
 
   // Live zip -> coordinates lookup (debounced) for the preview under the field.
   useEffect(() => {
@@ -214,6 +284,42 @@ export default function ControlPanel() {
     setSettings((s) => ({ ...s, searchRadius: v }));
   const patchSettings = (p: Partial<Settings>) =>
     setSettings((s) => ({ ...s, ...p }));
+
+  const switchProfile = (id: string) => {
+    const p = profiles.find((x) => x.id === id);
+    if (!p) return;
+    Haptics.selectionAsync().catch(() => {});
+    setActiveId(id);
+    setSettings({ ...DEFAULTS, ...p.settings });
+    storage.setItem(ACTIVE_KEY, id);
+  };
+  const addProfile = () => {
+    const id = String(Date.now());
+    const base = { ...DEFAULTS, wallName: "New Wall" };
+    const next = [...profiles, { id, name: "New Wall", settings: base }];
+    setProfiles(next);
+    storage.setItem(PROFILES_KEY, next);
+    setActiveId(id);
+    setSettings(base);
+    storage.setItem(ACTIVE_KEY, id);
+    toast.show("New wall added", "success");
+  };
+  const deleteProfile = (id: string) => {
+    if (profiles.length <= 1) {
+      toast.show("Keep at least one wall", "error");
+      return;
+    }
+    const next = profiles.filter((p) => p.id !== id);
+    setProfiles(next);
+    storage.setItem(PROFILES_KEY, next);
+    if (id === activeId) {
+      const first = next[0];
+      setActiveId(first.id);
+      setSettings({ ...DEFAULTS, ...first.settings });
+      storage.setItem(ACTIVE_KEY, first.id);
+    }
+    toast.show("Wall deleted", "info");
+  };
 
   const setWeather = (v: boolean) =>
     setSettings((s) => ({ ...s, showWeather: v }));
@@ -263,6 +369,7 @@ export default function ControlPanel() {
       await disconnect();
       setStatus("disconnected");
       setDevice(null);
+      storage.removeItem(LAST_DEVICE_KEY);
       toast.show("Disconnected from matrix", "info");
       return;
     }
@@ -274,6 +381,7 @@ export default function ControlPanel() {
         toast.show("Matrix disconnected", "error");
       });
       setDevice({ name: info.name, rssi: info.rssi });
+      storage.setItem(LAST_DEVICE_KEY, info.id);
       Haptics.notificationAsync(
         Haptics.NotificationFeedbackType.Success,
       ).catch(() => {});
@@ -439,6 +547,30 @@ export default function ControlPanel() {
   const previewPayload = buildBlePayload(settings, geo);
   const flightMissing = settings.trackFlight && !settings.flightIdent.trim();
   const mapSize = Math.min(winW - spacing.lg * 4, 360);
+  const polyMode = settings.trackingMode === "polygon";
+
+  const handleMapPress = (e: any) => {
+    if (!polyMode || !geo) return;
+    const lx = e.nativeEvent?.locationX ?? 0;
+    const ly = e.nativeEvent?.locationY ?? 0;
+    const z = mapZoom;
+    const n = Math.pow(2, z);
+    const c = lonLatToTileFrac(geo.lon, geo.lat, z);
+    const xt = Math.floor(c.x);
+    const yt = Math.floor(c.y);
+    const S = mapSize / 3;
+    const tileX = xt - 1 + lx / S;
+    const tileY = yt - 1 + ly / S;
+    const lon = (tileX / n) * 360 - 180;
+    const lat =
+      (Math.atan(Math.sinh(Math.PI * (1 - (2 * tileY) / n))) * 180) / Math.PI;
+    patchSettings({
+      polygon: [
+        ...settings.polygon,
+        [Number(lat.toFixed(5)), Number(lon.toFixed(5))],
+      ],
+    });
+  };
 
   return (
     <View style={styles.root}>
@@ -966,13 +1098,22 @@ export default function ControlPanel() {
             {geo && (
               <View style={styles.mapImageWrap}>
                 <View style={{ width: mapSize, height: mapSize }}>
-                  <TileMap
+                  <Pressable onPress={handleMapPress} disabled={!polyMode}>
+                    <TileMap
+                      lat={geo.lat}
+                      lon={geo.lon}
+                      size={mapSize}
+                      zoom={mapZoom}
+                      radiusMiles={polyMode ? undefined : settings.searchRadius}
+                      mapType={mapType}
+                    />
+                  </Pressable>
+                  <PolyOverlay
                     lat={geo.lat}
                     lon={geo.lon}
-                    size={mapSize}
                     zoom={mapZoom}
-                    radiusMiles={settings.searchRadius}
-                    mapType={mapType}
+                    size={mapSize}
+                    polygon={settings.polygon}
                   />
                   <View style={styles.zoomControls}>
                     <Pressable
@@ -1022,22 +1163,89 @@ export default function ControlPanel() {
                     </Text>
                   </Pressable>
                   <View style={styles.radiusOverlay}>
-                    <Text style={styles.radiusOverlayLabel}>
-                      Radius: {settings.searchRadius} mi
-                    </Text>
-                    <Slider
-                      testID="map-radius-slider"
-                      style={{ width: "100%", height: 32 }}
-                      minimumValue={1}
-                      maximumValue={50}
-                      step={1}
-                      value={settings.searchRadius}
-                      onValueChange={(v) => setRadius(Math.round(v))}
-                      onSlidingComplete={(v) => handleLiveRadius(Math.round(v))}
-                      minimumTrackTintColor={colors.brand}
-                      maximumTrackTintColor="rgba(255,255,255,0.35)"
-                      thumbTintColor={colors.brand}
-                    />
+                    <View style={styles.modeRow}>
+                      <Pressable
+                        testID="mode-radius"
+                        onPress={() => patchSettings({ trackingMode: "radius" })}
+                        style={[
+                          styles.modeChip,
+                          !polyMode && styles.modeChipActive,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.modeChipText,
+                            !polyMode && styles.modeChipTextActive,
+                          ]}
+                        >
+                          RADIUS
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        testID="mode-polygon"
+                        onPress={() =>
+                          patchSettings({ trackingMode: "polygon" })
+                        }
+                        style={[
+                          styles.modeChip,
+                          polyMode && styles.modeChipActive,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.modeChipText,
+                            polyMode && styles.modeChipTextActive,
+                          ]}
+                        >
+                          POLYGON
+                        </Text>
+                      </Pressable>
+                    </View>
+                    {polyMode ? (
+                      <View style={styles.polyRow}>
+                        <Text style={styles.radiusOverlayLabel}>
+                          {settings.polygon.length === 0
+                            ? "Tap map to add points"
+                            : `Polygon: ${settings.polygon.length} pts`}
+                        </Text>
+                        <Pressable
+                          testID="poly-clear"
+                          onPress={() => patchSettings({ polygon: [] })}
+                          style={({ pressed }) => [
+                            styles.polyClearBtn,
+                            pressed && styles.pressed,
+                          ]}
+                        >
+                          <Ionicons
+                            name="trash-outline"
+                            size={14}
+                            color={colors.brand}
+                          />
+                          <Text style={styles.polyClearText}>CLEAR</Text>
+                        </Pressable>
+                      </View>
+                    ) : (
+                      <>
+                        <Text style={styles.radiusOverlayLabel}>
+                          Radius: {settings.searchRadius} mi
+                        </Text>
+                        <Slider
+                          testID="map-radius-slider"
+                          style={{ width: "100%", height: 32 }}
+                          minimumValue={1}
+                          maximumValue={50}
+                          step={1}
+                          value={settings.searchRadius}
+                          onValueChange={(v) => setRadius(Math.round(v))}
+                          onSlidingComplete={(v) =>
+                            handleLiveRadius(Math.round(v))
+                          }
+                          minimumTrackTintColor={colors.brand}
+                          maximumTrackTintColor="rgba(255,255,255,0.35)"
+                          thumbTintColor={colors.brand}
+                        />
+                      </>
+                    )}
                   </View>
                 </View>
               </View>
@@ -1063,6 +1271,11 @@ export default function ControlPanel() {
         visible={settingsOpen}
         onClose={() => setSettingsOpen(false)}
         wallName={settings.wallName}
+        profiles={profiles.map((p) => ({ id: p.id, name: p.name }))}
+        activeId={activeId}
+        onSwitchProfile={switchProfile}
+        onAddProfile={addProfile}
+        onDeleteProfile={deleteProfile}
         brightness={settings.brightness}
         scheduleEnabled={settings.scheduleEnabled}
         scheduleStart={settings.scheduleStart}
@@ -1264,6 +1477,60 @@ function signalColor(rssi: number | null): string {
   if (rssi >= -60) return colors.success;
   if (rssi >= -80) return colors.warning;
   return colors.error;
+}
+
+function PolyOverlay({
+  lat,
+  lon,
+  zoom,
+  size,
+  polygon,
+}: {
+  lat: number;
+  lon: number;
+  zoom: number;
+  size: number;
+  polygon: number[][];
+}) {
+  if (!polygon.length) return null;
+  const z = zoom;
+  const c = lonLatToTileFrac(lon, lat, z);
+  const xt = Math.floor(c.x);
+  const yt = Math.floor(c.y);
+  const S = size / 3;
+  const pts = polygon.map(([vlat, vlon]) => {
+    const p = lonLatToTileFrac(vlon, vlat, z);
+    return { x: (p.x - (xt - 1)) * S, y: (p.y - (yt - 1)) * S };
+  });
+  const pointsStr = pts.map((p) => `${p.x},${p.y}`).join(" ");
+  return (
+    <Svg
+      width={size}
+      height={size}
+      style={{ position: "absolute", left: 0, top: 0 }}
+      pointerEvents="none"
+    >
+      {pts.length >= 2 && (
+        <SvgPolygon
+          points={pointsStr}
+          fill="rgba(255,107,0,0.22)"
+          stroke={colors.brand}
+          strokeWidth={2}
+        />
+      )}
+      {pts.map((p, i) => (
+        <SvgCircle
+          key={i}
+          cx={p.x}
+          cy={p.y}
+          r={5}
+          fill={colors.brand}
+          stroke={colors.onSurface}
+          strokeWidth={1.5}
+        />
+      ))}
+    </Svg>
+  );
 }
 
 // Renders a small OpenStreetMap tile grid (3x3) centered on lat/lon with an
@@ -1474,6 +1741,55 @@ const styles = StyleSheet.create({
     fontSize: fontSize.lg,
     letterSpacing: 0.5,
     marginBottom: 2,
+  },
+  modeRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  modeChip: {
+    flex: 1,
+    height: 30,
+    borderRadius: radius.sm,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  modeChipActive: {
+    backgroundColor: colors.brandTertiary,
+    borderColor: colors.brand,
+  },
+  modeChipText: {
+    color: colors.info,
+    fontFamily: fonts.displayMedium,
+    fontSize: fontSize.sm,
+    letterSpacing: 1,
+  },
+  modeChipTextActive: {
+    color: colors.brand,
+  },
+  polyRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  polyClearBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.brand,
+  },
+  polyClearText: {
+    color: colors.brand,
+    fontFamily: fonts.displayMedium,
+    fontSize: 11,
+    letterSpacing: 1,
   },
   brandTitle: {
     flex: 1,
