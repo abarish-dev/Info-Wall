@@ -267,6 +267,27 @@ export async function flashTest(): Promise<void> {
   }
 }
 
+/** Write a lightweight live command (no read-back) to the matrix. */
+export async function writeLive(obj: Record<string, unknown>): Promise<void> {
+  if (!connectedDevice) {
+    throw new BleError("NOT_CONNECTED", "Not connected.");
+  }
+  const value = base64Encode(unescape(encodeURIComponent(JSON.stringify(obj))));
+  try {
+    await connectedDevice.writeCharacteristicWithResponseForService(
+      SERVICE_UUID,
+      CHARACTERISTIC_UUID,
+      value,
+    );
+  } catch {
+    await connectedDevice.writeCharacteristicWithoutResponseForService(
+      SERVICE_UUID,
+      CHARACTERISTIC_UUID,
+      value,
+    );
+  }
+}
+
 /** Read current signal strength (RSSI, in dBm) of the connected device. */
 export async function readRssi(): Promise<number | null> {
   if (!connectedDevice) return null;

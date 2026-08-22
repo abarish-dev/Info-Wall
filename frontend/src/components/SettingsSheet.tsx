@@ -85,6 +85,8 @@ export function SettingsSheet({
   scheduleEnd,
   scheduleBrightness,
   onChange,
+  onLiveBrightness,
+  liveEnabled,
 }: {
   visible: boolean;
   onClose: () => void;
@@ -94,6 +96,8 @@ export function SettingsSheet({
   scheduleEnd: string;
   scheduleBrightness: number;
   onChange: (patch: DisplayPatch) => void;
+  onLiveBrightness?: (value: number) => void;
+  liveEnabled?: boolean;
 }) {
   const insets = useSafeAreaInsets();
   const dimLabel =
@@ -141,14 +145,27 @@ export function SettingsSheet({
               step={1}
               value={brightness}
               onValueChange={(v) => onChange({ brightness: Math.round(v) })}
-              onSlidingComplete={() => Haptics.selectionAsync().catch(() => {})}
+              onSlidingComplete={(v) => {
+                Haptics.selectionAsync().catch(() => {});
+                onLiveBrightness?.(Math.round(v));
+              }}
               minimumTrackTintColor={colors.brand}
               maximumTrackTintColor={colors.surfaceTertiary}
               thumbTintColor={colors.brand}
             />
-            <Text style={styles.hint}>
-              Overall matrix LED brightness.
-            </Text>
+            <View style={styles.liveRow}>
+              <View
+                style={[
+                  styles.liveDot,
+                  { backgroundColor: liveEnabled ? colors.success : colors.info },
+                ]}
+              />
+              <Text style={styles.hint}>
+                {liveEnabled
+                  ? "Live — changes push to the matrix instantly"
+                  : "Connect to push brightness live (saved & synced otherwise)"}
+              </Text>
+            </View>
           </View>
 
           {/* Display schedule */}
@@ -291,6 +308,17 @@ const styles = StyleSheet.create({
     color: colors.info,
     fontFamily: fonts.text,
     fontSize: fontSize.sm,
+    flex: 1,
+  },
+  liveRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   timeRow: {
     flexDirection: "row",

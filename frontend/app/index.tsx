@@ -33,6 +33,7 @@ import {
   isBleSupported,
   readRssi,
   flashTest,
+  writeLive,
   BleError,
   type BleStatus,
 } from "@/src/services/ble";
@@ -290,6 +291,16 @@ export default function ControlPanel() {
     Linking.openURL(url).catch(() => {});
   };
 
+  const handleLiveBrightness = async (value: number) => {
+    if (!isConnected) return;
+    try {
+      await writeLive({ command: "brightness", brightness: value });
+      toast.show(`Brightness → ${value}%`, "success");
+    } catch {
+      toast.show("Couldn't update brightness live", "error");
+    }
+  };
+
   const handleFlash = async () => {
     if (flashing || !isConnected) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
@@ -414,7 +425,7 @@ export default function ControlPanel() {
             <View style={styles.logoBox}>
               <Ionicons name="grid" size={18} color={colors.brand} />
             </View>
-            <Text style={styles.brandTitle}>MATRIX CONTROL</Text>
+            <Text style={styles.brandTitle}>INFO WALL</Text>
 
             <View style={styles.statusPill} testID="connection-status-pill">
               <View
@@ -982,6 +993,8 @@ export default function ControlPanel() {
         scheduleEnd={settings.scheduleEnd}
         scheduleBrightness={settings.scheduleBrightness}
         onChange={patchSettings}
+        onLiveBrightness={handleLiveBrightness}
+        liveEnabled={isConnected}
       />
     </View>
   );
