@@ -55,3 +55,79 @@ export const fontSize = {
   xl: 20,
   "2xl": 24,
 } as const;
+
+// ---------------------------------------------------------------------------
+// Runtime accent theming.
+// `colors.brand` (+ its shades) is mutated in place when the user picks a
+// theme. Style factories re-run via the rebuild registry so both static
+// StyleSheets and inline JSX colors pick up the new accent on the next render.
+// ---------------------------------------------------------------------------
+
+export type AccentId = "orange" | "blue" | "red" | "gray";
+
+export const ACCENTS: Record<
+  AccentId,
+  {
+    label: string;
+    brand: string;
+    brandSecondary: string;
+    brandTertiary: string;
+    onBrand: string;
+    onBrandTertiary: string;
+  }
+> = {
+  orange: {
+    label: "Ember",
+    brand: "#FF6B00",
+    brandSecondary: "#E25A24",
+    brandTertiary: "#4A2511",
+    onBrand: "#111827",
+    onBrandTertiary: "#FFB380",
+  },
+  blue: {
+    label: "Azure",
+    brand: "#2F6FED",
+    brandSecondary: "#2457C5",
+    brandTertiary: "#12233F",
+    onBrand: "#FFFFFF",
+    onBrandTertiary: "#AFC6F5",
+  },
+  red: {
+    label: "Crimson",
+    brand: "#E5484D",
+    brandSecondary: "#C13B40",
+    brandTertiary: "#3E1719",
+    onBrand: "#FFFFFF",
+    onBrandTertiary: "#F3A6A8",
+  },
+  gray: {
+    label: "Slate",
+    brand: "#8A8F98",
+    brandSecondary: "#6E727A",
+    brandTertiary: "#26292E",
+    onBrand: "#111827",
+    onBrandTertiary: "#C7CAD0",
+  },
+};
+
+const rebuilders = new Set<() => void>();
+
+/** Register a style-factory rebuild callback; returns an unsubscribe fn. */
+export function onAccentChange(fn: () => void): () => void {
+  rebuilders.add(fn);
+  return () => rebuilders.delete(fn);
+}
+
+/** Mutate the shared `colors` accent fields and rebuild all registered styles. */
+export function applyAccent(id: AccentId): void {
+  const a = ACCENTS[id] ?? ACCENTS.orange;
+  Object.assign(colors as Record<string, string>, {
+    brand: a.brand,
+    brandSecondary: a.brandSecondary,
+    brandTertiary: a.brandTertiary,
+    onBrand: a.onBrand,
+    onBrandTertiary: a.onBrandTertiary,
+    borderStrong: a.brand,
+  });
+  rebuilders.forEach((fn) => fn());
+}

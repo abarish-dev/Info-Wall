@@ -24,7 +24,17 @@ import {
   KeyboardStickyView,
 } from "react-native-keyboard-controller";
 
-import { colors, spacing, radius, fonts, fontSize } from "@/src/theme";
+import {
+  colors,
+  spacing,
+  radius,
+  fonts,
+  fontSize,
+  applyAccent,
+  onAccentChange,
+  ACCENTS,
+  type AccentId,
+} from "@/src/theme";
 import { storage } from "@/src/utils/storage";
 import { useToast } from "@/src/components/Toast";
 import Svg, { Polygon as SvgPolygon } from "react-native-svg";
@@ -38,7 +48,6 @@ import {
   flashTest,
   writeLive,
   monitorMatrix,
-  stopMonitor,
   BleError,
   type BleStatus,
 } from "@/src/services/ble";
@@ -54,6 +63,7 @@ const LAST_SYNC_KEY = "last_sync_v1";
 const PROFILES_KEY = "wall_profiles_v1";
 const ACTIVE_KEY = "active_wall_v1";
 const LAST_DEVICE_KEY = "last_device_v1";
+const THEME_KEY = "theme_id_v1";
 
 type Profile = {
   id: string;
@@ -173,8 +183,31 @@ export default function ControlPanel() {
     at: string;
     summary: string;
   } | null>(null);
+  const [themeId, setThemeId] = useState<AccentId>("orange");
 
   const bleSupported = useMemo(() => isBleSupported(), []);
+
+  // Load persisted accent theme once (applied before first meaningful paint;
+  // the LED splash masks any brief default-accent flash on cold start).
+  useEffect(() => {
+    (async () => {
+      const id = (await storage.getItem<AccentId>(
+        THEME_KEY,
+        "orange",
+      )) as AccentId;
+      if (id && ACCENTS[id]) {
+        applyAccent(id);
+        setThemeId(id);
+      }
+    })();
+  }, []);
+
+  const setTheme = (id: AccentId) => {
+    applyAccent(id);
+    setThemeId(id);
+    storage.setItem(THEME_KEY, id);
+    Haptics.selectionAsync().catch(() => {});
+  };
 
   // Load wall profiles once (migrating any legacy single-settings blob).
   useEffect(() => {
@@ -338,6 +371,47 @@ export default function ControlPanel() {
     settings.msgLine3,
     status,
   ]);
+
+  // Live push of flight-tracking config (debounced).
+  useEffect(() => {
+    if (status !== "connected") return;
+    const t = setTimeout(() => {
+      writeLive({
+        command: "flight",
+        trackFlight: settings.trackFlight,
+        flightIdent: settings.flightIdent.trim(),
+      }).catch(() => {});
+    }, 800);
+    return () => clearTimeout(t);
+  }, [settings.trackFlight, settings.flightIdent, status]);
+
+  // Live push of weather toggle + resolved coordinates (debounced).
+  useEffect(() => {
+    if (status !== "connected") return;
+    const t = setTimeout(() => {
+      writeLive({
+        command: "weather",
+        showWeather: settings.showWeather,
+        lat: geo?.lat ?? 0,
+        lon: geo?.lon ?? 0,
+      }).catch(() => {});
+    }, 800);
+    return () => clearTimeout(t);
+  }, [settings.showWeather, geo, status]);
+
+  // Live push of the tracking zone: radius mode vs polygon (debounced).
+  useEffect(() => {
+    if (status !== "connected") return;
+    const t = setTimeout(() => {
+      writeLive({
+        command: "zone",
+        trackingMode: settings.trackingMode,
+        polygon: settings.polygon,
+      }).catch(() => {});
+    }, 800);
+    return () => clearTimeout(t);
+  }, [settings.trackingMode, settings.polygon, status]);
+
 
   // Load remembered Wi-Fi SSID (password never stored).
   useEffect(() => {
@@ -1206,7 +1280,11 @@ export default function ControlPanel() {
               placeholder="NYY"
               autoCapitalize="characters"
               maxLength={5}
-              badge={getTeamBadge(team)}
+              warning={
+                team.trim().length > 0 && !getTeamBadge(team).known
+                  ? "Unrecognized code — check the abbreviation"
+                  : undefined
+              }
               onChangeText={(t) => editList("teams", i, t)}
               onRemove={
                 settings.teams.length > 1
@@ -1381,11 +1459,11 @@ export default function ControlPanel() {
             ]}
           >
             {busy ? (
-              <ActivityIndicator color={colors.onBrand} />
+              <ActivityIndicator color={colors.brand} />
             ) : (
-              <Ionicons name="sync" size={20} color={colors.onBrand} />
+              <Ionicons name="sync" size={18} color={colors.brand} />
             )}
-            <Text style={styles.syncBtnText}>SYNC SETTINGS</Text>
+            <Text style={styles.syncBtnText}>SYNC &amp; CONFIRM</Text>
           </Pressable>
         </View>
       </KeyboardStickyView>
@@ -1663,6 +1741,8 @@ export default function ControlPanel() {
         initialSsid={lastSsid}
         liveEnabled={isConnected}
         wifiStatus={wifiStatus}
+        themeId={themeId}
+        onSetTheme={setTheme}
       />
 
       {/* Device picker (multiple FlightWall- boards nearby) */}
@@ -1765,7 +1845,7 @@ function AvatarInput({
   maxLength,
   testID,
   onRemove,
-  badge,
+  warning,
 }: {
   label: string;
   value: string;
@@ -1775,35 +1855,14 @@ function AvatarInput({
   maxLength?: number;
   testID: string;
   onRemove?: () => void;
-  badge?: { bg: string; fg: string; known: boolean };
+  warning?: string;
 }) {
   const [focused, setFocused] = useState(false);
-  const initials = (value.trim() || placeholder)
-    .replace(/[^a-zA-Z0-9]/g, "")
-    .slice(0, 2)
-    .toUpperCase();
-  const hasValue = value.trim().length > 0;
 
   return (
     <View style={styles.field}>
       <Text style={styles.fieldLabel}>{label}</Text>
       <View style={[styles.inputRow, focused && styles.inputRowFocused]}>
-        <View
-          style={[
-            styles.avatar,
-            badge && hasValue && { backgroundColor: badge.bg },
-          ]}
-          testID={`${testID}-badge`}
-        >
-          <Text
-            style={[
-              styles.avatarText,
-              badge && hasValue && { color: badge.fg },
-            ]}
-          >
-            {initials || "--"}
-          </Text>
-        </View>
         <TextInput
           testID={testID}
           style={styles.input}
@@ -1835,6 +1894,16 @@ function AvatarInput({
           </Pressable>
         )}
       </View>
+      {warning ? (
+        <View style={styles.warnRow} testID={`${testID}-warning`}>
+          <Ionicons
+            name="alert-circle-outline"
+            size={13}
+            color={colors.warning}
+          />
+          <Text style={styles.warnText}>{warning}</Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -2228,7 +2297,8 @@ function formatSyncTime(iso: string): string {
 /* Styles                                                              */
 /* ------------------------------------------------------------------ */
 
-const styles = StyleSheet.create({
+const makeStyles = () =>
+  StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: colors.surface,
@@ -2804,6 +2874,18 @@ const styles = StyleSheet.create({
     fontSize: fontSize.base,
     letterSpacing: 0.5,
   },
+  warnRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: spacing.xs,
+    paddingLeft: 2,
+  },
+  warnText: {
+    color: colors.warning,
+    fontFamily: fonts.text,
+    fontSize: fontSize.sm,
+  },
   input: {
     flex: 1,
     color: colors.onSurface,
@@ -2823,17 +2905,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: spacing.sm,
-    backgroundColor: colors.brand,
+    backgroundColor: "transparent",
+    borderWidth: 1.5,
+    borderColor: colors.brand,
     borderRadius: radius.md,
-    paddingVertical: spacing.lg,
+    paddingVertical: spacing.md,
   },
   syncBtnBusy: {
     opacity: 0.7,
   },
   syncBtnText: {
-    color: colors.onBrand,
+    color: colors.brand,
     fontFamily: fonts.displayMedium,
-    fontSize: fontSize.lg,
+    fontSize: fontSize.base,
     letterSpacing: 1.5,
   },
   deviceRow: {
@@ -2915,4 +2999,9 @@ const styles = StyleSheet.create({
     fontFamily: fonts.textMedium,
     fontSize: fontSize.base,
   },
+  });
+
+let styles = makeStyles();
+onAccentChange(() => {
+  styles = makeStyles();
 });

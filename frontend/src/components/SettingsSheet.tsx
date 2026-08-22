@@ -18,6 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { colors, spacing, radius, fonts, fontSize } from "@/src/theme";
+import { onAccentChange, ACCENTS, type AccentId } from "@/src/theme";
 
 export type DisplayPatch = {
   wallName?: string;
@@ -104,6 +105,8 @@ export function SettingsSheet({
   initialSsid,
   liveEnabled,
   wifiStatus,
+  themeId,
+  onSetTheme,
 }: {
   visible: boolean;
   onClose: () => void;
@@ -137,6 +140,8 @@ export function SettingsSheet({
     state: "idle" | "waiting" | "connected" | "failed";
     ip?: string;
   };
+  themeId?: AccentId;
+  onSetTheme?: (id: AccentId) => void;
 }) {
   const insets = useSafeAreaInsets();
   const [wifiSsid, setWifiSsid] = useState(initialSsid ?? "");
@@ -409,6 +414,49 @@ export function SettingsSheet({
               </View>
             )}
           </View>
+          {/* Appearance / accent theme */}
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>APPEARANCE</Text>
+            <Text style={styles.hint}>Pick an accent color for the app.</Text>
+            <View style={styles.themeRow}>
+              {(Object.keys(ACCENTS) as AccentId[]).map((id) => {
+                const active = themeId === id;
+                return (
+                  <Pressable
+                    key={id}
+                    testID={`theme-${id}`}
+                    onPress={() => onSetTheme?.(id)}
+                    style={styles.themeItem}
+                  >
+                    <View
+                      style={[
+                        styles.themeSwatch,
+                        { backgroundColor: ACCENTS[id].brand },
+                        active && styles.themeSwatchActive,
+                      ]}
+                    >
+                      {active && (
+                        <Ionicons
+                          name="checkmark"
+                          size={18}
+                          color={ACCENTS[id].onBrand}
+                        />
+                      )}
+                    </View>
+                    <Text
+                      style={[
+                        styles.themeLabel,
+                        active && styles.themeLabelActive,
+                      ]}
+                    >
+                      {ACCENTS[id].label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+
           {/* Wi-Fi setup */}
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>WI-FI SETUP</Text>
@@ -515,7 +563,8 @@ export function SettingsSheet({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = () =>
+  StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: colors.surface,
@@ -768,4 +817,39 @@ const styles = StyleSheet.create({
     alignSelf: "flex-end",
     backgroundColor: colors.onBrand,
   },
+  themeRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: spacing.md,
+  },
+  themeItem: {
+    alignItems: "center",
+    gap: spacing.xs,
+  },
+  themeSwatch: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  themeSwatchActive: {
+    borderColor: colors.onSurface,
+  },
+  themeLabel: {
+    color: colors.onSurfaceSecondary,
+    fontFamily: fonts.text,
+    fontSize: fontSize.sm,
+  },
+  themeLabelActive: {
+    color: colors.onSurface,
+    fontFamily: fonts.textMedium,
+  },
+  });
+
+let styles = makeStyles();
+onAccentChange(() => {
+  styles = makeStyles();
 });

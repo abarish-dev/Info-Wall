@@ -60,3 +60,10 @@ Build a mobile app to control a smart LED matrix via Bluetooth. UI: prominent "C
 - [x] Team badges: each team abbreviation shows a colored badge in its official team color (`src/utils/teamColors.ts`, ~120 NFL/MLB/NBA/NHL teams mapped; unknown abbrevs get a deterministic color). Applied via a new `badge` prop on `AvatarInput`.
 - [x] Splash skip: tap anywhere on the LED intro to dismiss it instantly ("Tap to skip" hint).
 
+## Updates (2026-06, fork · round 3)
+- [x] Removed the two-letter initial avatars from team/show/ticker inputs (kept the icon avatar on Zip/Flight fields).
+- [x] Team-code validation: entering a code not in the built-in ~120 NFL/MLB/NBA/NHL abbreviation set shows an inline "Unrecognized code" warning (soft, non-blocking). Source: `src/utils/teamColors.ts` `getTeamBadge().known`.
+- [x] Full live sync (option B): added debounced live pushes for the remaining fields so the matrix always stays in sync while connected — `{command:"flight"}` (trackFlight + flightIdent), `{command:"weather"}` (showWeather + lat/lon), `{command:"zone"}` (trackingMode + polygon). Firmware must handle these commands.
+- [x] Sync button demoted to a smaller outlined "SYNC & CONFIRM" (it now mainly does the full write + read-back confirmation, since everything else pushes live).
+- [x] Accent themes: Settings → APPEARANCE lets the user pick Ember (orange), Azure (blue), Crimson (red), or Slate (gray). Implemented via runtime mutation of `colors` accent fields + a style-rebuild registry (`applyAccent`/`onAccentChange` in `theme.ts`); persisted as `theme_id_v1`. Applies app-wide (icons, sliders, toggles, buttons, borders).
+
