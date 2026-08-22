@@ -8,6 +8,9 @@ import {
   ActivityIndicator,
   Switch,
   ScrollView,
+  Modal,
+  Linking,
+  useWindowDimensions,
 } from "react-native";
 import Slider from "@react-native-community/slider";
 import { Image } from "expo-image";
@@ -76,6 +79,7 @@ const STATUS_META: Record<
 
 export default function ControlPanel() {
   const insets = useSafeAreaInsets();
+  const { width: winW } = useWindowDimensions();
   const toast = useToast();
 
   const [settings, setSettings] = useState<Settings>(DEFAULTS);
@@ -90,6 +94,7 @@ export default function ControlPanel() {
   const [geo, setGeo] = useState<GeoResult | null>(null);
   const [geoLoading, setGeoLoading] = useState(false);
   const [recentZips, setRecentZips] = useState<string[]>([]);
+  const [mapOpen, setMapOpen] = useState(false);
   const [lastSync, setLastSync] = useState<{
     at: string;
     summary: string;
@@ -264,6 +269,12 @@ export default function ControlPanel() {
     }
   };
 
+  const openInMaps = () => {
+    if (!geo) return;
+    const url = `https://www.openstreetmap.org/?mlat=${geo.lat}&mlon=${geo.lon}#map=13/${geo.lat}/${geo.lon}`;
+    Linking.openURL(url).catch(() => {});
+  };
+
   const handleFlash = async () => {
     if (flashing || !isConnected) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
@@ -366,6 +377,7 @@ export default function ControlPanel() {
   const zipComplete = zipTrimmed.length === 5;
   const previewPayload = buildBlePayload(settings, geo);
   const flightMissing = settings.trackFlight && !settings.flightIdent.trim();
+  const mapSize = Math.min(winW - spacing.lg * 4, 360);
 
   return (
     <View style={styles.root}>
@@ -637,7 +649,14 @@ export default function ControlPanel() {
           )}
 
           {settings.showWeather && zipComplete && !geoLoading && geo && (
-            <View style={styles.coordPreview} testID="coord-preview">
+            <Pressable
+              testID="coord-preview"
+              onPress={() => setMapOpen(true)}
+              style={({ pressed }) => [
+                styles.coordPreview,
+                pressed && styles.pressed,
+              ]}
+            >
               <Ionicons name="navigate" size={16} color={colors.brand} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.coordCity} numberOfLines={1}>
@@ -649,7 +668,8 @@ export default function ControlPanel() {
                   {geo.lat.toFixed(4)}, {geo.lon.toFixed(4)}
                 </Text>
               </View>
-            </View>
+              <Ionicons name="map" size={18} color={colors.info} />
+            </Pressable>
           )}
 
           {settings.showWeather && zipComplete && !geoLoading && !geo && (
@@ -818,6 +838,65 @@ export default function ControlPanel() {
           </Pressable>
         </View>
       </KeyboardStickyView>
+
+      {/* Map Peek */}
+      <Modal
+        visible={mapOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setMapOpen(false)}
+      >
+        <Pressable
+          style={styles.mapBackdrop}
+          onPress={() => setMapOpen(false)}
+          testID="map-backdrop"
+        >
+          <Pressable
+            style={[styles.mapCard, { paddingBottom: insets.bottom + spacing.lg }]}
+            onPress={() => {}}
+          >
+            <View style={styles.mapHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.mapTitle} numberOfLines={1}>
+                  {geo?.city}
+                  {geo?.state ? `, ${geo.state}` : ""}
+                </Text>
+                <Text style={styles.mapSub}>
+                  {geo ? `${geo.lat.toFixed(4)}, ${geo.lon.toFixed(4)}` : ""}
+                  {settings.zipCode ? ` · ${settings.zipCode}` : ""}
+                </Text>
+              </View>
+              <Pressable
+                testID="map-close"
+                onPress={() => setMapOpen(false)}
+                hitSlop={8}
+                style={styles.mapCloseBtn}
+              >
+                <Ionicons name="close" size={20} color={colors.onSurface} />
+              </Pressable>
+            </View>
+
+            {geo && (
+              <View style={styles.mapImageWrap}>
+                <TileMap lat={geo.lat} lon={geo.lon} size={mapSize} />
+              </View>
+            )}
+            <Text style={styles.mapAttribution}>Map data © OpenStreetMap</Text>
+
+            <Pressable
+              testID="open-in-maps"
+              onPress={openInMaps}
+              style={({ pressed }) => [
+                styles.mapOpenBtn,
+                pressed && styles.pressed,
+              ]}
+            >
+              <Ionicons name="open-outline" size={18} color={colors.onBrand} />
+              <Text style={styles.mapOpenText}>OPEN IN MAPS</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -1009,6 +1088,90 @@ function signalColor(rssi: number | null): string {
   if (rssi >= -60) return colors.success;
   if (rssi >= -80) return colors.warning;
   return colors.error;
+}
+
+// Renders a small OpenStreetMap tile grid (3x3) centered on lat/lon with an
+// accurate pin. Uses raw OSM tiles (key-less) instead of a static-map service.
+function lonLatToTileFrac(lon: number, lat: number, z: number) {
+  const n = Math.pow(2, z);
+  const x = ((lon + 180) / 360) * n;
+  const latRad = (lat * Math.PI) / 180;
+  const y =
+    ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n;
+  return { x, y };
+}
+
+function TileMap({
+  lat,
+  lon,
+  size,
+}: {
+  lat: number;
+  lon: number;
+  size: number;
+}) {
+  const z = 11;
+  const { x, y } = lonLatToTileFrac(lon, lat, z);
+  const xt = Math.floor(x);
+  const yt = Math.floor(y);
+  const fracX = x - xt;
+  const fracY = y - yt;
+  const S = size / 3;
+
+  const tiles: { i: number; j: number; uri: string }[] = [];
+  for (let j = 0; j < 3; j++) {
+    for (let i = 0; i < 3; i++) {
+      const tx = xt - 1 + i;
+      const ty = yt - 1 + j;
+      tiles.push({
+        i,
+        j,
+        uri: `https://tile.openstreetmap.org/${z}/${tx}/${ty}.png`,
+      });
+    }
+  }
+  const markerLeft = S + fracX * S;
+  const markerTop = S + fracY * S;
+
+  return (
+    <View
+      testID="map-image"
+      style={{
+        width: size,
+        height: size,
+        borderRadius: radius.md,
+        overflow: "hidden",
+        backgroundColor: colors.surfaceTertiary,
+      }}
+    >
+      {tiles.map((t) => (
+        <Image
+          key={`${t.i}-${t.j}`}
+          source={{ uri: t.uri }}
+          style={{
+            position: "absolute",
+            left: t.i * S,
+            top: t.j * S,
+            width: S,
+            height: S,
+          }}
+          contentFit="cover"
+          transition={150}
+        />
+      ))}
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          left: markerLeft,
+          top: markerTop,
+          transform: [{ translateX: -14 }, { translateY: -26 }],
+        }}
+      >
+        <Ionicons name="location" size={28} color={colors.brand} />
+      </View>
+    </View>
+  );
 }
 
 function formatSyncTime(iso: string): string {
@@ -1335,6 +1498,70 @@ const styles = StyleSheet.create({
     fontFamily: fonts.mono,
     fontSize: 12,
     lineHeight: 18,
+  },
+  mapBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    justifyContent: "flex-end",
+  },
+  mapCard: {
+    backgroundColor: colors.surfaceSecondary,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    padding: spacing.lg,
+    gap: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  mapHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  mapTitle: {
+    color: colors.onSurface,
+    fontFamily: fonts.displayMedium,
+    fontSize: fontSize.xl,
+    letterSpacing: 0.5,
+  },
+  mapSub: {
+    color: colors.info,
+    fontFamily: fonts.mono,
+    fontSize: fontSize.sm,
+    marginTop: 2,
+  },
+  mapCloseBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.sm,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.surfaceTertiary,
+  },
+  mapImageWrap: {
+    alignItems: "center",
+  },
+  mapAttribution: {
+    color: colors.info,
+    fontFamily: fonts.text,
+    fontSize: 10,
+    textAlign: "right",
+    marginTop: -spacing.xs,
+  },
+  mapOpenBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.sm,
+    backgroundColor: colors.brand,
+    borderRadius: radius.md,
+    paddingVertical: spacing.lg,
+  },
+  mapOpenText: {
+    color: colors.onBrand,
+    fontFamily: fonts.displayMedium,
+    fontSize: fontSize.lg,
+    letterSpacing: 1.2,
   },
   fieldLabel: {
     color: colors.onSurfaceSecondary,
