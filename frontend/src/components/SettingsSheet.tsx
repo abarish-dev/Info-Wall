@@ -2,7 +2,7 @@
 // an evening "Display schedule" that dims or blacks out the matrix during a
 // settable time range. State is owned by the main screen and passed in.
 
-import React from "react";
+import React, { useState } from "react";
 import {
   Modal,
   View,
@@ -99,6 +99,7 @@ export function SettingsSheet({
   onChange,
   onLiveBrightness,
   onLiveSchedule,
+  onSaveWifi,
   liveEnabled,
 }: {
   visible: boolean;
@@ -126,9 +127,12 @@ export function SettingsSheet({
     scheduleEnd: string;
     scheduleBrightness: number;
   }) => void;
+  onSaveWifi?: (ssid: string, password: string) => void;
   liveEnabled?: boolean;
 }) {
   const insets = useSafeAreaInsets();
+  const [wifiSsid, setWifiSsid] = useState("");
+  const [wifiPassword, setWifiPassword] = useState("");
   const dimLabel =
     scheduleBrightness === 0 ? "Display off" : `Dimmed to ${scheduleBrightness}%`;
 
@@ -396,6 +400,55 @@ export function SettingsSheet({
               </View>
             )}
           </View>
+          {/* Wi-Fi setup */}
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>WI-FI SETUP</Text>
+            <Text style={styles.hint}>
+              Provision the matrix onto your network over Bluetooth.
+            </Text>
+            <TextInput
+              testID="wifi-ssid-input"
+              style={styles.nameInput}
+              value={wifiSsid}
+              onChangeText={setWifiSsid}
+              placeholder="Wi-Fi SSID"
+              placeholderTextColor={colors.info}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <TextInput
+              testID="wifi-password-input"
+              style={styles.nameInput}
+              value={wifiPassword}
+              onChangeText={setWifiPassword}
+              placeholder="Wi-Fi Password"
+              placeholderTextColor={colors.info}
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <Pressable
+              testID="save-wifi-button"
+              onPress={() => onSaveWifi?.(wifiSsid, wifiPassword)}
+              style={({ pressed }) => [styles.wifiBtn, pressed && styles.pressed]}
+            >
+              <Ionicons name="wifi" size={18} color={colors.onBrand} />
+              <Text style={styles.wifiBtnText}>SAVE WI-FI TO MATRIX</Text>
+            </Pressable>
+            <View style={styles.liveRow}>
+              <View
+                style={[
+                  styles.liveDot,
+                  { backgroundColor: liveEnabled ? colors.success : colors.info },
+                ]}
+              />
+              <Text style={styles.hint}>
+                {liveEnabled
+                  ? "Connected — ready to send"
+                  : "Connect to the matrix first to send"}
+              </Text>
+            </View>
+          </View>
         </ScrollView>
       </View>
     </Modal>
@@ -467,6 +520,22 @@ const styles = StyleSheet.create({
     color: colors.onSurface,
     fontFamily: fonts.text,
     fontSize: fontSize.lg,
+  },
+  wifiBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.sm,
+    backgroundColor: colors.brand,
+    borderRadius: radius.md,
+    paddingVertical: spacing.lg,
+    marginTop: spacing.xs,
+  },
+  wifiBtnText: {
+    color: colors.onBrand,
+    fontFamily: fonts.displayMedium,
+    fontSize: fontSize.lg,
+    letterSpacing: 1.2,
   },
   profileRow: {
     gap: spacing.sm,

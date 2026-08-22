@@ -507,6 +507,26 @@ export default function ControlPanel() {
     toast.show("Payload JSON copied", "success");
   };
 
+  const handleSaveWifi = async (ssid: string, password: string) => {
+    if (!isConnected) {
+      toast.show("Connect to the matrix first", "error");
+      return;
+    }
+    if (!ssid.trim()) {
+      toast.show("Enter a Wi-Fi SSID", "error");
+      return;
+    }
+    try {
+      await writeLive({ command: "wifi", ssid: ssid.trim(), password });
+      toast.show(
+        "Wi-Fi credentials sent. Matrix is rebooting and connecting...",
+        "success",
+      );
+    } catch {
+      toast.show("Couldn't send Wi-Fi credentials", "error");
+    }
+  };
+
   const handleFlash = async () => {
     if (flashing || !isConnected) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
@@ -1420,6 +1440,7 @@ export default function ControlPanel() {
         onChange={patchSettings}
         onLiveBrightness={handleLiveBrightness}
         onLiveSchedule={handleLiveSchedule}
+        onSaveWifi={handleSaveWifi}
         liveEnabled={isConnected}
       />
     </View>

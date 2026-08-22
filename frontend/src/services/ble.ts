@@ -149,6 +149,10 @@ export async function connectToMatrix(
         }
         if (!device) return;
 
+        // Match FlightWall-<id> name prefix (in addition to the service UUID).
+        const nm = device.name ?? device.localName ?? "";
+        if (!nm.startsWith("FlightWall-")) return;
+
         settled = true;
         clearTimeout(timeout);
         bleManager.stopDeviceScan();
