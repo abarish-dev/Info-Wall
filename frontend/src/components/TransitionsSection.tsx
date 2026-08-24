@@ -21,6 +21,17 @@ import { colors, spacing, radius, fonts, fontSize } from "@/src/theme";
 import { useThemedStyles } from "@/src/hooks/useThemedStyles";
 import { Section, TextField } from "@/src/components/FormControls";
 
+const PRESETS: {
+  key: string;
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  fadeSpeed: number;
+  holdSeconds: number;
+}[] = [
+  { key: "calm", label: "Calm", icon: "leaf", fadeSpeed: 2, holdSeconds: 20 },
+  { key: "snappy", label: "Snappy", icon: "flash", fadeSpeed: 9, holdSeconds: 6 },
+];
+
 function fmtDate(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -45,6 +56,7 @@ export function TransitionsSection({
   countdownLabel,
   countdownDate,
   onChange,
+  defaultOpen = true,
 }: {
   fadeSpeed: number;
   holdSeconds: number;
@@ -62,6 +74,7 @@ export function TransitionsSection({
     countdownLabel?: string;
     countdownDate?: string;
   }) => void;
+  defaultOpen?: boolean;
 }) {
   const styles = useThemedStyles(makeStyles);
   const [showPicker, setShowPicker] = useState(false);
@@ -82,7 +95,45 @@ export function TransitionsSection({
       icon="film"
       title="DISPLAY & TRANSITIONS"
       subtitle="Timing and travel countdown"
+      defaultOpen={defaultOpen}
     >
+      {/* Quick presets */}
+      <View style={styles.presetRow}>
+        {PRESETS.map((p) => {
+          const active =
+            Math.round(fadeSpeed) === p.fadeSpeed &&
+            Math.round(holdSeconds) === p.holdSeconds;
+          return (
+            <Pressable
+              key={p.key}
+              testID={`preset-${p.key}`}
+              onPress={() =>
+                onChange({ fadeSpeed: p.fadeSpeed, holdSeconds: p.holdSeconds })
+              }
+              style={({ pressed }) => [
+                styles.presetChip,
+                active && styles.presetChipActive,
+                pressed && styles.pressed,
+              ]}
+            >
+              <Ionicons
+                name={p.icon}
+                size={14}
+                color={active ? colors.onBrand : colors.brand}
+              />
+              <Text
+                style={[
+                  styles.presetText,
+                  active && styles.presetTextActive,
+                ]}
+              >
+                {p.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
       {/* Hold duration */}
       <View style={styles.field}>
         <View style={styles.rowBetween}>
@@ -277,6 +328,34 @@ function ToggleRow({
 const makeStyles = () =>
   StyleSheet.create({
     field: { gap: spacing.sm },
+    presetRow: {
+      flexDirection: "row",
+      gap: spacing.sm,
+    },
+    presetChip: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.sm,
+      borderWidth: 1.5,
+      borderColor: colors.brand,
+      backgroundColor: "transparent",
+    },
+    presetChipActive: {
+      backgroundColor: colors.brand,
+    },
+    presetText: {
+      color: colors.brand,
+      fontFamily: fonts.displayMedium,
+      fontSize: fontSize.base,
+      letterSpacing: 0.5,
+    },
+    presetTextActive: {
+      color: colors.onBrand,
+    },
     subheader: {
       color: colors.brand,
       fontFamily: fonts.displayMedium,

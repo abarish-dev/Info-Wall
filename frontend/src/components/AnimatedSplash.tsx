@@ -5,13 +5,7 @@
 // Tap anywhere to skip the intro instantly.
 
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
-import {
-  StyleSheet,
-  View,
-  Text,
-  Pressable,
-  useWindowDimensions,
-} from "react-native";
+import { StyleSheet, View, Text, useWindowDimensions } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -83,14 +77,6 @@ export default function AnimatedSplash({ onDone }: { onDone: () => void }) {
     onDone();
   }, [onDone]);
 
-  const skip = useCallback(() => {
-    if (dondone.current) return;
-    fade.value = withTiming(0, { duration: 220 }, (done) => {
-      if (done) runOnJS(finish)();
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [finish]);
-
   useEffect(() => {
     progress.value = withTiming(1, {
       duration: 1100,
@@ -109,40 +95,28 @@ export default function AnimatedSplash({ onDone }: { onDone: () => void }) {
 
   return (
     <Animated.View
+      pointerEvents="none"
       style={[StyleSheet.absoluteFill, styles.root, containerStyle]}
     >
-      <Pressable
-        testID="splash-skip"
-        onPress={skip}
-        style={StyleSheet.absoluteFill}
-        android_disableSound
-      >
-        <View style={styles.center}>
-          <View style={[styles.board, { width: boardW }]}>
-            {pixels.map((p) => (
-              <Pixel
-                key={p.idx}
-                threshold={p.threshold}
-                progress={progress}
-                size={cell}
-              />
-            ))}
-          </View>
-          <Animated.View
-            entering={FadeIn.delay(850).duration(500)}
-            style={styles.wordmarkWrap}
-          >
-            <Ionicons name="grid" size={22} color={colors.brand} />
-            <Text style={styles.wordmark}>INFO WALL</Text>
-          </Animated.View>
-          <Animated.Text
-            entering={FadeIn.delay(1200).duration(400)}
-            style={styles.skipHint}
-          >
-            Tap to skip
-          </Animated.Text>
+      <View style={styles.center}>
+        <View style={[styles.board, { width: boardW }]}>
+          {pixels.map((p) => (
+            <Pixel
+              key={p.idx}
+              threshold={p.threshold}
+              progress={progress}
+              size={cell}
+            />
+          ))}
         </View>
-      </Pressable>
+        <Animated.View
+          entering={FadeIn.delay(850).duration(500)}
+          style={styles.wordmarkWrap}
+        >
+          <Ionicons name="grid" size={22} color={colors.brand} />
+          <Text style={styles.wordmark}>INFO WALL</Text>
+        </Animated.View>
+      </View>
     </Animated.View>
   );
 }
@@ -173,12 +147,5 @@ const styles = StyleSheet.create({
     fontFamily: fonts.displayMedium,
     fontSize: 26,
     letterSpacing: 4,
-  },
-  skipHint: {
-    color: colors.info,
-    fontFamily: fonts.text,
-    fontSize: 12,
-    letterSpacing: 1,
-    marginTop: 40,
   },
 });

@@ -1146,6 +1146,7 @@ export default function ControlPanel() {
           icon="navigate"
           title="PINNED FLIGHT"
           subtitle="Follow one flight live"
+          defaultOpen={false}
         >
           <View style={styles.toggleRow}>
             <View style={styles.toggleTextWrap}>
@@ -1319,6 +1320,7 @@ export default function ControlPanel() {
           icon="american-football"
           title="SPORTS"
           subtitle="Track your teams"
+          defaultOpen={false}
         >
           {settings.teams.map((team, i) => (
             <TextField
@@ -1351,7 +1353,12 @@ export default function ControlPanel() {
         </Section>
 
         {/* TV Shows */}
-        <Section icon="tv" title="TV SHOWS" subtitle="Your watchlist">
+        <Section
+          icon="tv"
+          title="TV SHOWS"
+          subtitle="Your watchlist"
+          defaultOpen={false}
+        >
           {settings.shows.map((show, i) => (
             <TextField
               key={`show-${i}`}
@@ -1380,6 +1387,7 @@ export default function ControlPanel() {
           icon="trending-up"
           title="FINANCIAL TICKERS"
           subtitle="Up to 8 stock / ETF symbols"
+          defaultOpen={false}
         >
           {settings.stocks.map((sym, i) => (
             <TextField
@@ -1400,6 +1408,7 @@ export default function ControlPanel() {
           icon="chatbox-ellipses"
           title="CUSTOM MESSAGE"
           subtitle="Show a 3-line note on the matrix"
+          defaultOpen={false}
         >
           <View style={styles.toggleRow}>
             <View style={styles.toggleTextWrap}>
@@ -1449,12 +1458,15 @@ export default function ControlPanel() {
           countdownLabel={settings.countdownLabel}
           countdownDate={settings.countdownDate}
           onChange={patchSettings}
+          defaultOpen={false}
         />
 
         {/* Sync Status / History */}
         <Section
           icon="time"
-          title="SYNC STATUS"          subtitle="Last push to the matrix"
+          title="SYNC STATUS"
+          subtitle="Last push to the matrix"
+          defaultOpen={false}
         >
           {lastSync ? (
             <View style={styles.syncHistory} testID="sync-history">
