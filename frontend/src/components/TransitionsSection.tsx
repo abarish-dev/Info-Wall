@@ -3,7 +3,15 @@
 // by the control panel and pushed live via the `transitions` BLE command.
 
 import React, { useState } from "react";
-import { View, Text, Platform, Pressable, TextInput, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  Platform,
+  Pressable,
+  TextInput,
+  Switch,
+  StyleSheet,
+} from "react-native";
 import Slider from "@react-native-community/slider";
 import DateTimePicker, {
   type DateTimePickerEvent,
@@ -31,17 +39,26 @@ function daysUntil(iso: string): number | null {
 export function TransitionsSection({
   fadeSpeed,
   holdSeconds,
+  showLKN,
+  showFolly,
+  showCountdown,
   countdownLabel,
   countdownDate,
   onChange,
 }: {
   fadeSpeed: number;
   holdSeconds: number;
+  showLKN: boolean;
+  showFolly: boolean;
+  showCountdown: boolean;
   countdownLabel: string;
   countdownDate: string;
   onChange: (patch: {
     fadeSpeed?: number;
     holdSeconds?: number;
+    showLKN?: boolean;
+    showFolly?: boolean;
+    showCountdown?: boolean;
     countdownLabel?: string;
     countdownDate?: string;
   }) => void;
@@ -116,86 +133,167 @@ export function TransitionsSection({
 
       <View style={styles.divider} />
 
-      {/* Countdown label */}
-      <TextField
-        testID="countdown-label-input"
-        label="Event Name"
-        value={countdownLabel}
-        placeholder="e.g. BALTIC CRUISE"
-        autoCapitalize="characters"
-        maxLength={20}
-        onChangeText={(t) => onChange({ countdownLabel: t })}
+      {/* Module visibility */}
+      <Text style={styles.subheader}>MODULE VISIBILITY</Text>
+      <ToggleRow
+        testID="toggle-lkn"
+        label="Lake Norman Marine"
+        value={showLKN}
+        onValueChange={(v) => onChange({ showLKN: v })}
+        styles={styles}
+      />
+      <ToggleRow
+        testID="toggle-folly"
+        label="Folly Beach Tides"
+        value={showFolly}
+        onValueChange={(v) => onChange({ showFolly: v })}
+        styles={styles}
+      />
+      <ToggleRow
+        testID="toggle-countdown"
+        label="Travel Countdown"
+        value={showCountdown}
+        onValueChange={(v) => onChange({ showCountdown: v })}
+        styles={styles}
       />
 
-      {/* Departure date */}
-      <View style={styles.field}>
-        <Text style={styles.fieldLabel}>Departure Date</Text>
-        {Platform.OS === "web" ? (
-          <View style={styles.inputRow}>
-            <View style={styles.dateIcon}>
-              <Ionicons name="calendar" size={18} color={colors.brand} />
-            </View>
-            <TextInput
-              testID="countdown-date-input"
-              style={styles.input}
-              value={countdownDate}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor={colors.info}
-              onChangeText={(t) =>
-                onChange({ countdownDate: t.replace(/[^0-9-]/g, "").slice(0, 10) })
-              }
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </View>
-        ) : (
-          <Pressable
-            testID="countdown-date-button"
-            onPress={() => setShowPicker(true)}
-            style={({ pressed }) => [styles.inputRow, pressed && styles.pressed]}
-          >
-            <View style={styles.dateIcon}>
-              <Ionicons name="calendar" size={18} color={colors.brand} />
-            </View>
-            <Text
-              style={[
-                styles.input,
-                { paddingVertical: spacing.sm },
-                !countdownDate && { color: colors.info },
-              ]}
-            >
-              {countdownDate || "Select a date"}
-            </Text>
-          </Pressable>
-        )}
-        {showPicker && Platform.OS !== "web" && (
-          <DateTimePicker
-            value={dateObj}
-            mode="date"
-            display="default"
-            onChange={onPickerChange}
+      {showCountdown && (
+        <>
+          <View style={styles.divider} />
+          <Text style={styles.subheader}>TRAVEL COUNTDOWN</Text>
+
+          {/* Countdown label */}
+          <TextField
+            testID="countdown-label-input"
+            label="Event Name"
+            value={countdownLabel}
+            placeholder="e.g. BALTIC CRUISE"
+            autoCapitalize="characters"
+            maxLength={20}
+            onChangeText={(t) => onChange({ countdownLabel: t })}
           />
-        )}
-        {remaining != null && (
-          <View style={styles.countdownRow} testID="countdown-preview">
-            <Ionicons name="time" size={13} color={colors.brand} />
-            <Text style={styles.countdownText}>
-              {remaining > 0
-                ? `${remaining} day${remaining === 1 ? "" : "s"} to go`
-                : remaining === 0
-                  ? "Today!"
-                  : "Date has passed"}
-            </Text>
+
+          {/* Departure date */}
+          <View style={styles.field}>
+            <Text style={styles.fieldLabel}>Departure Date</Text>
+            {Platform.OS === "web" ? (
+              <View style={styles.inputRow}>
+                <View style={styles.dateIcon}>
+                  <Ionicons name="calendar" size={18} color={colors.brand} />
+                </View>
+                <TextInput
+                  testID="countdown-date-input"
+                  style={styles.input}
+                  value={countdownDate}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor={colors.info}
+                  onChangeText={(t) =>
+                    onChange({
+                      countdownDate: t.replace(/[^0-9-]/g, "").slice(0, 10),
+                    })
+                  }
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
+            ) : (
+              <Pressable
+                testID="countdown-date-button"
+                onPress={() => setShowPicker(true)}
+                style={({ pressed }) => [
+                  styles.inputRow,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <View style={styles.dateIcon}>
+                  <Ionicons name="calendar" size={18} color={colors.brand} />
+                </View>
+                <Text
+                  style={[
+                    styles.input,
+                    { paddingVertical: spacing.sm },
+                    !countdownDate && { color: colors.info },
+                  ]}
+                >
+                  {countdownDate || "Select a date"}
+                </Text>
+              </Pressable>
+            )}
+            {showPicker && Platform.OS !== "web" && (
+              <DateTimePicker
+                value={dateObj}
+                mode="date"
+                display="default"
+                onChange={onPickerChange}
+              />
+            )}
+            {remaining != null && (
+              <View style={styles.countdownRow} testID="countdown-preview">
+                <Ionicons name="time" size={13} color={colors.brand} />
+                <Text style={styles.countdownText}>
+                  {remaining > 0
+                    ? `${remaining} day${remaining === 1 ? "" : "s"} to go`
+                    : remaining === 0
+                      ? "Today!"
+                      : "Date has passed"}
+                </Text>
+              </View>
+            )}
           </View>
-        )}
-      </View>
+        </>
+      )}
     </Section>
+  );
+}
+
+function ToggleRow({
+  label,
+  value,
+  onValueChange,
+  testID,
+  styles,
+}: {
+  label: string;
+  value: boolean;
+  onValueChange: (v: boolean) => void;
+  testID: string;
+  styles: ReturnType<typeof makeStyles>;
+}) {
+  return (
+    <View style={styles.switchRow}>
+      <Text style={styles.switchLabel}>{label}</Text>
+      <Switch
+        testID={testID}
+        value={value}
+        onValueChange={onValueChange}
+        trackColor={{ false: colors.surfaceTertiary, true: colors.brand }}
+        thumbColor={colors.onSurface}
+        ios_backgroundColor={colors.surfaceTertiary}
+      />
+    </View>
   );
 }
 
 const makeStyles = () =>
   StyleSheet.create({
     field: { gap: spacing.sm },
+    subheader: {
+      color: colors.brand,
+      fontFamily: fonts.displayMedium,
+      fontSize: fontSize.sm,
+      letterSpacing: 1.5,
+    },
+    switchRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    switchLabel: {
+      flex: 1,
+      color: colors.onSurface,
+      fontFamily: fonts.textMedium,
+      fontSize: fontSize.base,
+    },
     rowBetween: {
       flexDirection: "row",
       alignItems: "center",

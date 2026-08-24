@@ -120,6 +120,9 @@ const DEFAULTS = {
   shows: ["Shrinking", "Emily in Paris", "Ted Lasso"],
   fadeSpeed: 5,
   holdSeconds: 12,
+  showLKN: true,
+  showFolly: true,
+  showCountdown: true,
   countdownLabel: "",
   countdownDate: "",
 };
@@ -148,6 +151,9 @@ type Settings = {
   shows: string[];
   fadeSpeed: number;
   holdSeconds: number;
+  showLKN: boolean;
+  showFolly: boolean;
+  showCountdown: boolean;
   countdownLabel: string;
   countdownDate: string;
 };
@@ -440,6 +446,9 @@ export default function ControlPanel() {
         command: "transitions",
         fadeSpeed: Math.round(settings.fadeSpeed),
         holdDurationMs: Math.round(settings.holdSeconds * 1000),
+        showLKN: settings.showLKN,
+        showFolly: settings.showFolly,
+        showCountdown: settings.showCountdown,
         countdownLabel: settings.countdownLabel.trim(),
         countdownDate: settings.countdownDate,
       }).catch(() => {});
@@ -448,6 +457,9 @@ export default function ControlPanel() {
   }, [
     settings.fadeSpeed,
     settings.holdSeconds,
+    settings.showLKN,
+    settings.showFolly,
+    settings.showCountdown,
     settings.countdownLabel,
     settings.countdownDate,
     status,
@@ -1431,6 +1443,9 @@ export default function ControlPanel() {
         <TransitionsSection
           fadeSpeed={settings.fadeSpeed}
           holdSeconds={settings.holdSeconds}
+          showLKN={settings.showLKN}
+          showFolly={settings.showFolly}
+          showCountdown={settings.showCountdown}
           countdownLabel={settings.countdownLabel}
           countdownDate={settings.countdownDate}
           onChange={patchSettings}

@@ -74,4 +74,5 @@ Build a mobile app to control a smart LED matrix via Bluetooth. UI: prominent "C
 
 ## Updates (2026-06, fork · round 5)
 - [x] Display & Transitions + Travel Countdown (user's Gemini spec, restyled to Info Wall theme). New `src/components/TransitionsSection.tsx`: Screen Hold slider (3–45s), Fade Speed slider (1–10), Event Name, Departure Date (native `@react-native-community/datetimepicker`; web uses a YYYY-MM-DD text fallback) + live "days to go" preview. Settings fields `fadeSpeed/holdSeconds/countdownLabel/countdownDate` persist. Pushes live when connected as `{command:"transitions", fadeSpeed, holdDurationMs, countdownLabel, countdownDate}` (added to FIRMWARE_BLE_SPEC.md). Installed `@react-native-community/datetimepicker@8.4.4` (native module — date picker needs a dev/prod build, not Expo Go).
+- [x] Transitions round 2: added a "Module Visibility" subsection with 3 toggles — `showLKN` (Lake Norman Marine), `showFolly` (Folly Beach Tides), `showCountdown` (Travel Countdown). Turning off Travel Countdown hides the event-name/date fields. All three booleans added to the live `transitions` payload and to FIRMWARE_BLE_SPEC.md.
 
