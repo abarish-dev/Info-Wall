@@ -12,9 +12,11 @@ import {
   ScrollView,
   TextInput,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import Slider from "@react-native-community/slider";
 import { Ionicons } from "@expo/vector-icons";
+import Constants from "expo-constants";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { colors, spacing, radius, fonts, fontSize } from "@/src/theme";
@@ -559,6 +561,19 @@ export function SettingsSheet({
               </View>
             )}
           </View>
+
+          {/* App version footer */}
+          <View style={styles.versionRow} testID="app-version">
+            <Ionicons name="hardware-chip-outline" size={14} color={colors.info} />
+            <Text style={styles.versionText}>
+              Info Wall v{Constants.expoConfig?.version ?? "1.0.0"} ·{" "}
+              {Platform.OS === "ios"
+                ? "iOS"
+                : Platform.OS === "android"
+                  ? "Android"
+                  : "Web"}
+            </Text>
+          </View>
         </ScrollView>
       </View>
     </Modal>
@@ -818,6 +833,20 @@ const makeStyles = () =>
   switchThumbOn: {
     alignSelf: "flex-end",
     backgroundColor: colors.onBrand,
+  },
+  versionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
+  },
+  versionText: {
+    color: colors.info,
+    fontFamily: fonts.text,
+    fontSize: fontSize.sm,
+    letterSpacing: 0.3,
   },
   themeRow: {
     flexDirection: "row",

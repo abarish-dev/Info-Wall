@@ -79,4 +79,6 @@ Build a mobile app to control a smart LED matrix via Bluetooth. UI: prominent "C
 - [x] Start-collapsed defaults: Flight Tracking + Weather open on load; Pinned Flight, Sports, TV Shows, Financial Tickers, Custom Message, Display & Transitions, and Sync Status default collapsed (`defaultOpen={false}`) for a tidy first view.
 - [x] Transition presets: "Calm" (fade 2 / hold 20s) and "Snappy" (fade 9 / hold 6s) one-tap chips at the top of Display & Transitions; the matching chip highlights when current values equal a preset.
 - [x] Removed the splash "Tap to skip" affordance (intro is short); `AnimatedSplash` now just auto-fades with no Pressable/hint.
+- [x] App version footer in Settings: bottom of the settings sheet shows `Info Wall v{version} · {platform}` (version from `app.json` via `expo-constants`), so it's easy to see which build is on the phone.
+- [x] Firmware starter delivered at `/app/firmware/` (PlatformIO/Arduino: platformio.ini, include/BLEController.h, src/main.cpp, README.md) — parses every BLE command in FIRMWARE_BLE_SPEC.md. Also corrected the spec: ESP32 receives RAW JSON (no base64 decode).
 
