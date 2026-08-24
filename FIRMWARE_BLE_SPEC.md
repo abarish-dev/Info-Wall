@@ -5,8 +5,12 @@ BLE service/characteristic (unchanged):
 - Characteristic UUID: `beb5483e-36e1-4688-b7f5-ea07361b26a8`
 - Advertise a name starting with `FlightWall-` (the app scans by this prefix).
 
-The app always writes a **UTF-8 JSON string, base64-encoded**, to the characteristic.
-Your firmware should base64-decode the value, then `JSON.parse` it.
+The app always writes a **UTF-8 JSON string** to the characteristic.
+(The React Native side base64-encodes it only because the BLE library's JS API
+requires that; react-native-ble-plx decodes it back to raw bytes before it goes
+over the air.) **Your ESP32 receives raw JSON bytes — just read the value and
+`deserializeJson` it directly. Do NOT base64-decode.** Likewise, when you notify
+back, send a plain JSON string (the app base64-decodes it on its side).
 
 There are two kinds of writes:
 
