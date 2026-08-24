@@ -2084,13 +2084,6 @@ const makeStyles = () =>
     fontSize: 10,
     letterSpacing: 1,
   },
-  heroSubtitle: {
-    color: colors.onSurfaceSecondary,
-    fontFamily: fonts.text,
-    fontSize: fontSize.base,
-    marginTop: spacing.lg,
-    marginBottom: spacing.md,
-  },
   bleHint: {
     color: colors.info,
     fontFamily: fonts.text,
