@@ -48,6 +48,7 @@ import {
   signalColor,
   lonLatToTileFrac,
 } from "@/src/components/MatrixMap";
+import { TransitionsSection } from "@/src/components/TransitionsSection";
 import {
   connectToKnownDevice,
   scanForDevices,
@@ -117,6 +118,10 @@ const DEFAULTS = {
   scheduleBrightness: 40,
   teams: ["NYY", "CAR"],
   shows: ["Shrinking", "Emily in Paris", "Ted Lasso"],
+  fadeSpeed: 5,
+  holdSeconds: 12,
+  countdownLabel: "",
+  countdownDate: "",
 };
 
 type Settings = {
@@ -141,6 +146,10 @@ type Settings = {
   scheduleBrightness: number;
   teams: string[];
   shows: string[];
+  fadeSpeed: number;
+  holdSeconds: number;
+  countdownLabel: string;
+  countdownDate: string;
 };
 
 const MAX_ROWS = 8;
@@ -422,6 +431,27 @@ export default function ControlPanel() {
     }, 800);
     return () => clearTimeout(t);
   }, [settings.trackingMode, settings.polygon, status]);
+
+  // Live push of display transitions + travel countdown (debounced).
+  useEffect(() => {
+    if (status !== "connected") return;
+    const t = setTimeout(() => {
+      writeLive({
+        command: "transitions",
+        fadeSpeed: Math.round(settings.fadeSpeed),
+        holdDurationMs: Math.round(settings.holdSeconds * 1000),
+        countdownLabel: settings.countdownLabel.trim(),
+        countdownDate: settings.countdownDate,
+      }).catch(() => {});
+    }, 800);
+    return () => clearTimeout(t);
+  }, [
+    settings.fadeSpeed,
+    settings.holdSeconds,
+    settings.countdownLabel,
+    settings.countdownDate,
+    status,
+  ]);
 
 
   // Load remembered Wi-Fi SSID (password never stored).
@@ -1398,11 +1428,18 @@ export default function ControlPanel() {
           />
         </Section>
 
+        <TransitionsSection
+          fadeSpeed={settings.fadeSpeed}
+          holdSeconds={settings.holdSeconds}
+          countdownLabel={settings.countdownLabel}
+          countdownDate={settings.countdownDate}
+          onChange={patchSettings}
+        />
+
         {/* Sync Status / History */}
         <Section
           icon="time"
-          title="SYNC STATUS"
-          subtitle="Last push to the matrix"
+          title="SYNC STATUS"          subtitle="Last push to the matrix"
         >
           {lastSync ? (
             <View style={styles.syncHistory} testID="sync-history">

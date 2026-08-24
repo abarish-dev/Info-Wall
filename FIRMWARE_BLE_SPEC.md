@@ -63,6 +63,7 @@ area (debounced ~0.8s). Handle each `command`:
 { "command": "zone", "trackingMode": "polygon", "polygon": [[lat,lon],...] }
 { "command": "flash_test", "ts": 1719000000000 }
 { "command": "wifi", "ssid": "MyNetwork", "password": "secret" }
+{ "command": "transitions", "fadeSpeed": 5, "holdDurationMs": 12000, "countdownLabel": "BALTIC CRUISE", "countdownDate": "2026-09-14" }
 ```
 
 Notes:

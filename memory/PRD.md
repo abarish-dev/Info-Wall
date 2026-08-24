@@ -72,3 +72,6 @@ Build a mobile app to control a smart LED matrix via Bluetooth. UI: prominent "C
 - [x] Removed the redundant hero subtitle "Configure and push live settings to your LED matrix." (status pill + title already convey this; frees vertical space).
 - [x] Added `/app/FIRMWARE_BLE_SPEC.md` — the exact ESP32/VS Code BLE contract (full sync payload keys, all live commands, and the new Wi-Fi status notification format). Implemented via runtime mutation of `colors` accent fields + a style-rebuild registry (`applyAccent`/`onAccentChange` in `theme.ts`); persisted as `theme_id_v1`. Applies app-wide (icons, sliders, toggles, buttons, borders).
 
+## Updates (2026-06, fork · round 5)
+- [x] Display & Transitions + Travel Countdown (user's Gemini spec, restyled to Info Wall theme). New `src/components/TransitionsSection.tsx`: Screen Hold slider (3–45s), Fade Speed slider (1–10), Event Name, Departure Date (native `@react-native-community/datetimepicker`; web uses a YYYY-MM-DD text fallback) + live "days to go" preview. Settings fields `fadeSpeed/holdSeconds/countdownLabel/countdownDate` persist. Pushes live when connected as `{command:"transitions", fadeSpeed, holdDurationMs, countdownLabel, countdownDate}` (added to FIRMWARE_BLE_SPEC.md). Installed `@react-native-community/datetimepicker@8.4.4` (native module — date picker needs a dev/prod build, not Expo Go).
+
