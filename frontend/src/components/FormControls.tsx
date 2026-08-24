@@ -4,27 +4,61 @@
 // themed StyleSheet via useThemedStyles so it follows the active accent.
 
 import React, { useState } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  StyleSheet,
+  LayoutAnimation,
+  Platform,
+  UIManager,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { colors, spacing, radius, fonts, fontSize } from "@/src/theme";
 import { useThemedStyles } from "@/src/hooks/useThemedStyles";
+
+if (
+  Platform.OS === "android" &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export function Section({
   icon,
   title,
   subtitle,
   children,
+  defaultOpen = true,
+  testID,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
   subtitle: string;
   children: React.ReactNode;
+  defaultOpen?: boolean;
+  testID?: string;
 }) {
   const styles = useThemedStyles(makeStyles);
+  const [open, setOpen] = useState(defaultOpen);
+  const toggle = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setOpen((o) => !o);
+    Haptics.selectionAsync().catch(() => {});
+  };
   return (
     <View style={styles.section}>
-      <View style={styles.sectionHeader}>
+      <Pressable
+        testID={testID ?? `section-${title}`}
+        onPress={toggle}
+        style={({ pressed }) => [
+          styles.sectionHeader,
+          !open && styles.sectionHeaderClosed,
+          pressed && styles.pressed,
+        ]}
+      >
         <View style={styles.sectionIcon}>
           <Ionicons name={icon} size={18} color={colors.brand} />
         </View>
@@ -32,8 +66,13 @@ export function Section({
           <Text style={styles.sectionTitle}>{title}</Text>
           <Text style={styles.sectionSubtitle}>{subtitle}</Text>
         </View>
-      </View>
-      <View style={styles.sectionBody}>{children}</View>
+        <Ionicons
+          name={open ? "chevron-up" : "chevron-down"}
+          size={20}
+          color={colors.info}
+        />
+      </Pressable>
+      {open && <View style={styles.sectionBody}>{children}</View>}
     </View>
   );
 }
@@ -203,6 +242,9 @@ const makeStyles = () =>
       alignItems: "center",
       gap: spacing.md,
       marginBottom: spacing.lg,
+    },
+    sectionHeaderClosed: {
+      marginBottom: 0,
     },
     sectionIcon: {
       width: 36,
