@@ -101,3 +101,69 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+## user_problem_statement: "Info Wall BLE LED matrix controller — add Planes Overhead live nearby-flights, live Matrix Preview, Auto-Countdown Clear, and ESP32 firmware draw code."
+
+## backend:
+##   - task: "GET /api/flights/nearby — live aircraft via adsb.lol proxy + airline logo resolution"
+##     implemented: true
+##     working: true
+##     file: "backend/server.py, backend/airlines.py"
+##     stuck_count: 0
+##     priority: "high"
+##     needs_retesting: true
+##     status_history:
+##       - working: true
+##         agent: "main"
+##         comment: "New endpoint proxies adsb.lol /v2/lat/{lat}/lon/{lon}/dist/{nm}. Converts radius miles->nm, resolves 3-letter ICAO callsign prefix to airline name + gstatic IATA logo url, sorts by distance, returns top 15. Verified via curl near JFK (66 flights, logos 200 OK)."
+
+## frontend:
+##   - task: "Planes Overhead section — live nearby flights card with airline logos"
+##     implemented: true
+##     working: true
+##     file: "frontend/src/components/PlanesOverhead.tsx, frontend/src/services/flights.ts, frontend/app/index.tsx"
+##     stuck_count: 0
+##     priority: "high"
+##     needs_retesting: true
+##     status_history:
+##       - working: true
+##         agent: "main"
+##         comment: "Section uses resolved Weather zip coords + search radius. Auto-refresh 25s, refresh button, logo fallback to airplane icon, empty/error/no-location states. Smoke-verified: reached feed near Mooresville (empty at 3mi = correct empty state)."
+##   - task: "Live Matrix Preview — settings-driven auto-cycling frames"
+##     implemented: true
+##     working: true
+##     file: "frontend/app/matrix-preview.tsx, frontend/app/index.tsx (preview-button)"
+##     stuck_count: 0
+##     priority: "medium"
+##     needs_retesting: true
+##     status_history:
+##       - working: true
+##         agent: "main"
+##         comment: "Reads matrix_settings_v2, builds frames only for enabled modules, cycles with hold/fade timing, honors brightness dimming + pin. Play/pause + prev/next + dots. Opened via tv icon in hero. Smoke-verified: 6 frames incl Mooresville weather."
+##   - task: "Auto-Countdown Clear — clears travel countdown after trip date passes"
+##     implemented: true
+##     working: true
+##     file: "frontend/app/index.tsx"
+##     stuck_count: 0
+##     priority: "low"
+##     needs_retesting: true
+##     status_history:
+##       - working: true
+##         agent: "main"
+##         comment: "Effect on hydrate + countdownDate change: if days-remaining < 0, clears countdownDate + countdownLabel and shows an info toast."
+
+## metadata:
+##   created_by: "main_agent"
+##   version: "1.1"
+##   test_sequence: 1
+
+## test_plan:
+##   current_focus:
+##     - "GET /api/flights/nearby — live aircraft via adsb.lol proxy + airline logo resolution"
+##     - "Planes Overhead section — live nearby flights card with airline logos"
+##   stuck_tasks: []
+##   test_all: false
+##   test_priority: "high_first"
+
+## agent_communication:
+##   - agent: "main"
+##     message: "Added Planes Overhead (new backend endpoint + frontend card), Live Matrix Preview, Auto-Countdown Clear, and fleshed out ESP32 firmware (not testable here). Please test the backend endpoint thoroughly (valid coords, busy area like JFK 40.6413/-73.7781 radius 25, invalid coords, radius clamping) and the frontend Planes Overhead + Preview flows. BLE is mocked in preview (native-only) — do not test BLE connect."

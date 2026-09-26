@@ -51,6 +51,7 @@ import {
 } from "@/src/components/MatrixMap";
 import { TransitionsSection } from "@/src/components/TransitionsSection";
 import { TeamRows } from "@/src/components/TeamPicker";
+import { PlanesOverhead } from "@/src/components/PlanesOverhead";
 import {
   connectToKnownDevice,
   scanForDevices,
@@ -68,6 +69,7 @@ import { geocodeZip, type GeoResult } from "@/src/services/geocode";
 import { buildBlePayload } from "@/src/services/payload";
 import { SettingsSheet } from "@/src/components/SettingsSheet";
 import * as Clipboard from "expo-clipboard";
+import { useRouter } from "expo-router";
 
 const STORAGE_KEY = "matrix_settings_v2";
 const RECENT_ZIPS_KEY = "recent_zips_v1";
@@ -82,6 +84,7 @@ type SectionKey =
   | "flight"
   | "pinned"
   | "weather"
+  | "planes"
   | "sports"
   | "tv"
   | "stocks"
@@ -93,6 +96,7 @@ const SECTION_DEFAULT_OPEN: Record<SectionKey, boolean> = {
   flight: true,
   pinned: false,
   weather: true,
+  planes: false,
   sports: false,
   tv: false,
   stocks: false,
@@ -200,6 +204,7 @@ export default function ControlPanel() {
   const insets = useSafeAreaInsets();
   const { width: winW } = useWindowDimensions();
   const toast = useToast();
+  const router = useRouter();
 
   const [settings, setSettings] = useState<Settings>(DEFAULTS);
   const [hydrated, setHydrated] = useState(false);
@@ -357,6 +362,23 @@ export default function ControlPanel() {
       return next;
     });
   }, [settings, hydrated, activeId]);
+
+  // Auto-clear a travel countdown once the trip date has passed (checked on
+  // launch and whenever the date changes) so old events never linger.
+  useEffect(() => {
+    if (!hydrated) return;
+    const d = settings.countdownDate;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
+    const target = new Date(d + "T00:00:00");
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const days = Math.round((target.getTime() - today.getTime()) / 86400000);
+    if (days < 0) {
+      setSettings((s) => ({ ...s, countdownDate: "", countdownLabel: "" }));
+      toast.show("Travel countdown cleared — the trip has passed", "info");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, settings.countdownDate]);
 
   // Load recent zips + last sync record once.
   useEffect(() => {
@@ -1001,6 +1023,14 @@ export default function ControlPanel() {
               {(settings.wallName || "Info Wall").toUpperCase()}
             </Text>
             <Pressable
+              testID="preview-button"
+              onPress={() => router.push("/matrix-preview")}
+              hitSlop={8}
+              style={({ pressed }) => [styles.gearBtn, pressed && styles.pressed]}
+            >
+              <Ionicons name="tv-outline" size={18} color={colors.onSurface} />
+            </Pressable>
+            <Pressable
               testID="settings-button"
               onPress={() => setSettingsOpen(true)}
               hitSlop={8}
@@ -1402,6 +1432,16 @@ export default function ControlPanel() {
             </View>
           )}
         </Section>
+
+        {/* Planes Overhead */}
+        <PlanesOverhead
+          lat={geo?.lat ?? null}
+          lon={geo?.lon ?? null}
+          radiusMiles={settings.searchRadius}
+          locationLabel={geo ? `${geo.city}${geo.state ? `, ${geo.state}` : ""}` : undefined}
+          open={sectionOpen.planes}
+          onToggle={() => toggleSection("planes")}
+        />
 
         {/* Sports */}
         <Section

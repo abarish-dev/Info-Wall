@@ -52,6 +52,12 @@ struct MatrixSettings {
   String countdownLabel = "";
   String countdownDate  = "";         // "YYYY-MM-DD"
 
+  // Custom 3-line message
+  bool  showCustomMessage = false;
+  String msgLine1       = "";
+  String msgLine2       = "";
+  String msgLine3       = "";
+
   // Content
   String teams[8];
   String shows[8];
@@ -70,6 +76,7 @@ class BLEController {
   // Set by the characteristic callback; call in loop() to run Wi-Fi joins
   // outside the BLE callback context.
   volatile bool wifiRequested = false;
+  volatile bool flashRequested = false;
   String pendingSsid;
   String pendingPass;
 
@@ -199,7 +206,10 @@ inline void BLEController::handleJson(const String &raw) {
 
   } else if (strcmp(cmd, "message") == 0) {
     // { showCustomMessage, line1, line2, line3 }
-    // TODO: store/draw the custom message lines.
+    g_settings.showCustomMessage = doc["showCustomMessage"] | g_settings.showCustomMessage;
+    g_settings.msgLine1 = (const char *)(doc["line1"] | g_settings.msgLine1.c_str());
+    g_settings.msgLine2 = (const char *)(doc["line2"] | g_settings.msgLine2.c_str());
+    g_settings.msgLine3 = (const char *)(doc["line3"] | g_settings.msgLine3.c_str());
 
   } else if (strcmp(cmd, "flight") == 0) {
     g_settings.trackFlight = doc["trackFlight"] | g_settings.trackFlight;
@@ -224,7 +234,8 @@ inline void BLEController::handleJson(const String &raw) {
     g_settings.countdownDate  = (const char *)(doc["countdownDate"]  | g_settings.countdownDate.c_str());
 
   } else if (strcmp(cmd, "flash_test") == 0) {
-    // TODO: flash a quick test pattern so the user can confirm the link.
+    // Ask loop() to flash a quick RGB test pattern (confirms the link).
+    flashRequested = true;
 
   } else if (strcmp(cmd, "wifi") == 0) {
     // Defer the actual join to loop() (don't block the BLE callback).

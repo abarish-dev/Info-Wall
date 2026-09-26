@@ -1,0 +1,49 @@
+{
+  "summary": "PASS. GET /api/flights/nearby + Planes Overhead + Matrix Preview all work end-to-end. Backend: 9/9 pytest cases pass against the public URL. Near-JFK (40.6413,-73.7781, r=25mi) returns valid shape {count, flights, center, radiusMiles}, every flight has a non-empty callsign, resolved airlines produce the exact gstatic 70px logo URL for their IATA, list is sorted by distance ascending, and is capped at 15 (with count >= len(flights)). Radius clamping verified: radius=1000mi still returns 200 (nm clamped to 250) and radius=0.5mi still returns 200 (nm clamped to 1). Low-traffic coord lat=0&lon=0 returns 200 with an empty/small array — no 5xx. Validation: missing lat, missing lon, and non-numeric lat all return 422 from FastAPI as expected. One transient 502 was observed on the huge-radius call on the first pass — root cause was an adsb.lol 429 rate-limit (backend logs: 'adsb.lol fetch failed: 429 Client Error') which the backend correctly surfaces as HTTP 502; re-run after ~30s cool-down passed. Frontend (390x844 mobile viewport): app loads, preview-button (tv icon) visible in header, EXPAND ALL tapped and PLANES OVERHEAD section renders with planes-refresh. With default zip 28117 the section resolves to Mooresville, NC and fetches live flights from our proxy — planes-list rendered a real flight (N1664F · C172 · 2,200 ft · 1.9 mi · ENE) and 'Updated just now · auto-refreshes every 25s' is shown. planes-refresh tap works without error. preview-button navigates to /matrix-preview which shows 'frame 1 of 6' with all four expected testIDs (preview-back, preview-playpause, preview-prev, preview-next); PAUSE + NEXT moves 1→2 (caption becomes 'Sports · frame 2 of 6' and the play/pause label flips to PLAY), PREV moves 2→1, and preview-back returns to home (connect-button reappears). BLE flows NOT tested (native-only per request, and BLE unsupported hint is displayed). No new React Native issues introduced by this feature; the pre-existing pointerEvents / textShadow* deprecation warnings from iteration_8 are still present but unchanged.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "GET /api/flights/nearby",
+        "issue": "When adsb.lol rate-limits us (HTTP 429) or is briefly down, the backend surfaces HTTP 502 to the client. Observed once during the radius=1000 test and recovered on retry ~30s later. Behavior is correct per current code (raise HTTPException(502, 'Flight feed unavailable')), but consider (a) returning an empty {flights: []} on upstream failure so the UI shows 'No aircraft in range' instead of the 'Couldn\\'t reach the flight feed' error state, and/or (b) adding a short in-memory cache (e.g. 20s TTL keyed by nm+lat+lon rounded to ~0.1deg) to smooth out adsb.lol rate limits during the client\\'s 25s auto-refresh."
+      },
+      {
+        "endpoint": "GET /api/flights/nearby",
+        "issue": "server.py uses `requests` (blocking) inside an async FastAPI handler, which pins a whole worker thread for up to 8s per upstream call. Consider `httpx.AsyncClient` to avoid head-of-line blocking under concurrent load."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "AnimatedSplash pointerEvents prop", "issue": "Console warning 'props.pointerEvents is deprecated. Use style.pointerEvents' still present. Reference: /app/frontend/src/components/AnimatedSplash.tsx:98. Pre-existing from iteration_8, not caused by this feature."},
+      {"component": "MatrixPreview textShadow* style props", "issue": "Console warning '\\\"textShadow*\\\" style props are deprecated. Use \\\"textShadow\\\".' Reference: /app/frontend/app/matrix-preview.tsx (styles.led uses textShadowColor / textShadowOffset / textShadowRadius). RN 0.86 / react-native-web wants the shorthand `textShadow: '0 0 10px <color>'`. Cosmetic, does not block rendering — the LED glow still paints correctly."}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_flights.py",
+    "/app/test_reports/pytest/flights_results.xml",
+    "/app/test_reports/iteration_9.json"
+  ],
+  "action_items": [
+    "(Optional, minor) In /app/backend/server.py flights_nearby(): return an empty {flights: []} on upstream failure instead of 502 so the mobile UI shows 'No aircraft in range' rather than an error state; alternatively, add a 15-30s in-process cache to absorb adsb.lol rate limits when the frontend auto-refreshes every 25s.",
+    "(Optional, minor) Swap `requests` for `httpx.AsyncClient` inside the async endpoint to free the worker thread during the ~1-8s upstream call.",
+    "(Optional, cosmetic) Migrate /app/frontend/app/matrix-preview.tsx styles.led to the RN 0.86 shorthand `textShadow: '0 0 10px <color>'` to silence the deprecation warning.",
+    "(Optional, cosmetic) Pre-existing: /app/frontend/src/components/AnimatedSplash.tsx:98 — move `pointerEvents=\"none\"` from prop to style.pointerEvents."
+  ],
+  "critical_code_review_comments": [
+    "server.py: `logger` is referenced inside flights_nearby's except block at line 77 but only defined at line 139 (`logger = logging.getLogger(__name__)`). At import time this is fine (function isn't called), but it's fragile — move the logging.basicConfig + logger= up above the endpoint definition.",
+    "server.py: `nm = max(1, min(250, round(radius / MILES_PER_NM)))` clamps to integer nm. That means radius values roughly <=0.86mi all collapse to 1nm (~1.15mi) which is a reasonable minimum. Documented behavior is fine.",
+    "airlines.py: 82-airline table is a good balance. Unknown callsigns (private N-numbers, mil callsigns, etc.) correctly return null airline/logo — the UI falls back to the airplane icon (verified with N1664F).",
+    "PlanesOverhead.tsx: polls every 25s while section is open — fine. It does NOT stop polling when the section is collapsed (parent stays mounted since PlanesOverhead is always rendered and the interval is inside PlanesList which mounts even when Section is closed but hidden). Actually PlanesList is rendered only when lat/lon are non-null; Section renders children regardless of open state (children are just hidden). If polling-while-collapsed is a concern, gate `<PlanesList />` on `open` too."
+  ],
+  "updated_files": ["/app/backend/tests/test_flights.py (new)"],
+  "success_rate": {"backend": "100% (9/9 pytest cases; 1 flaky retry due to upstream adsb.lol 429)", "frontend": "100% (all 12 checks passed: home load, expand-all, planes section render, planes-list content, updated label, refresh tap, preview nav, 4 preview testIDs, frame caption parse, next steps forward, prev steps back, back returns home)"},
+  "seed_data_creation": "None — feature is read-only against a public feed.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Feature is fully wired end-to-end. If the huge-radius (or generally busy-area) test flakes, it's almost always adsb.lol rate-limiting us (upstream returns 429 → we return 502). Wait 30-60s and retry, or bake in a tiny cache. To reproduce the frontend flow, the Weather zip must be a valid US zip that geocodes (default 28117 works and hits enough traffic near Charlotte NC / Lake Norman to show 0-3 planes; JFK-area zips like 11430 show many). BLE flows are still native-only and mocked in web — do not try to test connect/scan/sync.",
+  "rca_of_issue": "One test failure on the first pass (test_huge_radius_still_200 -> 502). RCA: adsb.lol rate-limited two rapid successive calls (previous test in the same worker used radius=100 -> nm=87, this one used nm=250, both to the same coords within 200ms). Backend logs confirm '429 Too Many Requests' from adsb.lol. Backend behavior is correct — it translates upstream failures into HTTP 502. Re-run after 30s cool-down passed cleanly. Mitigation: add a short cache in the proxy or return an empty list on upstream failure."
+}
