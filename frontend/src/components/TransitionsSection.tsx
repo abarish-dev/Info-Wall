@@ -32,6 +32,13 @@ const PRESETS: {
 }[] = [
   { key: "calm", label: "Calm", icon: "leaf", fadeSpeed: 2, holdSeconds: 20 },
   { key: "snappy", label: "Snappy", icon: "flash", fadeSpeed: 9, holdSeconds: 6 },
+  {
+    key: "cinematic",
+    label: "Cinematic",
+    icon: "film",
+    fadeSpeed: 1,
+    holdSeconds: 45,
+  },
 ];
 
 function fmtDate(d: Date): string {
@@ -59,6 +66,8 @@ export function TransitionsSection({
   countdownDate,
   onChange,
   defaultOpen = true,
+  open,
+  onToggle,
 }: {
   fadeSpeed: number;
   holdSeconds: number;
@@ -77,6 +86,8 @@ export function TransitionsSection({
     countdownDate?: string;
   }) => void;
   defaultOpen?: boolean;
+  open?: boolean;
+  onToggle?: () => void;
 }) {
   const styles = useThemedStyles(makeStyles);
   const [showPicker, setShowPicker] = useState(false);
@@ -98,6 +109,8 @@ export function TransitionsSection({
       title="DISPLAY & TRANSITIONS"
       subtitle="Timing and travel countdown"
       defaultOpen={defaultOpen}
+      open={open}
+      onToggle={onToggle}
     >
       {/* Quick presets */}
       <View style={styles.presetRow}>

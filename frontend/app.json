@@ -9,6 +9,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
+      "buildNumber": "1",
       "bundleIdentifier": "com.emergent.bluetoothledsync.hltjsu",
       "infoPlist": {
         "NSBluetoothAlwaysUsageDescription": "Connect to your LED matrix to sync settings",
@@ -21,6 +22,7 @@
         "backgroundColor": "#000000"
       },
       "package": "com.emergent.bluetoothledsync.hltjsu",
+      "versionCode": 1,
       "permissions": [
         "android.permission.BLUETOOTH_SCAN",
         "android.permission.BLUETOOTH_CONNECT",

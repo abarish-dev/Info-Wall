@@ -10,6 +10,7 @@ import {
   Modal,
   Linking,
   useWindowDimensions,
+  LayoutAnimation,
 } from "react-native";
 import Slider from "@react-native-community/slider";
 import { Image } from "expo-image";
@@ -75,6 +76,30 @@ const PROFILES_KEY = "wall_profiles_v1";
 const ACTIVE_KEY = "active_wall_v1";
 const LAST_DEVICE_KEY = "last_device_v1";
 const THEME_KEY = "theme_id_v1";
+const SECTION_OPEN_KEY = "section_open_v1";
+
+type SectionKey =
+  | "flight"
+  | "pinned"
+  | "weather"
+  | "sports"
+  | "tv"
+  | "stocks"
+  | "message"
+  | "transitions"
+  | "sync";
+
+const SECTION_DEFAULT_OPEN: Record<SectionKey, boolean> = {
+  flight: true,
+  pinned: false,
+  weather: true,
+  sports: false,
+  tv: false,
+  stocks: false,
+  message: false,
+  transitions: false,
+  sync: false,
+};
 
 type Profile = {
   id: string;
@@ -210,6 +235,45 @@ export default function ControlPanel() {
     summary: string;
   } | null>(null);
   const [themeId, setThemeId] = useState<AccentId>("orange");
+  const [sectionOpen, setSectionOpen] = useState<Record<SectionKey, boolean>>(
+    SECTION_DEFAULT_OPEN,
+  );
+
+  // Load persisted accordion open/closed state once.
+  useEffect(() => {
+    (async () => {
+      const saved = (await storage.getItem<any>(
+        SECTION_OPEN_KEY,
+        null,
+      )) as Partial<Record<SectionKey, boolean>> | null;
+      if (saved && typeof saved === "object") {
+        setSectionOpen({ ...SECTION_DEFAULT_OPEN, ...saved });
+      }
+    })();
+  }, []);
+
+  const toggleSection = (key: SectionKey) => {
+    setSectionOpen((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      storage.setItem(SECTION_OPEN_KEY, next);
+      return next;
+    });
+  };
+
+  const allExpanded = (Object.keys(SECTION_DEFAULT_OPEN) as SectionKey[]).every(
+    (k) => sectionOpen[k],
+  );
+
+  const setAllSections = (openAll: boolean) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    Haptics.selectionAsync().catch(() => {});
+    const next = (Object.keys(SECTION_DEFAULT_OPEN) as SectionKey[]).reduce(
+      (acc, k) => ({ ...acc, [k]: openAll }),
+      {} as Record<SectionKey, boolean>,
+    );
+    setSectionOpen(next);
+    storage.setItem(SECTION_OPEN_KEY, next);
+  };
 
   const bleSupported = useMemo(() => isBleSupported(), []);
 
@@ -1107,11 +1171,32 @@ export default function ControlPanel() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        {/* Expand / Collapse all */}
+        <Pressable
+          testID="toggle-all-sections"
+          onPress={() => setAllSections(!allExpanded)}
+          style={({ pressed }) => [
+            styles.toggleAllBtn,
+            pressed && styles.pressed,
+          ]}
+        >
+          <Ionicons
+            name={allExpanded ? "contract" : "expand"}
+            size={15}
+            color={colors.brand}
+          />
+          <Text style={styles.toggleAllText}>
+            {allExpanded ? "COLLAPSE ALL" : "EXPAND ALL"}
+          </Text>
+        </Pressable>
+
         {/* Flight Tracking */}
         <Section
           icon="airplane"
           title="FLIGHT TRACKING"
           subtitle="Show flights within range"
+          open={sectionOpen.flight}
+          onToggle={() => toggleSection("flight")}
         >
           <View style={styles.radiusHeader}>
             <Text style={styles.fieldLabel}>Search Radius</Text>
@@ -1146,7 +1231,8 @@ export default function ControlPanel() {
           icon="navigate"
           title="PINNED FLIGHT"
           subtitle="Follow one flight live"
-          defaultOpen={false}
+          open={sectionOpen.pinned}
+          onToggle={() => toggleSection("pinned")}
         >
           <View style={styles.toggleRow}>
             <View style={styles.toggleTextWrap}>
@@ -1194,6 +1280,8 @@ export default function ControlPanel() {
           icon="partly-sunny"
           title="WEATHER"
           subtitle="Local conditions"
+          open={sectionOpen.weather}
+          onToggle={() => toggleSection("weather")}
         >
           <View style={styles.toggleRow}>
             <View style={styles.toggleTextWrap}>
@@ -1320,7 +1408,8 @@ export default function ControlPanel() {
           icon="american-football"
           title="SPORTS"
           subtitle="Track your teams"
-          defaultOpen={false}
+          open={sectionOpen.sports}
+          onToggle={() => toggleSection("sports")}
         >
           <TeamRows
             teams={settings.teams}
@@ -1341,7 +1430,8 @@ export default function ControlPanel() {
           icon="tv"
           title="TV SHOWS"
           subtitle="Your watchlist"
-          defaultOpen={false}
+          open={sectionOpen.tv}
+          onToggle={() => toggleSection("tv")}
         >
           {settings.shows.map((show, i) => (
             <TextField
@@ -1371,7 +1461,8 @@ export default function ControlPanel() {
           icon="trending-up"
           title="FINANCIAL TICKERS"
           subtitle="Up to 8 stock / ETF symbols"
-          defaultOpen={false}
+          open={sectionOpen.stocks}
+          onToggle={() => toggleSection("stocks")}
         >
           {settings.stocks.map((sym, i) => (
             <TextField
@@ -1392,7 +1483,8 @@ export default function ControlPanel() {
           icon="chatbox-ellipses"
           title="CUSTOM MESSAGE"
           subtitle="Show a 3-line note on the matrix"
-          defaultOpen={false}
+          open={sectionOpen.message}
+          onToggle={() => toggleSection("message")}
         >
           <View style={styles.toggleRow}>
             <View style={styles.toggleTextWrap}>
@@ -1442,7 +1534,8 @@ export default function ControlPanel() {
           countdownLabel={settings.countdownLabel}
           countdownDate={settings.countdownDate}
           onChange={patchSettings}
-          defaultOpen={false}
+          open={sectionOpen.transitions}
+          onToggle={() => toggleSection("transitions")}
         />
 
         {/* Sync Status / History */}
@@ -1450,7 +1543,8 @@ export default function ControlPanel() {
           icon="time"
           title="SYNC STATUS"
           subtitle="Last push to the matrix"
-          defaultOpen={false}
+          open={sectionOpen.sync}
+          onToggle={() => toggleSection("sync")}
         >
           {lastSync ? (
             <View style={styles.syncHistory} testID="sync-history">
@@ -2111,6 +2205,25 @@ const makeStyles = () =>
   scrollContent: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.xl,
+  },
+  toggleAllBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-end",
+    gap: 6,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceSecondary,
+    marginBottom: spacing.lg,
+  },
+  toggleAllText: {
+    color: colors.brand,
+    fontFamily: fonts.displayMedium,
+    fontSize: fontSize.sm,
+    letterSpacing: 1,
   },
   section: {
     marginBottom: spacing.xl,

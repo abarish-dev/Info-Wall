@@ -95,3 +95,9 @@ Build a mobile app to control a smart LED matrix via Bluetooth. UI: prominent "C
 - [x] Matrix hardware specs captured from the repo: 128×64 HUB75 (MatrixPortal S3), teams "NFL:DAL", ESPN team-logo + Google airline-logo CDNs, and a pre-rendered `generated_logos.h` to reuse when we write the draw code.
 - [ ] TODO (airline logos): needs a live overhead-flight feed (adsb.lol, native-only/no CORS) which InfoWall doesn't have yet — offered to port `adsb.ts` + a live-flight card as a follow-up.
 
+## Updates (2026, fork · round 8 — accordion memory + UX polish)
+- [x] Remember Layout: each accordion section's expanded/collapsed state now persists across launches. Section open-state lifted into `app/index.tsx` (`sectionOpen` map, keys flight/pinned/weather/sports/tv/stocks/message/transitions/sync), saved under `section_open_v1`. `Section` (FormControls.tsx) made controllable via optional `open`/`onToggle` props (falls back to internal state when uncontrolled). `TransitionsSection` forwards these props.
+- [x] Expand/Collapse All: a pill button at the top of the scroll toggles every section open/closed at once (`setAllSections`, `toggle-all-sections` testID); label flips EXPAND ALL ↔ COLLAPSE ALL. Verified: default=EXPAND ALL (flight+weather open), click→COLLAPSE ALL, reload persists.
+- [x] Version/Build info: Settings footer now shows `Info Wall v{version} · build {buildNumber} · {platform} · tap to copy`; tapping copies device/version info (version, build, platform+OS version, device name) to the clipboard with a "Copied device info" confirmation. Added `ios.buildNumber:"1"` + `android.versionCode:1` to app.json.
+- [x] "Cinematic" transition preset added to `TransitionsSection` (fade 1 / hold 45s) alongside Calm and Snappy.
+

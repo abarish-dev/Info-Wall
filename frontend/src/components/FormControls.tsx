@@ -35,6 +35,8 @@ export function Section({
   children,
   defaultOpen = true,
   testID,
+  open: openProp,
+  onToggle,
 }: {
   icon: IoniconsIconName;
   title: string;
@@ -42,12 +44,17 @@ export function Section({
   children: React.ReactNode;
   defaultOpen?: boolean;
   testID?: string;
+  open?: boolean;
+  onToggle?: () => void;
 }) {
   const styles = useThemedStyles(makeStyles);
-  const [open, setOpen] = useState(defaultOpen);
+  const controlled = openProp !== undefined;
+  const [internalOpen, setInternalOpen] = useState(defaultOpen);
+  const open = controlled ? openProp : internalOpen;
   const toggle = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setOpen((o) => !o);
+    if (controlled) onToggle?.();
+    else setInternalOpen((o) => !o);
     Haptics.selectionAsync().catch(() => {});
   };
   return (

@@ -17,6 +17,7 @@ import {
 import Slider from "@react-native-community/slider";
 import Ionicons from "@react-native-vector-icons/ionicons";
 import Constants from "expo-constants";
+import * as Clipboard from "expo-clipboard";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { colors, spacing, radius, fonts, fontSize } from "@/src/theme";
@@ -151,6 +152,30 @@ export function SettingsSheet({
   const [wifiSsid, setWifiSsid] = useState(initialSsid ?? "");
   const [wifiPassword, setWifiPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const appVersion = Constants.expoConfig?.version ?? "1.0.0";
+  const buildNumber =
+    Constants.expoConfig?.ios?.buildNumber ??
+    (Constants.expoConfig?.android?.versionCode != null
+      ? String(Constants.expoConfig.android.versionCode)
+      : "1");
+  const platformName =
+    Platform.OS === "ios"
+      ? "iOS"
+      : Platform.OS === "android"
+        ? "Android"
+        : "Web";
+  const copyVersionInfo = async () => {
+    Haptics.selectionAsync().catch(() => {});
+    const info = [
+      `Info Wall v${appVersion} (build ${buildNumber})`,
+      `Platform: ${platformName} ${String(Platform.Version)}`,
+      `Device: ${Constants.deviceName ?? "unknown"}`,
+    ].join("\n");
+    await Clipboard.setStringAsync(info);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1800);
+  };
   const dimLabel =
     scheduleBrightness === 0 ? "Display off" : `Dimmed to ${scheduleBrightness}%`;
 
@@ -563,17 +588,22 @@ export function SettingsSheet({
           </View>
 
           {/* App version footer */}
-          <View style={styles.versionRow} testID="app-version">
-            <Ionicons name="hardware-chip-outline" size={14} color={colors.info} />
+          <Pressable
+            testID="app-version"
+            onPress={copyVersionInfo}
+            style={({ pressed }) => [styles.versionRow, pressed && styles.pressed]}
+          >
+            <Ionicons
+              name={copied ? "checkmark-circle" : "copy-outline"}
+              size={14}
+              color={copied ? colors.success : colors.info}
+            />
             <Text style={styles.versionText}>
-              Info Wall v{Constants.expoConfig?.version ?? "1.0.0"} ·{" "}
-              {Platform.OS === "ios"
-                ? "iOS"
-                : Platform.OS === "android"
-                  ? "Android"
-                  : "Web"}
+              {copied
+                ? "Copied device info"
+                : `Info Wall v${appVersion} · build ${buildNumber} · ${platformName} · tap to copy`}
             </Text>
-          </View>
+          </Pressable>
         </ScrollView>
       </View>
     </Modal>
