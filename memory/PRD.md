@@ -82,3 +82,10 @@ Build a mobile app to control a smart LED matrix via Bluetooth. UI: prominent "C
 - [x] App version footer in Settings: bottom of the settings sheet shows `Info Wall v{version} · {platform}` (version from `app.json` via `expo-constants`), so it's easy to see which build is on the phone.
 - [x] Firmware starter delivered at `/app/firmware/` (PlatformIO/Arduino: platformio.ini, include/BLEController.h, src/main.cpp, README.md) — parses every BLE command in FIRMWARE_BLE_SPEC.md. Also corrected the spec: ESP32 receives RAW JSON (no base64 decode).
 
+## Updates (2026, fork · round 6 — Expo SDK 57 upgrade)
+- [x] Upgraded Expo SDK 54 → 57 via the `expo-version-upgrade` skill (`expo@^57`, then `expo install --fix`). Now: expo 57.0.25, react-native 0.86.3, react-native-reanimated 4.5.1, expo-router 57, etc. `expo-doctor` 20/20 pass.
+- [x] app.json: removed `newArchEnabled` and `edgeToEdgeEnabled` (deprecated in 55).
+- [x] Icon migration (55→56): replaced `@expo/vector-icons` with `@react-native-vector-icons/ionicons@13.1.4` across all 7 files; `keyof typeof Ionicons.glyphMap` → `IoniconsIconName`. The new lib auto-loads its font via expo-font, so the custom `src/hooks/use-icon-fonts.ts` CDN workaround was DELETED and its gating removed from `_layout.tsx`.
+- [x] Fixed `pointerEvents` prop → `style.pointerEvents` in AnimatedSplash (RN 0.86 deprecation).
+- [x] Regression-tested (iteration_8, all 8 flows pass): boots clean, all icons render (26 glyphs), collapsible defaults, theme switch+persist, presets, map (svg), version footer, core inputs.
+

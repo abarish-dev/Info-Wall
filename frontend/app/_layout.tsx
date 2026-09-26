@@ -7,7 +7,6 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 
-import { useIconFonts } from "@/src/hooks/use-icon-fonts";
 import { ToastProvider } from "@/src/components/Toast";
 import AnimatedSplash from "@/src/components/AnimatedSplash";
 import { colors } from "@/src/theme";
@@ -16,15 +15,13 @@ import { colors } from "@/src/theme";
 // and agent works as expected.
 LogBox.ignoreAllLogs(true);
 
-// Keep the native splash visible from cold start until icon fonts register.
-// Required because @expo/vector-icons' componentDidMount fallback fires
-// Font.loadAsync against a broken vendor path if any <Icon> mounts before
-// the family is registered — which throws on Android Expo Go.
+// Keep the native splash visible from cold start until our custom fonts
+// register. @react-native-vector-icons loads its own icon font dynamically
+// (via expo-font), so no separate icon-font gate is needed.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [splashDone, setSplashDone] = useState(false);
-  const [iconsLoaded, iconsError] = useIconFonts();
   const [fontsLoaded, fontsError] = useFonts({
     Rajdhani: require("../assets/fonts/Rajdhani-Regular.ttf"),
     "Rajdhani-Medium": require("../assets/fonts/Rajdhani-Medium.ttf"),
@@ -33,18 +30,15 @@ export default function RootLayout() {
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
 
-  const iconsReady = iconsLoaded || iconsError;
   const fontsReady = fontsLoaded || fontsError;
 
   useEffect(() => {
-    if (iconsReady && fontsReady) {
+    if (fontsReady) {
       SplashScreen.hideAsync();
     }
-  }, [iconsReady, fontsReady]);
+  }, [fontsReady]);
 
-  // If the CDN is unreachable we fall through on error rather than wedging
-  // the app — icons will tofu, but the app still boots.
-  if (!iconsReady || !fontsReady) return null;
+  if (!fontsReady) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

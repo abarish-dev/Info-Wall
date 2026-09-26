@@ -16,7 +16,9 @@ import Slider from "@react-native-community/slider";
 import DateTimePicker, {
   type DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons, {
+  type IoniconsIconName,
+} from "@react-native-vector-icons/ionicons";
 import { colors, spacing, radius, fonts, fontSize } from "@/src/theme";
 import { useThemedStyles } from "@/src/hooks/useThemedStyles";
 import { Section, TextField } from "@/src/components/FormControls";
@@ -24,7 +26,7 @@ import { Section, TextField } from "@/src/components/FormControls";
 const PRESETS: {
   key: string;
   label: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IoniconsIconName;
   fadeSpeed: number;
   holdSeconds: number;
 }[] = [

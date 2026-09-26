@@ -9,7 +9,9 @@ import React, {
   useState,
 } from "react";
 import { Animated, StyleSheet, Text, View, Easing } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons, {
+  type IoniconsIconName,
+} from "@react-native-vector-icons/ionicons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, spacing, radius, fonts, fontSize } from "@/src/theme";
 
@@ -29,7 +31,7 @@ export function useToast(): ToastContextValue {
 
 const VARIANT_META: Record<
   ToastVariant,
-  { icon: keyof typeof Ionicons.glyphMap; color: string }
+  { icon: IoniconsIconName; color: string }
 > = {
   success: { icon: "checkmark-circle", color: colors.success },
   error: { icon: "alert-circle", color: colors.error },

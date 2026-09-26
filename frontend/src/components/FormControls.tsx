@@ -14,7 +14,9 @@ import {
   Platform,
   UIManager,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons, {
+  type IoniconsIconName,
+} from "@react-native-vector-icons/ionicons";
 import * as Haptics from "expo-haptics";
 import { colors, spacing, radius, fonts, fontSize } from "@/src/theme";
 import { useThemedStyles } from "@/src/hooks/useThemedStyles";
@@ -34,7 +36,7 @@ export function Section({
   defaultOpen = true,
   testID,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IoniconsIconName;
   title: string;
   subtitle: string;
   children: React.ReactNode;
@@ -163,7 +165,7 @@ export function IconInput({
   value: string;
   placeholder: string;
   onChangeText: (t: string) => void;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IoniconsIconName;
   keyboardType?: "default" | "number-pad";
   maxLength?: number;
   editable?: boolean;

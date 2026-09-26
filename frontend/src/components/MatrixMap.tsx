@@ -5,7 +5,7 @@
 import React, { useRef } from "react";
 import { View, PanResponder } from "react-native";
 import { Image } from "expo-image";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@react-native-vector-icons/ionicons";
 import Svg, { Polygon as SvgPolygon } from "react-native-svg";
 import { colors, radius } from "@/src/theme";
 

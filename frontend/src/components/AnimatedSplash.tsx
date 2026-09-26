@@ -16,7 +16,7 @@ import Animated, {
   FadeIn,
   SharedValue,
 } from "react-native-reanimated";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@react-native-vector-icons/ionicons";
 import { colors, fonts } from "@/src/theme";
 
 const COLS = 14;
@@ -95,8 +95,12 @@ export default function AnimatedSplash({ onDone }: { onDone: () => void }) {
 
   return (
     <Animated.View
-      pointerEvents="none"
-      style={[StyleSheet.absoluteFill, styles.root, containerStyle]}
+      style={[
+        StyleSheet.absoluteFill,
+        styles.root,
+        { pointerEvents: "none" },
+        containerStyle,
+      ]}
     >
       <View style={styles.center}>
         <View style={[styles.board, { width: boardW }]}>

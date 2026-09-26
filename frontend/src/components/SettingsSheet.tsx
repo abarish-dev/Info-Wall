@@ -15,7 +15,7 @@ import {
   Platform,
 } from "react-native";
 import Slider from "@react-native-community/slider";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@react-native-vector-icons/ionicons";
 import Constants from "expo-constants";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
