@@ -41,8 +41,10 @@ inline void serializeSettings(JsonDocument &d) {
   d["msg1"] = g_settings.msgLine1;
   d["msg2"] = g_settings.msgLine2;
   d["msg3"] = g_settings.msgLine3;
+  d["apiBase"] = g_settings.apiBase;
   for (int i = 0; i < 8; i++) {
     d["team"][i] = g_settings.teams[i];
+    d["tc"][i] = g_settings.teamColor[i];
     d["show"][i] = g_settings.shows[i];
     d["stk"][i] = g_settings.stocks[i];
     d["pr"][i] = g_settings.stockPrice[i];
@@ -78,8 +80,10 @@ inline void applySettings(JsonDocument &d) {
   g_settings.msgLine1 = (const char *)(d["msg1"] | "");
   g_settings.msgLine2 = (const char *)(d["msg2"] | "");
   g_settings.msgLine3 = (const char *)(d["msg3"] | "");
+  g_settings.apiBase = (const char *)(d["apiBase"] | "");
   for (int i = 0; i < 8; i++) {
     g_settings.teams[i] = (const char *)(d["team"][i] | "");
+    g_settings.teamColor[i] = (const char *)(d["tc"][i] | "");
     g_settings.shows[i] = (const char *)(d["show"][i] | "");
     g_settings.stocks[i] = (const char *)(d["stk"][i] | "");
     g_settings.stockPrice[i] = d["pr"][i] | 0.0f;
@@ -101,7 +105,7 @@ inline void loadSettings() {
     Serial.println("[NVS] no saved config — using defaults");
     return;
   }
-  StaticJsonDocument<3072> d;
+  StaticJsonDocument<4096> d;
   if (deserializeJson(d, blob) == DeserializationError::Ok) {
     applySettings(d);
     Serial.println("[NVS] restored saved config");
@@ -120,7 +124,7 @@ inline void maybeSaveSettings() {
   }
   if (pending && millis() - lastChange > 1500) {
     pending = false;
-    StaticJsonDocument<3072> d;
+    StaticJsonDocument<4096> d;
     serializeSettings(d);
     String blob;
     serializeJson(d, blob);

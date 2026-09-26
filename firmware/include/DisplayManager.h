@@ -235,12 +235,21 @@ class DisplayManager {
   }
 
   void drawWeather() {
-    // Live temperature would come from a weather API fetched over Wi-Fi using
-    // g_settings.lat/lon; here we show the module is active + its coordinates.
-    centerText("WEATHER", 12, amber());
-    char buf[24];
-    snprintf(buf, sizeof(buf), "%.2f,%.2f", g_settings.lat, g_settings.lon);
-    centerText(buf, 34, white());
+    if (g_settings.wxText.length()) {
+      char t[16];
+      snprintf(t, sizeof(t), "%d\xF7", g_settings.wxTemp);  // temp
+      centerText(t, 10, amber(), 2);
+      centerText(g_settings.wxText, 32, white());
+      char hl[20];
+      snprintf(hl, sizeof(hl), "H%d  L%d", g_settings.wxHi, g_settings.wxLo);
+      centerText(hl, 46, cyan());
+    } else {
+      // Not fetched yet (no Wi-Fi/apiBase) — show the module is active.
+      centerText("WEATHER", 12, amber());
+      char buf[24];
+      snprintf(buf, sizeof(buf), "%.2f,%.2f", g_settings.lat, g_settings.lon);
+      centerText(buf, 34, white());
+    }
   }
 
   void drawTeams() {

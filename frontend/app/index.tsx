@@ -485,9 +485,15 @@ export default function ControlPanel() {
   useEffect(() => {
     if (status !== "connected") return;
     const t = setTimeout(() => {
+      const activeTeams = settings.teams.map((x) => x.trim()).filter(Boolean);
       writeLive({
         command: "teams",
-        teams: settings.teams.map((x) => x.trim()).filter(Boolean),
+        teams: activeTeams,
+        // Per-team colors so the panel can flash the right color on a score.
+        colors: activeTeams.map((code) => {
+          const [lg, ab] = code.split(":");
+          return findTeam(lg as any, ab)?.color ?? "";
+        }),
       }).catch(() => {});
       writeLive({
         command: "shows",
@@ -496,6 +502,18 @@ export default function ControlPanel() {
     }, 800);
     return () => clearTimeout(t);
   }, [settings.teams, settings.shows, status]);
+
+  // Tell the panel our backend base URL so it can fetch live data itself over
+  // Wi-Fi (scores, prices, weather, planes, TV) without the phone nearby.
+  useEffect(() => {
+    if (status !== "connected") return;
+    const url = process.env.EXPO_PUBLIC_BACKEND_URL ?? "";
+    if (!url) return;
+    const t = setTimeout(() => {
+      writeLive({ command: "server", url }).catch(() => {});
+    }, 900);
+    return () => clearTimeout(t);
+  }, [status]);
 
   // Live push of stock tickers (debounced) — only verified-valid symbols,
   // with current price + daily change so the matrix can render them.

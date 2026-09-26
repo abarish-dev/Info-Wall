@@ -60,12 +60,23 @@ struct MatrixSettings {
 
   // Content
   String teams[8];
+  String teamColor[8];          // "#RRGGBB" per team (for on-device score flash)
+  float  prevScore[8] = {0};    // last seen live score (score-flash detection)
   String shows[8];
   String stocks[8];
   float  stockPrice[8] = {0};
   float  stockChg[8]   = {0};   // daily % change
   String scores[4];             // live/final game score lines
   String reminders[4];          // episodes airing today
+
+  // Wi-Fi self-fetch (panel pulls its own live data; no phone required)
+  String apiBase        = "";   // e.g. "https://<host>"  (set via BLE "server")
+  int    wxTemp         = 0;
+  int    wxHi           = 0;
+  int    wxLo           = 0;
+  String wxText         = "";
+  String planeLine      = "";   // nearest overhead flight
+  String tvNewLine      = "";   // a show with a new episode
 };
 
 extern MatrixSettings g_settings;
@@ -193,10 +204,17 @@ inline void BLEController::handleJson(const String &raw) {
     g_settings.isPinned = doc["isPinned"] | g_settings.isPinned;
 
   } else if (strcmp(cmd, "teams") == 0) {
-    for (int i = 0; i < 8; i++) g_settings.teams[i] = "";
+    for (int i = 0; i < 8; i++) { g_settings.teams[i] = ""; g_settings.teamColor[i] = ""; }
     JsonArray arr = doc["teams"].as<JsonArray>();
     int i = 0;
     for (JsonVariant v : arr) { if (i < 8) g_settings.teams[i++] = v.as<const char *>(); }
+    JsonArray col = doc["colors"].as<JsonArray>();
+    int j = 0;
+    for (JsonVariant v : col) { if (j < 8) g_settings.teamColor[j++] = v.as<const char *>(); }
+
+  } else if (strcmp(cmd, "server") == 0) {
+    // Base URL of the app backend so the panel can fetch its own live data.
+    g_settings.apiBase = (const char *)(doc["url"] | "");
 
   } else if (strcmp(cmd, "shows") == 0) {
     for (int i = 0; i < 8; i++) g_settings.shows[i] = "";

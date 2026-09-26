@@ -91,3 +91,18 @@ characteristic (enable notifications on it) with one of:
 The app subscribes to notifications right after sending Wi-Fi creds. Until your
 firmware sends this, the app just shows "Sent · waiting for the matrix to join…".
 (`ip` is optional; if present it's displayed.)
+
+## Wi-Fi self-fetch (panel is phone-independent)
+The panel pulls its own live data over Wi-Fi from the Info Wall backend and no
+longer depends on the phone for live updates. The phone only pushes preferences
+(saved to NVS). New BLE commands:
+- `{command:"server", url:"https://<host>"}` — backend base URL (persisted).
+- `{command:"teams", teams:[...], colors:["#RRGGBB",...]}` — team colors added
+  so the panel can flash the correct color on a score.
+- `{command:"scoreflash", team, abbr, color}` — optional phone-side trigger;
+  the panel also detects scores itself.
+
+Panel poll intervals (NetworkData.h): scores 30s, quotes 120s, weather 900s,
+planes 30s, tv 3600s. Endpoints: /api/device/scores, /api/device/quotes,
+/api/weather/current, /api/device/planes, /api/device/tv. On a live team's
+score increase the panel runs the SCORE flash on its own.

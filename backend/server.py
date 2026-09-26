@@ -699,6 +699,126 @@ async def teams_status(teams: str):
             results.append(_team_status_one(code))
     return {"results": results}
 
+
+# ---------------------------------------------------------------------------
+# Current weather (Open-Meteo, keyless) — for on-device weather display.
+# ---------------------------------------------------------------------------
+_WMO = {
+    0: "Clear", 1: "Mostly Clear", 2: "Partly Cloudy", 3: "Cloudy",
+    45: "Fog", 48: "Rime Fog", 51: "Drizzle", 53: "Drizzle", 55: "Drizzle",
+    61: "Rain", 63: "Rain", 65: "Heavy Rain", 66: "Freezing Rain",
+    67: "Freezing Rain", 71: "Snow", 73: "Snow", 75: "Heavy Snow",
+    77: "Snow", 80: "Showers", 81: "Showers", 82: "Heavy Showers",
+    85: "Snow Showers", 86: "Snow Showers", 95: "Thunderstorm",
+    96: "Thunderstorm", 99: "Thunderstorm",
+}
+_weather_cache: dict = {}
+
+
+@api_router.get("/weather/current")
+async def weather_current(lat: float, lon: float):
+    """Current temp + condition + daily hi/lo (Fahrenheit). 10-min cache."""
+    import time as _time
+
+    key = f"{round(lat, 2)}:{round(lon, 2)}"
+    cached = _weather_cache.get(key)
+    if cached and _time.time() - cached["ts"] < 600:
+        return cached["data"]
+    data = {"temp": None, "code": None, "text": None, "hi": None, "lo": None}
+    try:
+        r = requests.get(
+            "https://api.open-meteo.com/v1/forecast",
+            params={
+                "latitude": lat,
+                "longitude": lon,
+                "current": "temperature_2m,weather_code",
+                "daily": "temperature_2m_max,temperature_2m_min",
+                "temperature_unit": "fahrenheit",
+                "timezone": "auto",
+            },
+            timeout=8,
+        )
+        r.raise_for_status()
+        j = r.json()
+        cur = j.get("current") or {}
+        daily = j.get("daily") or {}
+        code = cur.get("weather_code")
+        data.update(
+            temp=round(cur["temperature_2m"]) if cur.get("temperature_2m") is not None else None,
+            code=code,
+            text=_WMO.get(code, "—"),
+            hi=round(daily["temperature_2m_max"][0]) if daily.get("temperature_2m_max") else None,
+            lo=round(daily["temperature_2m_min"][0]) if daily.get("temperature_2m_min") else None,
+        )
+        _weather_cache[key] = {"ts": _time.time(), "data": data}
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("weather fetch failed: %s", exc)
+    return data
+
+
+# ---------------------------------------------------------------------------
+# Compact device endpoint — the ESP32 panel calls this so it can render live
+# scores (and detect a score to flash) without the phone. Small field names
+# keep the JSON tiny for on-device parsing.
+# ---------------------------------------------------------------------------
+@api_router.get("/device/scores")
+async def device_scores(teams: str):
+    out = []
+    for raw in teams.split("|"):
+        code = raw.strip().upper()
+        if not code:
+            continue
+        s = _team_status_one(code)
+        out.append(
+            {
+                "c": code,
+                "s": s.get("score"),
+                "o": s.get("oppScore"),
+                "h": s.get("highlight"),
+                "l": s.get("label"),
+            }
+        )
+    return {"t": out}
+
+
+@api_router.get("/device/quotes")
+async def device_quotes(symbols: str):
+    seen, out = set(), []
+    for raw in symbols.split(","):
+        sym = raw.strip().upper()
+        if not sym or sym in seen:
+            continue
+        seen.add(sym)
+        q = _quote_one(sym)
+        out.append({"s": sym, "p": q.get("price"), "c": q.get("changePct")})
+    return {"q": out}
+
+
+@api_router.get("/device/planes")
+async def device_planes(lat: float, lon: float, radius: float = 25):
+    data = await flights_nearby(lat, lon, radius)  # reuse + cache
+    out = [
+        {
+            "f": f["callsign"],
+            "al": f.get("airline"),
+            "d": round(f["distance"] * 1.15078, 1) if f.get("distance") is not None else None,
+        }
+        for f in data.get("flights", [])[:6]
+    ]
+    return {"p": out}
+
+
+@api_router.get("/device/tv")
+async def device_tv(names: str):
+    out = []
+    for raw in names.split("|"):
+        nm = raw.strip()
+        if not nm:
+            continue
+        s = _tv_status_one(nm)
+        out.append({"n": nm, "h": s.get("highlight"), "l": s.get("label")})
+    return {"v": out}
+
 # Include the router in the main app
 app.include_router(api_router)
 

@@ -11,11 +11,13 @@
 #include "BLEController.h"
 #include "DisplayManager.h"
 #include "Persistence.h"
+#include "NetworkData.h"
 
 // Global instances used across the firmware.
 MatrixSettings g_settings;
 BLEController  g_ble;
 DisplayManager g_display;
+NetworkData    g_net;
 volatile bool  g_settingsDirty = false;
 
 static bool s_clockSynced = false;
@@ -75,6 +77,10 @@ void loop() {
     g_display.scoreFlash(
         g_ble.flashAbbr, g_ble.flashR, g_ble.flashG, g_ble.flashB);
   }
+
+  // Pull our own live data over Wi-Fi (scores/prices/weather/planes/TV) so the
+  // panel stays current without the phone. Safe no-op until Wi-Fi + apiBase set.
+  g_net.tick();
 
   // Render the current module (reads live from g_settings). DisplayManager
   // honors brightness, schedule, pin, hold/fade timing and visibility toggles.
