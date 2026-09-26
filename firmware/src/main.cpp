@@ -69,6 +69,13 @@ void loop() {
     g_display.flashTest();
   }
 
+  // A tracked team just scored — flash the wall with their color + "SCORE".
+  if (g_ble.scoreFlashRequested) {
+    g_ble.scoreFlashRequested = false;
+    g_display.scoreFlash(
+        g_ble.flashAbbr, g_ble.flashR, g_ble.flashG, g_ble.flashB);
+  }
+
   // Render the current module (reads live from g_settings). DisplayManager
   // honors brightness, schedule, pin, hold/fade timing and visibility toggles.
   g_display.tick();

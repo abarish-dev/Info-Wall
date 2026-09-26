@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -54,6 +54,7 @@ import { ShowRows } from "@/src/components/ShowRows";
 import { StockRows } from "@/src/components/StockRows";
 import { useShowStatuses } from "@/src/hooks/useShowStatuses";
 import { useTeamStatuses } from "@/src/hooks/useTeamStatuses";
+import { findTeam } from "@/src/data/teams";
 import type { Reminder } from "@/src/components/ShowRows";
 import { PlanesOverhead } from "@/src/components/PlanesOverhead";
 import {
@@ -610,6 +611,65 @@ export default function ControlPanel() {
     }, 800);
     return () => clearTimeout(t);
   }, [settings.trackingMode, settings.polygon, status]);
+
+  // Auto full-sync whenever the phone (re)connects, so the wall always matches
+  // the app — even after edits made while disconnected.
+  const prevStatusRef = useRef<BleStatus>(status);
+  useEffect(() => {
+    const was = prevStatusRef.current;
+    prevStatusRef.current = status;
+    if (status === "connected" && was !== "connected") {
+      (async () => {
+        try {
+          const payload = buildBlePayload(settings, geo);
+          await syncSettings(payload);
+          const rec = {
+            at: new Date().toISOString(),
+            summary: "Auto-synced on reconnect",
+          };
+          setLastSync(rec);
+          storage.setItem(LAST_SYNC_KEY, rec);
+          toast.show("Reconnected — wall re-synced", "success");
+        } catch {
+          /* best effort */
+        }
+      })();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
+
+  // Detect when a tracked team SCORES during a live game and flash the wall
+  // with the team color + logo + "SCORE".
+  const prevScoresRef = useRef<Record<string, number>>({});
+  useEffect(() => {
+    Object.values(teamStatuses).forEach((st) => {
+      if (st.score == null) return;
+      const prev = prevScoresRef.current[st.team];
+      if (st.highlight === "live" && prev != null && st.score > prev) {
+        const [league, abbr] = st.team.split(":");
+        const team = findTeam(league as any, abbr);
+        const color = team?.color ?? colors.brand;
+        Haptics.notificationAsync(
+          Haptics.NotificationFeedbackType.Success,
+        ).catch(() => {});
+        toast.show(
+          `${abbr} scored! ${st.score}-${st.oppScore ?? ""}`,
+          "success",
+        );
+        if (status === "connected") {
+          writeLive({
+            command: "scoreflash",
+            team: st.team,
+            abbr,
+            color,
+          }).catch(() => {});
+        }
+      }
+      prevScoresRef.current[st.team] = st.score;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [teamStatuses]);
+
 
   // Live push of display transitions + travel countdown (debounced).
   useEffect(() => {

@@ -81,6 +81,9 @@ class BLEController {
   // outside the BLE callback context.
   volatile bool wifiRequested = false;
   volatile bool flashRequested = false;
+  volatile bool scoreFlashRequested = false;
+  String flashAbbr;
+  uint8_t flashR = 255, flashG = 106, flashB = 0;
   String pendingSsid;
   String pendingPass;
 
@@ -254,6 +257,24 @@ inline void BLEController::handleJson(const String &raw) {
     g_settings.showCountdown  = doc["showCountdown"]  | g_settings.showCountdown;
     g_settings.countdownLabel = (const char *)(doc["countdownLabel"] | g_settings.countdownLabel.c_str());
     g_settings.countdownDate  = (const char *)(doc["countdownDate"]  | g_settings.countdownDate.c_str());
+
+  } else if (strcmp(cmd, "scoreflash") == 0) {
+    // { team, abbr, color:"#RRGGBB" } — a tracked team just scored.
+    flashAbbr = (const char *)(doc["abbr"] | "");
+    const char *hex = doc["color"] | "#FF6A00";
+    if (hex[0] == '#' && strlen(hex) >= 7) {
+      auto hx = [](char c) -> int {
+        if (c >= '0' && c <= '9') return c - '0';
+        if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+        if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+        return 0;
+      };
+      flashR = hx(hex[1]) * 16 + hx(hex[2]);
+      flashG = hx(hex[3]) * 16 + hx(hex[4]);
+      flashB = hx(hex[5]) * 16 + hx(hex[6]);
+    }
+    scoreFlashRequested = true;
+    return;  // don't mark dirty / persist a transient flash
 
   } else if (strcmp(cmd, "flash_test") == 0) {
     // Ask loop() to flash a quick RGB test pattern (confirms the link).

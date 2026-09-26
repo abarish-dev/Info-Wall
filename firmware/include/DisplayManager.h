@@ -108,6 +108,28 @@ class DisplayManager {
     fading_ = false;
   }
 
+  // Celebrate a score: blink the team color with the abbr + "SCORE" (~2.4s).
+  void scoreFlash(const String &abbr, uint8_t r, uint8_t g, uint8_t b) {
+    if (!dma_) return;
+    dma_->setBrightness8(255);
+    uint16_t bg = dma_->color565(r, g, b);
+    // Pick black/white text for contrast against the team color.
+    uint16_t fg = (r * 299 + g * 587 + b * 114) / 1000 > 140
+                      ? dma_->color565(0, 0, 0)
+                      : white();
+    for (int i = 0; i < 4; i++) {
+      dma_->fillScreen(bg);
+      centerText(abbr, height_ / 2 - 14, fg, 2);
+      centerText("SCORE!", height_ / 2 + 4, fg, 2);
+      delay(320);
+      dma_->clearScreen();
+      delay(140);
+    }
+    dma_->setBrightness8(map(g_settings.brightness, 0, 100, 0, 255));
+    lastSwitch_ = millis();
+    fading_ = false;
+  }
+
  private:
   enum Module { M_MESSAGE, M_FLIGHT, M_WEATHER, M_SPORTS, M_SCORES, M_TV,
                 M_STOCKS, M_COUNTDOWN, M_REMINDERS, M_LKN, M_FOLLY };
