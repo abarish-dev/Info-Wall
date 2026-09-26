@@ -89,3 +89,9 @@ Build a mobile app to control a smart LED matrix via Bluetooth. UI: prominent "C
 - [x] Fixed `pointerEvents` prop → `style.pointerEvents` in AnimatedSplash (RN 0.86 deprecation).
 - [x] Regression-tested (iteration_8, all 8 flows pass): boots clean, all icons render (26 glyphs), collapsible defaults, theme switch+persist, presets, map (svg), version footer, core inputs.
 
+## Updates (2026, fork · round 7 — team logos from LED_Matrix_Aura)
+- [x] Ported the team catalog from the user's repo (github.com/abarish-dev/LED_Matrix_Aura) into `src/data/teams.ts` (4 leagues, official colors, `teamLogoUrl` ESPN CDN, `readableOn`).
+- [x] Sports section rebuilt: replaced free-text team boxes with `src/components/TeamPicker.tsx` — rows show the real ESPN logo on the team's color swatch + city/name, and an "Add Team" modal picks by League → Team. Teams now stored as `"LEAGUE:ABBR"` (e.g. `MLB:NYY`) to match the firmware contract; DEFAULTS updated to `["MLB:NYY","NFL:CAR"]`. Logo `<Image>` falls back to a colored abbr badge on 404. `teamColors.ts`/`getTeamBadge` no longer used.
+- [x] Matrix hardware specs captured from the repo: 128×64 HUB75 (MatrixPortal S3), teams "NFL:DAL", ESPN team-logo + Google airline-logo CDNs, and a pre-rendered `generated_logos.h` to reuse when we write the draw code.
+- [ ] TODO (airline logos): needs a live overhead-flight feed (adsb.lol, native-only/no CORS) which InfoWall doesn't have yet — offered to port `adsb.ts` + a live-flight card as a follow-up.
+

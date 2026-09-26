@@ -49,6 +49,7 @@ import {
   lonLatToTileFrac,
 } from "@/src/components/MatrixMap";
 import { TransitionsSection } from "@/src/components/TransitionsSection";
+import { TeamRows } from "@/src/components/TeamPicker";
 import {
   connectToKnownDevice,
   scanForDevices,
@@ -64,7 +65,6 @@ import {
 } from "@/src/services/ble";
 import { geocodeZip, type GeoResult } from "@/src/services/geocode";
 import { buildBlePayload } from "@/src/services/payload";
-import { getTeamBadge } from "@/src/utils/teamColors";
 import { SettingsSheet } from "@/src/components/SettingsSheet";
 import * as Clipboard from "expo-clipboard";
 
@@ -116,7 +116,7 @@ const DEFAULTS = {
   scheduleStart: "19:00",
   scheduleEnd: "07:00",
   scheduleBrightness: 40,
-  teams: ["NYY", "CAR"],
+  teams: ["MLB:NYY", "NFL:CAR"],
   shows: ["Shrinking", "Emily in Paris", "Ted Lasso"],
   fadeSpeed: 5,
   holdSeconds: 12,
@@ -1322,33 +1322,17 @@ export default function ControlPanel() {
           subtitle="Track your teams"
           defaultOpen={false}
         >
-          {settings.teams.map((team, i) => (
-            <TextField
-              key={`team-${i}`}
-              testID={`team-${i + 1}-input`}
-              label={`Team ${i + 1}`}
-              value={team}
-              placeholder="NYY"
-              autoCapitalize="characters"
-              maxLength={5}
-              warning={
-                team.trim().length > 0 && !getTeamBadge(team).known
-                  ? "Unrecognized code — check the abbreviation"
-                  : undefined
-              }
-              onChangeText={(t) => editList("teams", i, t)}
-              onRemove={
-                settings.teams.length > 1
-                  ? () => removeRow("teams", i)
-                  : undefined
-              }
-            />
-          ))}
-          <AddRowButton
-            testID="add-team-button"
-            label="Add Team"
-            disabled={settings.teams.length >= MAX_ROWS}
-            onPress={() => addRow("teams")}
+          <TeamRows
+            teams={settings.teams}
+            max={MAX_ROWS}
+            onRemove={(i) => removeRow("teams", i)}
+            onAdd={(value) =>
+              setSettings((s) =>
+                s.teams.includes(value) || s.teams.length >= MAX_ROWS
+                  ? s
+                  : { ...s, teams: [...s.teams, value] },
+              )
+            }
           />
         </Section>
 
