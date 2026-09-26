@@ -102,6 +102,8 @@ export type EpisodesInfo = {
   network: string | null;
   seasons: number;
   totalEpisodes: number;
+  watchName: string | null;
+  watchUrl: string | null;
   upcoming: EpisodeRow[];
   recent: EpisodeRow[];
 };
@@ -129,6 +131,8 @@ export type TeamStatus = {
   label: string | null;
   opponent: string | null;
   date: string | null;
+  score: number | null;
+  oppScore: number | null;
 };
 
 export async function fetchTeamStatus(codes: string[]): Promise<TeamStatus[]> {

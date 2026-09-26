@@ -468,12 +468,22 @@ async def tv_episodes(id: int):  # noqa: A002
             past.append(_row(e))
 
     seasons = max((e.get("season") or 0) for e in eps) if eps else 0
+    net = show.get("network") or {}
+    web = show.get("webChannel") or {}
+    watch_name = web.get("name") or net.get("name")
+    watch_url = (
+        show.get("officialSite")
+        or web.get("officialSite")
+        or net.get("officialSite")
+    )
     return {
         "name": show.get("name"),
         "status": show.get("status"),
-        "network": (show.get("network") or show.get("webChannel") or {}).get("name"),
+        "network": watch_name,
         "seasons": seasons,
         "totalEpisodes": len(eps),
+        "watchName": watch_name,
+        "watchUrl": watch_url,
         "upcoming": upcoming[:8],
         "recent": list(reversed(past))[:4],
     }
@@ -490,6 +500,59 @@ _LEAGUE_PATH = {
 }
 _team_cache: dict = {}
 _TEAM_TTL = 120
+_sb_cache: dict = {}
+
+
+def _to_int(v):
+    try:
+        return int(v) if v not in (None, "") else None
+    except (ValueError, TypeError):
+        return None
+
+
+def _scoreboard_map(sport: str, lg: str) -> dict:
+    """abbr -> live/final game info from the league scoreboard (60s cache)."""
+    import time as _time
+
+    key = f"{sport}/{lg}"
+    cached = _sb_cache.get(key)
+    if cached and _time.time() - cached["ts"] < 60:
+        return cached["data"]
+    m: dict = {}
+    try:
+        r = requests.get(
+            f"https://site.api.espn.com/apis/site/v2/sports/{sport}/{lg}/scoreboard",
+            timeout=8,
+        )
+        r.raise_for_status()
+        for e in r.json().get("events", []):
+            comp = (e.get("competitions") or [{}])[0]
+            stype = (comp.get("status") or {}).get("type") or {}
+            state = stype.get("state")
+            detail = stype.get("shortDetail") or ""
+            comps = comp.get("competitors") or []
+            for c in comps:
+                team = c.get("team") or {}
+                ab = team.get("abbreviation")
+                if not ab:
+                    continue
+                others = [x for x in comps if x is not c]
+                oc = others[0] if others else {}
+                m[ab.upper()] = {
+                    "state": state,
+                    "detail": detail,
+                    "score": _to_int(c.get("score")),
+                    "opp": (oc.get("team") or {}).get("abbreviation"),
+                    "oppScore": _to_int(oc.get("score")),
+                    "home": c.get("homeAway") == "home",
+                    "name": team.get("displayName"),
+                    "logo": team.get("logo"),
+                    "date": e.get("date"),
+                }
+        _sb_cache[key] = {"ts": _time.time(), "data": m}
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("espn scoreboard failed %s/%s: %s", sport, lg, exc)
+    return m
 
 
 def _team_status_one(code: str) -> dict:
@@ -503,6 +566,8 @@ def _team_status_one(code: str) -> dict:
         "label": None,
         "opponent": None,
         "date": None,
+        "score": None,
+        "oppScore": None,
     }
     if ":" not in code:
         return data
@@ -510,12 +575,40 @@ def _team_status_one(code: str) -> dict:
     sport_lg = _LEAGUE_PATH.get(league)
     if not sport_lg:
         return data
+    sport, lg = sport_lg
+
+    # Live/just-finished games come from the scoreboard (has scores + clock).
+    g = _scoreboard_map(sport, lg).get(abbr.upper())
+    if g and g["state"] in ("in", "post"):
+        opp = g["opp"]
+        vs = "vs" if g["home"] else "@"
+        score_str = (
+            f"{g['score']}-{g['oppScore']}"
+            if g["score"] is not None and g["oppScore"] is not None
+            else ""
+        )
+        data.update(
+            name=g.get("name"),
+            logo=g.get("logo"),
+            opponent=opp,
+            score=g["score"],
+            oppScore=g["oppScore"],
+            date=g.get("date"),
+        )
+        if g["state"] == "in":
+            bits = " ".join(x for x in [f"{vs} {opp}", score_str, g["detail"]] if x)
+            data.update(highlight="live", label=f"🔴 {bits}".strip())
+        else:
+            data.update(
+                highlight="recent",
+                label=f"Final {score_str} {vs} {opp}".strip(),
+            )
+        return data  # not cached — refreshes with the 60s scoreboard cache
 
     cached = _team_cache.get(code)
     if cached and _time.time() - cached["ts"] < _TEAM_TTL:
         return cached["data"]
 
-    sport, lg = sport_lg
     try:
         r = requests.get(
             f"https://site.api.espn.com/apis/site/v2/sports/{sport}/{lg}/teams/{abbr.lower()}",
@@ -537,24 +630,44 @@ def _team_status_one(code: str) -> dict:
             date = e.get("date")
             data["date"] = date
 
-            # Resolve opponent + home/away relative to our team.
+            # Resolve opponent + home/away + scores relative to our team.
             opp, vs = None, "vs"
+            my_score = opp_score = None
             my_id = t.get("id")
             for c in comp.get("competitors") or []:
-                if str((c.get("team") or {}).get("id")) != str(my_id):
+                is_us = str((c.get("team") or {}).get("id")) == str(my_id)
+                sc = c.get("score")
+                try:
+                    sc = int(sc) if sc is not None and str(sc) != "" else None
+                except (ValueError, TypeError):
+                    sc = None
+                if is_us:
+                    vs = "@" if c.get("homeAway") == "away" else "vs"
+                    my_score = sc
+                else:
                     opp = (c.get("team") or {}).get("abbreviation") or (
                         c.get("team") or {}
                     ).get("shortDisplayName")
-                else:
-                    vs = "@" if c.get("homeAway") == "away" else "vs"
+                    opp_score = sc
             data["opponent"] = opp
+            data["score"] = my_score
+            data["oppScore"] = opp_score
             matchup = f"{vs} {opp}" if opp else ""
+            has_scores = my_score is not None and opp_score is not None
+            score_str = f"{my_score}-{opp_score}" if has_scores else ""
             days = _days_from_today(date[:10]) if date else None
 
             if state == "in":
-                data.update(highlight="live", label=f"🔴 Live — {short}".strip())
+                bits = " ".join(x for x in [score_str, short] if x)
+                data.update(
+                    highlight="live",
+                    label=f"🔴 {opp} {bits}".strip(),
+                )
             elif state == "post":
-                data.update(highlight="recent", label=f"Final {matchup}".strip())
+                data.update(
+                    highlight="recent",
+                    label=f"Final {score_str} {matchup}".strip(),
+                )
             elif days == 0:
                 data.update(highlight="today", label=f"Today {matchup}".strip())
             elif days is not None and 0 < days <= 7:

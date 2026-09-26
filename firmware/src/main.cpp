@@ -10,11 +10,13 @@
 #include <WiFi.h>
 #include "BLEController.h"
 #include "DisplayManager.h"
+#include "Persistence.h"
 
 // Global instances used across the firmware.
 MatrixSettings g_settings;
 BLEController  g_ble;
 DisplayManager g_display;
+volatile bool  g_settingsDirty = false;
 
 static bool s_clockSynced = false;
 
@@ -49,7 +51,8 @@ void setup() {
   delay(200);
   Serial.println("\n[Info Wall] booting...");
 
-  g_display.begin();
+  loadSettings();       // restore last config from flash BEFORE drawing
+  g_display.begin();    // shows the restored content immediately on power-up
   g_ble.begin();
 }
 
@@ -69,6 +72,9 @@ void loop() {
   // Render the current module (reads live from g_settings). DisplayManager
   // honors brightness, schedule, pin, hold/fade timing and visibility toggles.
   g_display.tick();
+
+  // Persist any config changes to flash (debounced) so they survive a reboot.
+  maybeSaveSettings();
 
   delay(15);
 }

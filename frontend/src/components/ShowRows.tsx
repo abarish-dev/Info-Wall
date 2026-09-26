@@ -44,18 +44,29 @@ const HL_META: Record<
   none: { icon: "ellipse", color: () => colors.info },
 };
 
+export type Reminder = {
+  key: string;
+  show: string;
+  label: string;
+  airdate: string | null;
+};
+
 export function ShowRows({
   shows,
   onAdd,
   onRemove,
   max,
   statuses: statusesProp,
+  reminderKeys,
+  onToggleReminder,
 }: {
   shows: string[];
   onAdd: (name: string) => void;
   onRemove: (index: number) => void;
   max: number;
   statuses?: Record<string, ShowStatus>;
+  reminderKeys?: Set<string>;
+  onToggleReminder?: (r: Reminder) => void;
 }) {
   const styles = useThemedStyles(makeStyles);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -180,6 +191,8 @@ export function ShowRows({
       <EpisodesModal
         show={episodesFor}
         onClose={() => setEpisodesFor(null)}
+        reminderKeys={reminderKeys}
+        onToggleReminder={onToggleReminder}
         styles={styles}
       />
     </View>
@@ -190,10 +203,14 @@ function EpisodesModal({
   show,
   onClose,
   styles,
+  reminderKeys,
+  onToggleReminder,
 }: {
   show: ShowStatus | null;
   onClose: () => void;
   styles: ReturnType<typeof makeStyles>;
+  reminderKeys?: Set<string>;
+  onToggleReminder?: (r: Reminder) => void;
 }) {
   const [info, setInfo] = useState<EpisodesInfo | null>(null);
   const [loading, setLoading] = useState(false);
@@ -273,23 +290,64 @@ function EpisodesModal({
                     <Text style={styles.imdbText}>View on IMDb</Text>
                   </Pressable>
                 ) : null}
+                {info.watchUrl ? (
+                  <Pressable
+                    testID="episodes-watch"
+                    onPress={() => Linking.openURL(info.watchUrl as string)}
+                    style={styles.watchBtn}
+                  >
+                    <Ionicons name="play-circle" size={14} color={colors.onBrand} />
+                    <Text style={styles.watchText}>
+                      Watch{info.watchName ? ` on ${info.watchName}` : ""}
+                    </Text>
+                  </Pressable>
+                ) : null}
               </View>
             </View>
 
             {info.upcoming.length > 0 && (
               <>
                 <Text style={styles.sectionLabel}>UPCOMING</Text>
-                {info.upcoming.map((e, i) => (
-                  <View key={`u-${i}`} style={styles.epRow}>
-                    <View style={styles.epDate}>
-                      <Ionicons name="calendar" size={13} color={colors.brand} />
-                      <Text style={styles.epDateText}>{e.airdate}</Text>
+                {info.upcoming.map((e, i) => {
+                  const rKey = `${show?.name}|S${e.season}E${e.number}`;
+                  const reminded = reminderKeys?.has(rKey);
+                  return (
+                    <View key={`u-${i}`} style={styles.epRow}>
+                      <View style={styles.epDate}>
+                        <Ionicons name="calendar" size={13} color={colors.brand} />
+                        <Text style={styles.epDateText}>{e.airdate}</Text>
+                      </View>
+                      <Text style={styles.epName} numberOfLines={1}>
+                        {epLine(e)}
+                      </Text>
+                      {onToggleReminder && (
+                        <Pressable
+                          testID={`remind-${i}`}
+                          hitSlop={8}
+                          onPress={() =>
+                            onToggleReminder({
+                              key: rKey,
+                              show: show?.name ?? "",
+                              label: `${show?.name} ${epLine(e)}`,
+                              airdate: e.airdate,
+                            })
+                          }
+                          style={({ pressed }) => [
+                            styles.bellBtn,
+                            reminded && styles.bellBtnOn,
+                            pressed && styles.pressed,
+                          ]}
+                        >
+                          <Ionicons
+                            name={reminded ? "notifications" : "notifications-outline"}
+                            size={16}
+                            color={reminded ? colors.onBrand : colors.brand}
+                          />
+                        </Pressable>
+                      )}
                     </View>
-                    <Text style={styles.epName} numberOfLines={1}>
-                      {epLine(e)}
-                    </Text>
-                  </View>
-                ))}
+                  );
+                })}
               </>
             )}
 
@@ -619,6 +677,36 @@ const makeStyles = () =>
       color: colors.brand,
       fontFamily: fonts.textMedium,
       fontSize: fontSize.sm,
+    },
+    watchBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+      marginTop: spacing.sm,
+      alignSelf: "flex-start",
+      paddingHorizontal: spacing.md,
+      paddingVertical: 6,
+      borderRadius: radius.pill,
+      backgroundColor: colors.brand,
+    },
+    watchText: {
+      color: colors.onBrand,
+      fontFamily: fonts.textMedium,
+      fontSize: fontSize.sm,
+    },
+    bellBtn: {
+      width: 32,
+      height: 32,
+      borderRadius: radius.sm,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.surfaceSecondary,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    bellBtnOn: {
+      backgroundColor: colors.brand,
+      borderColor: colors.brand,
     },
     sectionLabel: {
       color: colors.info,

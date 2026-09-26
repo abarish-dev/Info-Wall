@@ -109,12 +109,12 @@ class DisplayManager {
   }
 
  private:
-  enum Module { M_MESSAGE, M_FLIGHT, M_WEATHER, M_SPORTS, M_TV, M_STOCKS,
-                M_COUNTDOWN, M_LKN, M_FOLLY };
+  enum Module { M_MESSAGE, M_FLIGHT, M_WEATHER, M_SPORTS, M_SCORES, M_TV,
+                M_STOCKS, M_COUNTDOWN, M_REMINDERS, M_LKN, M_FOLLY };
 
   MatrixPanel_I2S_DMA *dma_ = nullptr;
   int width_ = 128, height_ = 64;
-  Module frames_[9];
+  Module frames_[11];
   int  frameCount_ = 0;
   int  current_ = 0;
   unsigned long lastSwitch_ = 0;
@@ -137,9 +137,11 @@ class DisplayManager {
     sig += (g_settings.trackFlight && g_settings.flightIdent.length()) ? "F" : "";
     sig += g_settings.showWeather ? "W" : "";
     sig += anyTeam() ? "S" : "";
+    sig += anyScore() ? "G" : "";
     sig += anyShow() ? "T" : "";
     sig += anyStock() ? "$" : "";
     sig += (g_settings.showCountdown && g_settings.countdownLabel.length()) ? "C" : "";
+    sig += anyReminder() ? "R" : "";
     sig += g_settings.showLKN ? "L" : "";
     sig += g_settings.showFolly ? "O" : "";
     if (sig == lastSig_) return;
@@ -150,9 +152,11 @@ class DisplayManager {
     if (g_settings.trackFlight && g_settings.flightIdent.length()) frames_[frameCount_++] = M_FLIGHT;
     if (g_settings.showWeather) frames_[frameCount_++] = M_WEATHER;
     if (anyTeam())  frames_[frameCount_++] = M_SPORTS;
+    if (anyScore()) frames_[frameCount_++] = M_SCORES;
     if (anyShow())  frames_[frameCount_++] = M_TV;
     if (anyStock()) frames_[frameCount_++] = M_STOCKS;
     if (g_settings.showCountdown && g_settings.countdownLabel.length()) frames_[frameCount_++] = M_COUNTDOWN;
+    if (anyReminder()) frames_[frameCount_++] = M_REMINDERS;
     if (g_settings.showLKN)   frames_[frameCount_++] = M_LKN;
     if (g_settings.showFolly) frames_[frameCount_++] = M_FOLLY;
     if (current_ >= frameCount_) current_ = 0;
@@ -165,6 +169,8 @@ class DisplayManager {
   bool anyTeam()  { for (int i=0;i<8;i++) if (g_settings.teams[i].length())  return true; return false; }
   bool anyShow()  { for (int i=0;i<8;i++) if (g_settings.shows[i].length())  return true; return false; }
   bool anyStock() { for (int i=0;i<8;i++) if (g_settings.stocks[i].length()) return true; return false; }
+  bool anyScore() { for (int i=0;i<4;i++) if (g_settings.scores[i].length()) return true; return false; }
+  bool anyReminder() { for (int i=0;i<4;i++) if (g_settings.reminders[i].length()) return true; return false; }
 
   // Center a size-1 GFX string (6px per char) horizontally at row y.
   void centerText(const String &s, int y, uint16_t color, uint8_t size = 1) {
@@ -183,9 +189,11 @@ class DisplayManager {
       case M_FLIGHT:    drawFlight();    break;
       case M_WEATHER:   drawWeather();   break;
       case M_SPORTS:    drawTeams();     break;
+      case M_SCORES:    drawScores();    break;
       case M_TV:        drawShows();     break;
       case M_STOCKS:    drawStocks();    break;
       case M_COUNTDOWN: drawCountdown(); break;
+      case M_REMINDERS: drawReminders(); break;
       case M_LKN:       drawLabel("LKN MARINE", cyan()); break;
       case M_FOLLY:     drawLabel("FOLLY TIDES", cyan()); break;
     }
@@ -254,6 +262,26 @@ class DisplayManager {
         centerText(g_settings.stocks[i], y, white());
       }
       y += 12;
+    }
+  }
+
+  void drawScores() {
+    centerText("SCORES", 6, amber());
+    int y = 22;
+    for (int i = 0; i < 4 && y < height_ - 8; i++) {
+      if (!g_settings.scores[i].length()) continue;
+      centerText(g_settings.scores[i], y, white());
+      y += 14;
+    }
+  }
+
+  void drawReminders() {
+    centerText("NEW TONIGHT", 6, green());
+    int y = 22;
+    for (int i = 0; i < 4 && y < height_ - 8; i++) {
+      if (!g_settings.reminders[i].length()) continue;
+      centerText(g_settings.reminders[i], y, white());
+      y += 14;
     }
   }
 

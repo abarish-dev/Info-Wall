@@ -24,10 +24,16 @@ import Ionicons, {
 import { colors, spacing, fonts } from "@/src/theme";
 import { storage } from "@/src/utils/storage";
 import { getCachedZip } from "@/src/services/geocode";
-import { fetchQuotes, type Quote } from "@/src/services/catalog";
+import {
+  fetchQuotes,
+  fetchTeamStatus,
+  type Quote,
+  type TeamStatus,
+} from "@/src/services/catalog";
 import { findTeam, teamLogoUrl, type League } from "@/src/data/teams";
 
 const STORAGE_KEY = "matrix_settings_v2";
+const REMINDERS_KEY = "episode_reminders_v1";
 
 const CYAN = "#22D3EE";
 const AMBER = "#FFB000";
@@ -99,6 +105,10 @@ export default function MatrixPreview() {
   const [settings, setSettings] = useState<any | null>(null);
   const [city, setCity] = useState<string>("");
   const [quotes, setQuotes] = useState<Record<string, Quote>>({});
+  const [teamStatuses, setTeamStatuses] = useState<Record<string, TeamStatus>>(
+    {},
+  );
+  const [dueReminders, setDueReminders] = useState<string[]>([]);
   const [idx, setIdx] = useState(0);
   const [paused, setPaused] = useState(false);
   const opacity = useRef(new Animated.Value(1)).current;
@@ -126,6 +136,27 @@ export default function MatrixPreview() {
           /* ignore */
         }
       }
+      const teams = ((s?.teams ?? []) as string[]).filter(Boolean);
+      if (teams.length) {
+        try {
+          const res = await fetchTeamStatus(teams);
+          const map: Record<string, TeamStatus> = {};
+          res.forEach((t) => (map[t.team.toUpperCase()] = t));
+          setTeamStatuses(map);
+        } catch {
+          /* ignore */
+        }
+      }
+      const rem = await storage.getItem<{ label: string; airdate: string }[]>(
+        REMINDERS_KEY,
+        [],
+      );
+      const today = new Date().toISOString().slice(0, 10);
+      setDueReminders(
+        (Array.isArray(rem) ? rem : [])
+          .filter((r) => r.airdate === today)
+          .map((r) => r.label),
+      );
     })();
   }, []);
 
@@ -186,6 +217,30 @@ export default function MatrixPreview() {
           <View style={styles.teamRow}>
             {teams.slice(0, 4).map((t: string) => (
               <TeamGlyph key={t} code={t} />
+            ))}
+          </View>
+        ),
+      });
+    }
+
+    // Live / final game scores for tracked teams.
+    const scoreLines = teams
+      .map((t) => teamStatuses[t.toUpperCase()])
+      .filter((st) => st && (st.highlight === "live" || st.highlight === "recent"))
+      .slice(0, 3);
+    if (scoreLines.length) {
+      f.push({
+        key: "scores",
+        label: "Live scores",
+        node: (
+          <View style={{ gap: 6 }}>
+            {scoreLines.map((st) => (
+              <Glow
+                key={st!.team}
+                text={st!.label ?? ""}
+                color={st!.highlight === "live" ? "#FF5A5A" : WHITE}
+                size={15}
+              />
             ))}
           </View>
         ),
@@ -297,8 +352,26 @@ export default function MatrixPreview() {
       });
     }
 
+    if (dueReminders.length) {
+      f.push({
+        key: "reminders",
+        label: "Airing today",
+        node: (
+          <View style={{ gap: 6 }}>
+            <View style={styles.rowCenter}>
+              <Ionicons name="notifications" size={18} color={GREEN} />
+              <Glow text="  NEW TONIGHT" color={GREEN} size={16} />
+            </View>
+            {dueReminders.slice(0, 3).map((r, i) => (
+              <Glow key={i} text={r} color={WHITE} size={14} />
+            ))}
+          </View>
+        ),
+      });
+    }
+
     return f;
-  }, [settings, city, quotes]);
+  }, [settings, city, quotes, teamStatuses, dueReminders]);
 
   // Auto-cycle using the user's hold + fade timing.
   useEffect(() => {

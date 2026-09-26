@@ -101,21 +101,27 @@ export function TeamRows({
   onRemove,
   onAdd,
   max,
+  statuses: statusesProp,
 }: {
   teams: string[];
   onRemove: (index: number) => void;
   onAdd: (value: string) => void;
   max: number;
+  statuses?: Record<string, TeamStatus>;
 }) {
   const styles = useThemedStyles(makeStyles);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [statuses, setStatuses] = useState<Record<string, TeamStatus>>({});
+  const [internalStatuses, setInternalStatuses] = useState<
+    Record<string, TeamStatus>
+  >({});
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const key = teams.join("|");
+  const statuses = statusesProp ?? internalStatuses;
 
   useEffect(() => {
+    if (statusesProp) return; // parent supplies statuses
     if (teams.length === 0) {
-      setStatuses({});
+      setInternalStatuses({});
       return;
     }
     if (timer.current) clearTimeout(timer.current);
@@ -124,7 +130,7 @@ export function TeamRows({
         const res = await fetchTeamStatus(teams);
         const map: Record<string, TeamStatus> = {};
         res.forEach((s) => (map[s.team.toUpperCase()] = s));
-        setStatuses(map);
+        setInternalStatuses(map);
       } catch {
         /* keep prior */
       }
@@ -133,7 +139,7 @@ export function TeamRows({
       if (timer.current) clearTimeout(timer.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
+  }, [key, statusesProp]);
 
   return (
     <View style={{ gap: spacing.md }}>

@@ -53,6 +53,8 @@ import { TeamRows } from "@/src/components/TeamPicker";
 import { ShowRows } from "@/src/components/ShowRows";
 import { StockRows } from "@/src/components/StockRows";
 import { useShowStatuses } from "@/src/hooks/useShowStatuses";
+import { useTeamStatuses } from "@/src/hooks/useTeamStatuses";
+import type { Reminder } from "@/src/components/ShowRows";
 import { PlanesOverhead } from "@/src/components/PlanesOverhead";
 import {
   connectToKnownDevice,
@@ -81,6 +83,7 @@ const ACTIVE_KEY = "active_wall_v1";
 const LAST_DEVICE_KEY = "last_device_v1";
 const THEME_KEY = "theme_id_v1";
 const SECTION_OPEN_KEY = "section_open_v1";
+const REMINDERS_KEY = "episode_reminders_v1";
 
 type SectionKey =
   | "flight"
@@ -212,6 +215,39 @@ export default function ControlPanel() {
   const { statuses: showStatuses, newTodayCount } = useShowStatuses(
     settings.shows,
   );
+  const { statuses: teamStatuses } = useTeamStatuses(settings.teams);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
+
+  // Load persisted episode reminders once.
+  useEffect(() => {
+    (async () => {
+      const saved = await storage.getItem<Reminder[]>(REMINDERS_KEY, []);
+      if (Array.isArray(saved)) setReminders(saved);
+    })();
+  }, []);
+
+  const reminderKeys = useMemo(
+    () => new Set(reminders.map((r) => r.key)),
+    [reminders],
+  );
+  const toggleReminder = (r: Reminder) => {
+    Haptics.selectionAsync().catch(() => {});
+    setReminders((prev) => {
+      const exists = prev.some((x) => x.key === r.key);
+      const next = exists
+        ? prev.filter((x) => x.key !== r.key)
+        : [...prev, r];
+      storage.setItem(REMINDERS_KEY, next);
+      return next;
+    });
+    toast.show(
+      reminderKeys.has(r.key) ? "Reminder removed" : "We'll flag it on the wall",
+      "info",
+    );
+  };
+
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const remindersDueToday = reminders.filter((r) => r.airdate === todayIso);
   const [hydrated, setHydrated] = useState(false);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [activeId, setActiveId] = useState<string>("");
@@ -497,6 +533,43 @@ export default function ControlPanel() {
     settings.msgLine3,
     status,
   ]);
+
+  // Live push of team scores (live/final today) so the matrix can show them.
+  const scoreLabels = useMemo(
+    () =>
+      settings.teams
+        .map((code) => teamStatuses[code.toUpperCase()])
+        .filter(
+          (s) =>
+            s &&
+            (s.highlight === "live" || s.highlight === "recent") &&
+            s.label,
+        )
+        .map((s) => (s as (typeof teamStatuses)[string]).label as string),
+    [settings.teams, teamStatuses],
+  );
+  useEffect(() => {
+    if (status !== "connected") return;
+    const t = setTimeout(() => {
+      const cmd: Record<string, unknown> = { command: "scores" };
+      scoreLabels.forEach((l, i) => (cmd[`score${i + 1}`] = l));
+      writeLive(cmd).catch(() => {});
+    }, 800);
+    return () => clearTimeout(t);
+  }, [scoreLabels, status]);
+
+  // Live push of episode reminders that are due today.
+  useEffect(() => {
+    if (status !== "connected") return;
+    const t = setTimeout(() => {
+      const cmd: Record<string, unknown> = { command: "reminders" };
+      remindersDueToday.forEach((r, i) => (cmd[`reminder${i + 1}`] = r.label));
+      writeLive(cmd).catch(() => {});
+    }, 800);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [remindersDueToday.map((r) => r.key).join(","), status]);
+
 
   // Live push of flight-tracking config (debounced).
   useEffect(() => {
@@ -1020,7 +1093,7 @@ export default function ControlPanel() {
             <Text style={styles.brandTitle} numberOfLines={1}>
               {(settings.wallName || "Info Wall").toUpperCase()}
             </Text>
-            {newTodayCount > 0 && (
+            {newTodayCount + remindersDueToday.length > 0 && (
               <Pressable
                 testID="new-episode-badge"
                 onPress={() => {
@@ -1038,7 +1111,9 @@ export default function ControlPanel() {
                 ]}
               >
                 <Ionicons name="tv" size={12} color={colors.onBrand} />
-                <Text style={styles.newBadgeText}>{newTodayCount} new</Text>
+                <Text style={styles.newBadgeText}>
+                  {newTodayCount + remindersDueToday.length} new
+                </Text>
               </Pressable>
             )}
             <Pressable
@@ -1473,6 +1548,7 @@ export default function ControlPanel() {
           <TeamRows
             teams={settings.teams}
             max={MAX_ROWS}
+            statuses={teamStatuses}
             onRemove={(i) => removeRow("teams", i)}
             onAdd={(value) =>
               setSettings((s) =>
@@ -1496,6 +1572,8 @@ export default function ControlPanel() {
             shows={settings.shows}
             max={MAX_ROWS}
             statuses={showStatuses}
+            reminderKeys={reminderKeys}
+            onToggleReminder={toggleReminder}
             onRemove={(i) => removeRow("shows", i)}
             onAdd={(name) =>
               setSettings((s) =>

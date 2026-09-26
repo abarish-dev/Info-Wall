@@ -64,6 +64,8 @@ struct MatrixSettings {
   String stocks[8];
   float  stockPrice[8] = {0};
   float  stockChg[8]   = {0};   // daily % change
+  String scores[4];             // live/final game score lines
+  String reminders[4];          // episodes airing today
 };
 
 extern MatrixSettings g_settings;
@@ -217,6 +219,20 @@ inline void BLEController::handleJson(const String &raw) {
     g_settings.msgLine2 = (const char *)(doc["line2"] | g_settings.msgLine2.c_str());
     g_settings.msgLine3 = (const char *)(doc["line3"] | g_settings.msgLine3.c_str());
 
+  } else if (strcmp(cmd, "scores") == 0) {
+    for (int i = 0; i < 4; i++) {
+      char k[10];
+      snprintf(k, sizeof(k), "score%d", i + 1);
+      g_settings.scores[i] = (const char *)(doc[k] | "");
+    }
+
+  } else if (strcmp(cmd, "reminders") == 0) {
+    for (int i = 0; i < 4; i++) {
+      char k[12];
+      snprintf(k, sizeof(k), "reminder%d", i + 1);
+      g_settings.reminders[i] = (const char *)(doc[k] | "");
+    }
+
   } else if (strcmp(cmd, "flight") == 0) {
     g_settings.trackFlight = doc["trackFlight"] | g_settings.trackFlight;
     g_settings.flightIdent = (const char *)(doc["flightIdent"] | g_settings.flightIdent.c_str());
@@ -276,5 +292,7 @@ inline void BLEController::handleJson(const String &raw) {
     if (ch_) ch_->setValue((uint8_t *)raw.c_str(), raw.length());
   }
 
-  // TODO: call your redraw()/applySettings() here so changes show instantly.
+  // Persist the latest config to flash (debounced in loop) and redraw so
+  // changes show instantly and survive a power cycle.
+  g_settingsDirty = true;
 }
