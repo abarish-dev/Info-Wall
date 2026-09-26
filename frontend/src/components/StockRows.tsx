@@ -14,7 +14,7 @@ import {
 import Ionicons from "@react-native-vector-icons/ionicons";
 import { colors, spacing, radius, fonts, fontSize } from "@/src/theme";
 import { useThemedStyles } from "@/src/hooks/useThemedStyles";
-import { verifyTickers } from "@/src/services/catalog";
+import { verifyTickers, fetchQuotes, type Quote } from "@/src/services/catalog";
 
 type SlotState = "empty" | "checking" | "valid" | "invalid" | "error";
 type SlotInfo = { state: SlotState; name?: string; type?: string };
@@ -23,13 +23,16 @@ export function StockRows({
   stocks,
   onChange,
   onValidChange,
+  onQuotes,
 }: {
   stocks: string[];
   onChange: (stocks: string[]) => void;
   onValidChange: (valid: string[]) => void;
+  onQuotes?: (quotes: Record<string, Quote>) => void;
 }) {
   const styles = useThemedStyles(makeStyles);
   const [info, setInfo] = useState<Record<string, SlotInfo>>({});
+  const [quotes, setQuotes] = useState<Record<string, Quote>>({});
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const emitValid = useCallback(
@@ -99,6 +102,38 @@ export function StockRows({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stocks]);
 
+  // Live price quotes for verified-valid symbols (refreshed each minute).
+  const validKey = Object.keys(info)
+    .filter((k) => info[k]?.state === "valid")
+    .sort()
+    .join(",");
+  useEffect(() => {
+    const syms = validKey ? validKey.split(",") : [];
+    if (syms.length === 0) {
+      setQuotes({});
+      return;
+    }
+    let alive = true;
+    const load = async () => {
+      try {
+        const res = await fetchQuotes(syms);
+        if (!alive) return;
+        const map: Record<string, Quote> = {};
+        res.forEach((q) => (map[q.symbol] = q));
+        setQuotes(map);
+        onQuotes?.(map);
+      } catch {
+        /* keep prior */
+      }
+    };
+    load();
+    const id = setInterval(load, 60000);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+  }, [validKey]);
+
   const setSlot = (i: number, val: string) => {
     const arr = [...stocks];
     arr[i] = val.toUpperCase();
@@ -140,23 +175,29 @@ export function StockRows({
               <StatusIcon state={slot.state} styles={styles} />
             </View>
             {key.length > 0 && (
-              <Text
-                style={[
-                  styles.helper,
-                  slot.state === "invalid" && { color: colors.error },
-                  slot.state === "valid" && { color: colors.success },
-                  slot.state === "error" && { color: colors.warning },
-                ]}
-                testID={`stock-${i + 1}-helper`}
-              >
-                {slot.state === "checking"
-                  ? "Checking…"
-                  : slot.state === "valid"
-                    ? `${slot.name ?? key}${slot.type ? ` · ${slot.type}` : ""}`
-                    : slot.state === "invalid"
-                      ? "Unknown symbol — blocked, won't show on the wall"
-                      : "Couldn't verify right now — will still be sent"}
-              </Text>
+              <View style={styles.helperRow}>
+                <Text
+                  style={[
+                    styles.helper,
+                    slot.state === "invalid" && { color: colors.error },
+                    slot.state === "valid" && { color: colors.success },
+                    slot.state === "error" && { color: colors.warning },
+                  ]}
+                  testID={`stock-${i + 1}-helper`}
+                  numberOfLines={1}
+                >
+                  {slot.state === "checking"
+                    ? "Checking…"
+                    : slot.state === "valid"
+                      ? `${slot.name ?? key}${slot.type ? ` · ${slot.type}` : ""}`
+                      : slot.state === "invalid"
+                        ? "Unknown symbol — blocked, won't show on the wall"
+                        : "Couldn't verify right now — will still be sent"}
+                </Text>
+                {slot.state === "valid" && quotes[key]?.price != null && (
+                  <PriceBadge quote={quotes[key]} styles={styles} />
+                )}
+              </View>
             )}
           </View>
         );
@@ -164,6 +205,29 @@ export function StockRows({
       <Text style={styles.summary}>
         {validCount} valid symbol{validCount === 1 ? "" : "s"} will show on the
         wall.
+      </Text>
+    </View>
+  );
+}
+
+function PriceBadge({
+  quote,
+  styles,
+}: {
+  quote: Quote;
+  styles: ReturnType<typeof makeStyles>;
+}) {
+  const up = (quote.change ?? 0) >= 0;
+  const color = up ? colors.success : colors.error;
+  return (
+    <View style={styles.priceBadge}>
+      <Text style={styles.priceText}>
+        {quote.price?.toFixed(2)}
+      </Text>
+      <Ionicons name={up ? "caret-up" : "caret-down"} size={11} color={color} />
+      <Text style={[styles.changeText, { color }]}>
+        {up ? "+" : ""}
+        {quote.changePct?.toFixed(2)}%
       </Text>
     </View>
   );
@@ -233,6 +297,28 @@ const makeStyles = () =>
       fontSize: fontSize.sm,
       marginTop: 3,
       marginLeft: 4,
+      flexShrink: 1,
+    },
+    helperRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.sm,
+    },
+    priceBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 3,
+      marginTop: 3,
+    },
+    priceText: {
+      color: colors.onSurface,
+      fontFamily: fonts.mono,
+      fontSize: fontSize.sm,
+    },
+    changeText: {
+      fontFamily: fonts.textMedium,
+      fontSize: fontSize.sm,
     },
     summary: {
       color: colors.onSurfaceSecondary,

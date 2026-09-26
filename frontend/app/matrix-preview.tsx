@@ -24,6 +24,7 @@ import Ionicons, {
 import { colors, spacing, fonts } from "@/src/theme";
 import { storage } from "@/src/utils/storage";
 import { getCachedZip } from "@/src/services/geocode";
+import { fetchQuotes, type Quote } from "@/src/services/catalog";
 import { findTeam, teamLogoUrl, type League } from "@/src/data/teams";
 
 const STORAGE_KEY = "matrix_settings_v2";
@@ -97,6 +98,7 @@ export default function MatrixPreview() {
   const router = useRouter();
   const [settings, setSettings] = useState<any | null>(null);
   const [city, setCity] = useState<string>("");
+  const [quotes, setQuotes] = useState<Record<string, Quote>>({});
   const [idx, setIdx] = useState(0);
   const [paused, setPaused] = useState(false);
   const opacity = useRef(new Animated.Value(1)).current;
@@ -110,6 +112,19 @@ export default function MatrixPreview() {
       if (zip.length === 5) {
         const c = await getCachedZip(zip);
         if (c) setCity(`${c.city}${c.state ? `, ${c.state}` : ""}`);
+      }
+      const syms = ((s?.stocks ?? []) as string[])
+        .map((x) => x.trim().toUpperCase())
+        .filter(Boolean);
+      if (syms.length) {
+        try {
+          const res = await fetchQuotes(syms);
+          const map: Record<string, Quote> = {};
+          res.forEach((q) => (map[q.symbol] = q));
+          setQuotes(map);
+        } catch {
+          /* ignore */
+        }
       }
     })();
   }, []);
@@ -197,11 +212,28 @@ export default function MatrixPreview() {
         key: "stocks",
         label: "Financial ticker",
         node: (
-          <Glow
-            text={stocks.slice(0, 4).join("   ")}
-            color={GREEN}
-            size={20}
-          />
+          <View style={{ gap: 4 }}>
+            {stocks.slice(0, 4).map((sym: string) => {
+              const q = quotes[sym.trim().toUpperCase()];
+              const up = (q?.change ?? 0) >= 0;
+              return (
+                <View key={sym} style={styles.rowBetween}>
+                  <Glow text={sym.toUpperCase()} color={WHITE} size={18} />
+                  {q?.price != null ? (
+                    <Glow
+                      text={`${q.price.toFixed(2)}  ${up ? "▲" : "▼"}${Math.abs(
+                        q.changePct ?? 0,
+                      ).toFixed(1)}%`}
+                      color={up ? GREEN : "#FF5A5A"}
+                      size={16}
+                    />
+                  ) : (
+                    <Glow text="—" color={GREEN} size={16} />
+                  )}
+                </View>
+              );
+            })}
+          </View>
         ),
       });
     }
@@ -266,7 +298,7 @@ export default function MatrixPreview() {
     }
 
     return f;
-  }, [settings, city]);
+  }, [settings, city, quotes]);
 
   // Auto-cycle using the user's hold + fade timing.
   useEffect(() => {

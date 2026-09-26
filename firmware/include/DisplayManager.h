@@ -243,7 +243,16 @@ class DisplayManager {
     int y = 20;
     for (int i = 0; i < 8 && y < height_ - 8; i++) {
       if (!g_settings.stocks[i].length()) continue;
-      centerText(g_settings.stocks[i], y, white());
+      char line[28];
+      if (g_settings.stockPrice[i] > 0) {
+        char arrow = g_settings.stockChg[i] >= 0 ? '+' : '-';
+        snprintf(line, sizeof(line), "%s %.2f %c%.1f%%",
+                 g_settings.stocks[i].c_str(), g_settings.stockPrice[i],
+                 arrow, fabsf(g_settings.stockChg[i]));
+        centerText(line, y, g_settings.stockChg[i] >= 0 ? green() : red());
+      } else {
+        centerText(g_settings.stocks[i], y, white());
+      }
       y += 12;
     }
   }

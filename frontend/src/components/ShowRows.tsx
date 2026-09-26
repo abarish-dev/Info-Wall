@@ -13,6 +13,7 @@ import {
   ScrollView,
   StyleSheet,
   ActivityIndicator,
+  Linking,
 } from "react-native";
 import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -23,9 +24,11 @@ import { useThemedStyles } from "@/src/hooks/useThemedStyles";
 import {
   searchShows,
   fetchShowStatus,
+  fetchEpisodes,
   type ShowSearchItem,
   type ShowStatus,
   type ShowHighlight,
+  type EpisodesInfo,
 } from "@/src/services/catalog";
 
 const HL_META: Record<
@@ -46,20 +49,27 @@ export function ShowRows({
   onAdd,
   onRemove,
   max,
+  statuses: statusesProp,
 }: {
   shows: string[];
   onAdd: (name: string) => void;
   onRemove: (index: number) => void;
   max: number;
+  statuses?: Record<string, ShowStatus>;
 }) {
   const styles = useThemedStyles(makeStyles);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [statuses, setStatuses] = useState<Record<string, ShowStatus>>({});
+  const [internalStatuses, setInternalStatuses] = useState<
+    Record<string, ShowStatus>
+  >({});
+  const [episodesFor, setEpisodesFor] = useState<ShowStatus | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const statuses = statusesProp ?? internalStatuses;
 
   useEffect(() => {
+    if (statusesProp) return; // parent supplies statuses
     if (shows.length === 0) {
-      setStatuses({});
+      setInternalStatuses({});
       return;
     }
     if (timer.current) clearTimeout(timer.current);
@@ -68,7 +78,7 @@ export function ShowRows({
         const res = await fetchShowStatus(shows);
         const map: Record<string, ShowStatus> = {};
         res.forEach((s) => (map[s.name.toLowerCase()] = s));
-        setStatuses(map);
+        setInternalStatuses(map);
       } catch {
         /* leave prior statuses */
       }
@@ -76,7 +86,7 @@ export function ShowRows({
     return () => {
       if (timer.current) clearTimeout(timer.current);
     };
-  }, [shows]);
+  }, [shows, statusesProp]);
 
   return (
     <View style={{ gap: spacing.md }}>
@@ -88,7 +98,13 @@ export function ShowRows({
         const hl = st?.highlight ?? "none";
         const meta = HL_META[hl];
         return (
-          <View key={`${name}-${i}`} style={styles.row} testID={`show-${i + 1}-row`}>
+          <Pressable
+            key={`${name}-${i}`}
+            style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+            testID={`show-${i + 1}-row`}
+            onPress={() => st?.id && setEpisodesFor(st)}
+            disabled={!st?.id}
+          >
             <View style={styles.poster}>
               {st?.image ? (
                 <Image
@@ -118,6 +134,9 @@ export function ShowRows({
                 </Text>
               )}
             </View>
+            {st?.id ? (
+              <Ionicons name="chevron-forward" size={16} color={colors.info} />
+            ) : null}
             <Pressable
               testID={`show-${i + 1}-remove`}
               hitSlop={8}
@@ -126,7 +145,7 @@ export function ShowRows({
             >
               <Ionicons name="close" size={16} color={colors.info} />
             </Pressable>
-          </View>
+          </Pressable>
         );
       })}
 
@@ -157,7 +176,151 @@ export function ShowRows({
         }}
         styles={styles}
       />
+
+      <EpisodesModal
+        show={episodesFor}
+        onClose={() => setEpisodesFor(null)}
+        styles={styles}
+      />
     </View>
+  );
+}
+
+function EpisodesModal({
+  show,
+  onClose,
+  styles,
+}: {
+  show: ShowStatus | null;
+  onClose: () => void;
+  styles: ReturnType<typeof makeStyles>;
+}) {
+  const [info, setInfo] = useState<EpisodesInfo | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!show?.id) {
+      setInfo(null);
+      return;
+    }
+    setLoading(true);
+    setInfo(null);
+    fetchEpisodes(show.id)
+      .then(setInfo)
+      .catch(() => setInfo(null))
+      .finally(() => setLoading(false));
+  }, [show?.id]);
+
+  const epLine = (e: {
+    season: number | null;
+    number: number | null;
+    name: string | null;
+    airdate: string | null;
+  }) =>
+    `S${e.season ?? "?"}·E${e.number ?? "?"}  ${e.name ?? ""}`.trim();
+
+  return (
+    <Modal
+      visible={!!show}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
+      <SafeAreaView style={styles.modalRoot} edges={["top", "bottom"]}>
+        <View style={styles.modalHeader}>
+          <Text style={styles.modalTitle} numberOfLines={1}>
+            {(show?.matchedName ?? show?.name ?? "SHOW").toUpperCase()}
+          </Text>
+          <Pressable testID="episodes-close" onPress={onClose} hitSlop={8}>
+            <Ionicons name="close" size={24} color={colors.onSurface} />
+          </Pressable>
+        </View>
+
+        {loading ? (
+          <View style={styles.centerFill}>
+            <ActivityIndicator color={colors.brand} />
+          </View>
+        ) : !info ? (
+          <View style={styles.centerFill}>
+            <Text style={styles.showMeta}>Couldn&apos;t load episodes.</Text>
+          </View>
+        ) : (
+          <ScrollView contentContainerStyle={styles.list}>
+            <View style={styles.infoBar}>
+              {show?.image ? (
+                <Image
+                  source={{ uri: show.image }}
+                  style={styles.bigPoster}
+                  contentFit="cover"
+                />
+              ) : null}
+              <View style={{ flex: 1 }}>
+                <Text style={styles.infoStat}>{info.status ?? ""}</Text>
+                <Text style={styles.showMeta}>
+                  {info.seasons} season{info.seasons === 1 ? "" : "s"} ·{" "}
+                  {info.totalEpisodes} episodes
+                </Text>
+                {info.network ? (
+                  <Text style={styles.showMeta}>{info.network}</Text>
+                ) : null}
+                {show?.imdb ? (
+                  <Pressable
+                    testID="episodes-imdb"
+                    onPress={() => Linking.openURL(show.imdb as string)}
+                    style={styles.imdbBtn}
+                  >
+                    <Ionicons name="open-outline" size={13} color={colors.brand} />
+                    <Text style={styles.imdbText}>View on IMDb</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            </View>
+
+            {info.upcoming.length > 0 && (
+              <>
+                <Text style={styles.sectionLabel}>UPCOMING</Text>
+                {info.upcoming.map((e, i) => (
+                  <View key={`u-${i}`} style={styles.epRow}>
+                    <View style={styles.epDate}>
+                      <Ionicons name="calendar" size={13} color={colors.brand} />
+                      <Text style={styles.epDateText}>{e.airdate}</Text>
+                    </View>
+                    <Text style={styles.epName} numberOfLines={1}>
+                      {epLine(e)}
+                    </Text>
+                  </View>
+                ))}
+              </>
+            )}
+
+            {info.recent.length > 0 && (
+              <>
+                <Text style={styles.sectionLabel}>RECENT</Text>
+                {info.recent.map((e, i) => (
+                  <View key={`r-${i}`} style={[styles.epRow, { opacity: 0.7 }]}>
+                    <View style={styles.epDate}>
+                      <Ionicons
+                        name="checkmark-done"
+                        size={13}
+                        color={colors.info}
+                      />
+                      <Text style={styles.epDateText}>{e.airdate}</Text>
+                    </View>
+                    <Text style={styles.epName} numberOfLines={1}>
+                      {epLine(e)}
+                    </Text>
+                  </View>
+                ))}
+              </>
+            )}
+
+            {info.upcoming.length === 0 && info.recent.length === 0 && (
+              <Text style={styles.showMeta}>No episode data available.</Text>
+            )}
+          </ScrollView>
+        )}
+      </SafeAreaView>
+    </Modal>
   );
 }
 
@@ -424,4 +587,72 @@ const makeStyles = () =>
       padding: spacing.sm,
     },
     pickRowDisabled: { opacity: 0.5 },
+    centerFill: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      padding: spacing.xl,
+    },
+    infoBar: {
+      flexDirection: "row",
+      gap: spacing.md,
+      marginBottom: spacing.md,
+    },
+    bigPoster: {
+      width: 70,
+      height: 98,
+      borderRadius: radius.sm,
+      backgroundColor: colors.surfaceSecondary,
+    },
+    infoStat: {
+      color: colors.onSurface,
+      fontFamily: fonts.displayMedium,
+      fontSize: fontSize.lg,
+    },
+    imdbBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      marginTop: spacing.sm,
+    },
+    imdbText: {
+      color: colors.brand,
+      fontFamily: fonts.textMedium,
+      fontSize: fontSize.sm,
+    },
+    sectionLabel: {
+      color: colors.info,
+      fontFamily: fonts.displayMedium,
+      fontSize: fontSize.sm,
+      letterSpacing: 1.5,
+      marginTop: spacing.md,
+      marginBottom: spacing.xs,
+    },
+    epRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.md,
+      backgroundColor: colors.surfaceTertiary,
+      borderRadius: radius.sm,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      marginBottom: spacing.xs,
+    },
+    epDate: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      width: 96,
+    },
+    epDateText: {
+      color: colors.onSurfaceSecondary,
+      fontFamily: fonts.mono,
+      fontSize: fontSize.sm,
+    },
+    epName: {
+      flex: 1,
+      color: colors.onSurface,
+      fontFamily: fonts.text,
+      fontSize: fontSize.sm,
+    },
   });

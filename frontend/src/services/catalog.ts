@@ -51,6 +51,7 @@ export type ShowHighlight =
 
 export type ShowStatus = {
   name: string;
+  id: number | null;
   matchedName: string | null;
   status: string | null;
   highlight: ShowHighlight;
@@ -66,5 +67,75 @@ export async function fetchShowStatus(names: string[]): Promise<ShowStatus[]> {
   const q = list.join("|");
   const r = await fetch(`${BASE}/api/tv/status?names=${encodeURIComponent(q)}`);
   if (!r.ok) throw new Error("status failed");
+  return (await r.json()).results ?? [];
+}
+
+export type Quote = {
+  symbol: string;
+  price: number | null;
+  prevClose: number | null;
+  change: number | null;
+  changePct: number | null;
+  currency: string | null;
+};
+
+export async function fetchQuotes(symbols: string[]): Promise<Quote[]> {
+  const q = symbols.filter(Boolean).join(",");
+  if (!q) return [];
+  const r = await fetch(
+    `${BASE}/api/tickers/quotes?symbols=${encodeURIComponent(q)}`,
+  );
+  if (!r.ok) throw new Error("quotes failed");
+  return (await r.json()).results ?? [];
+}
+
+export type EpisodeRow = {
+  season: number | null;
+  number: number | null;
+  name: string | null;
+  airdate: string | null;
+};
+
+export type EpisodesInfo = {
+  name: string;
+  status: string | null;
+  network: string | null;
+  seasons: number;
+  totalEpisodes: number;
+  upcoming: EpisodeRow[];
+  recent: EpisodeRow[];
+};
+
+export async function fetchEpisodes(id: number): Promise<EpisodesInfo> {
+  const r = await fetch(`${BASE}/api/tv/episodes?id=${id}`);
+  if (!r.ok) throw new Error("episodes failed");
+  return r.json();
+}
+
+export type TeamGameHighlight =
+  | "live"
+  | "today"
+  | "soon"
+  | "upcoming"
+  | "recent"
+  | "offseason"
+  | "none";
+
+export type TeamStatus = {
+  team: string;
+  name: string | null;
+  logo: string | null;
+  highlight: TeamGameHighlight;
+  label: string | null;
+  opponent: string | null;
+  date: string | null;
+};
+
+export async function fetchTeamStatus(codes: string[]): Promise<TeamStatus[]> {
+  const list = codes.filter(Boolean);
+  if (!list.length) return [];
+  const q = list.join("|");
+  const r = await fetch(`${BASE}/api/teams/status?teams=${encodeURIComponent(q)}`);
+  if (!r.ok) throw new Error("team status failed");
   return (await r.json()).results ?? [];
 }

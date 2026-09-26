@@ -52,6 +52,7 @@ import { TransitionsSection } from "@/src/components/TransitionsSection";
 import { TeamRows } from "@/src/components/TeamPicker";
 import { ShowRows } from "@/src/components/ShowRows";
 import { StockRows } from "@/src/components/StockRows";
+import { useShowStatuses } from "@/src/hooks/useShowStatuses";
 import { PlanesOverhead } from "@/src/components/PlanesOverhead";
 import {
   connectToKnownDevice,
@@ -208,6 +209,9 @@ export default function ControlPanel() {
   const router = useRouter();
 
   const [settings, setSettings] = useState<Settings>(DEFAULTS);
+  const { statuses: showStatuses, newTodayCount } = useShowStatuses(
+    settings.shows,
+  );
   const [hydrated, setHydrated] = useState(false);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [activeId, setActiveId] = useState<string>("");
@@ -243,6 +247,9 @@ export default function ControlPanel() {
   const [themeId, setThemeId] = useState<AccentId>("orange");
   // Symbols verified valid by StockRows — only these are pushed to the matrix.
   const [validStocks, setValidStocks] = useState<string[]>([]);
+  const [stockQuotes, setStockQuotes] = useState<
+    Record<string, { price: number | null; changePct: number | null }>
+  >({});
   const [sectionOpen, setSectionOpen] = useState<Record<SectionKey, boolean>>(
     SECTION_DEFAULT_OPEN,
   );
@@ -453,18 +460,22 @@ export default function ControlPanel() {
     return () => clearTimeout(t);
   }, [settings.teams, settings.shows, status]);
 
-  // Live push of stock tickers (debounced) — only verified-valid symbols.
+  // Live push of stock tickers (debounced) — only verified-valid symbols,
+  // with current price + daily change so the matrix can render them.
   useEffect(() => {
     if (status !== "connected") return;
     const t = setTimeout(() => {
       const cmd: Record<string, unknown> = { command: "stocks" };
       validStocks.forEach((s, i) => {
         cmd[`stock${i + 1}`] = s;
+        const q = stockQuotes[s];
+        if (q?.price != null) cmd[`price${i + 1}`] = q.price;
+        if (q?.changePct != null) cmd[`chg${i + 1}`] = q.changePct;
       });
       writeLive(cmd).catch(() => {});
     }, 800);
     return () => clearTimeout(t);
-  }, [validStocks, status]);
+  }, [validStocks, stockQuotes, status]);
 
   // Live push of the custom 3-line message (debounced).
   useEffect(() => {
@@ -1009,6 +1020,27 @@ export default function ControlPanel() {
             <Text style={styles.brandTitle} numberOfLines={1}>
               {(settings.wallName || "Info Wall").toUpperCase()}
             </Text>
+            {newTodayCount > 0 && (
+              <Pressable
+                testID="new-episode-badge"
+                onPress={() => {
+                  Haptics.selectionAsync().catch(() => {});
+                  setSectionOpen((prev) => {
+                    const next = { ...prev, tv: true };
+                    storage.setItem(SECTION_OPEN_KEY, next);
+                    return next;
+                  });
+                }}
+                hitSlop={8}
+                style={({ pressed }) => [
+                  styles.newBadge,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Ionicons name="tv" size={12} color={colors.onBrand} />
+                <Text style={styles.newBadgeText}>{newTodayCount} new</Text>
+              </Pressable>
+            )}
             <Pressable
               testID="preview-button"
               onPress={() => router.push("/matrix-preview")}
@@ -1463,6 +1495,7 @@ export default function ControlPanel() {
           <ShowRows
             shows={settings.shows}
             max={MAX_ROWS}
+            statuses={showStatuses}
             onRemove={(i) => removeRow("shows", i)}
             onAdd={(name) =>
               setSettings((s) =>
@@ -1487,6 +1520,7 @@ export default function ControlPanel() {
             stocks={settings.stocks}
             onChange={(next) => setSettings((s) => ({ ...s, stocks: next }))}
             onValidChange={setValidStocks}
+            onQuotes={setStockQuotes}
           />
         </Section>
 
@@ -2025,6 +2059,22 @@ const makeStyles = () =>
     backgroundColor: "rgba(0,0,0,0.45)",
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  newBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    height: 26,
+    borderRadius: radius.pill,
+    backgroundColor: colors.brand,
+    marginRight: spacing.xs,
+  },
+  newBadgeText: {
+    color: colors.onBrand,
+    fontFamily: fonts.displayMedium,
+    fontSize: fontSize.sm,
+    letterSpacing: 0.5,
   },
   zoomControls: {
     position: "absolute",

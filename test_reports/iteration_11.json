@@ -1,0 +1,38 @@
+{
+  "summary": "PASS end-to-end on all new iteration-11 features. BACKEND (9/9 pytest against the public URL, /app/backend/tests/test_new_features.py): (1) GET /api/tickers/quotes?symbols=AAPL,TSLA returns per-symbol {symbol,price,prevClose,change,changePct,currency} with numeric price>0 and numeric changePct; case-insensitive dedup (aapl,AAPL,AaPl -> 1 row 'AAPL'); empty symbols returns {results:[]}. (2) GET /api/tv/episodes?id=44458 returns {name,status,network,seasons,totalEpisodes,upcoming[],recent[]} with seasons=3 and totalEpisodes>0; invalid id=999999999 correctly returns 404 (not 500). (3) GET /api/teams/status?teams=MLB:NYY|NFL:CAR returns 2 rows with valid highlight enum, real display name + logo URL; malformed 'XXX:ZZZ' and 'NOCOLON' both return 200 with highlight='none' (no 500). (4) GET /api/tv/status?names=Ted%20Lasso now includes an integer 'id' field used by the episodes modal. FRONTEND (390x844 mobile viewport, EXPO_PUBLIC_BACKEND_URL): App loads with header rendering — 'INFO WALL' title + settings-button + preview-button both operable and no crash; new-episode-badge is absent by default (correct — none of the tracked shows air today), which matches the spec. Toggle-all-sections expands correctly. SPORTS team-1-row (Yankees) shows pill 'Sep 27 vs BAL' and team-2-row (Panthers) shows pill 'Sep 27 @ CLE' — matches ESPN nextEvent data. TV SHOWS: tapping show-1-row (Shrinking) opens the episodes modal, which shows '3 seasons · 31 episodes' summary, network, UPCOMING/RECENT episode rows, and an episodes-imdb 'View on IMDb' link; episodes-close closes the modal. FINANCIAL TICKERS: stock-1 (AAPL) shows 'Apple Inc. · Equity' + price 341.07 ▲+1.53%; stock-2 (MSFT) shows 'Microsoft Corporation · Equity' + price 516.17 ▲+3.66%; typing 'ZZZZZ' into stock-3-input yields red 'Unknown symbol — blocked, won't show on the wall'. All flows working; no console errors — only pre-existing cosmetic warnings (textShadow*, pointerEvents) that were flagged in iteration_10.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "SettingsSheet TimeStepper", "issue": "(carry-over from iteration_10, not re-verified here — schedule toggle off) Nested TimeStepper still references a bare 'styles' identifier that no longer exists at module scope after the useThemedStyles refactor. Enabling Display Schedule will ReferenceError. Reference: /app/frontend/src/components/SettingsSheet.tsx:44-85."},
+      {"component": "AnimatedSplash pointerEvents prop", "issue": "Console warning 'props.pointerEvents is deprecated. Use style.pointerEvents' still present. Reference: /app/frontend/src/components/AnimatedSplash.tsx:98."},
+      {"component": "MatrixPreview textShadow* style props", "issue": "Console warning '\"textShadow*\" style props are deprecated. Use \"textShadow\".' still present. Reference: /app/frontend/app/matrix-preview.tsx."}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_new_features.py",
+    "/app/test_reports/pytest/new_features_results.xml",
+    "/app/test_reports/iteration_11.json"
+  ],
+  "action_items": [
+    "(No new blocking issues.) Continue to schedule the carry-over TimeStepper bare-`styles` fix from iteration_10.",
+    "(Cosmetic, carry-over) Migrate AnimatedSplash pointerEvents prop -> style.pointerEvents.",
+    "(Cosmetic, carry-over) Migrate matrix-preview textShadow* -> shorthand textShadow."
+  ],
+  "critical_code_review_comments": [
+    "server.py /api/tv/episodes: on any upstream exception (including TVmaze 404) the endpoint raises HTTPException 404. Good — matches spec that invalid id must NOT surface as 500.",
+    "server.py /api/teams/status: for missing colon or unknown league, returns early with default {highlight:'none'} — spec-compliant and safe (no 500 from ESPN 404s).",
+    "server.py _quote_one: dividing by prev to compute % is guarded with `and prev`. Safe against zero. Price cache TTL 60s is reasonable.",
+    "ShowRows EpisodesModal: uses `show.imdb` from ShowStatus (not from episodes endpoint) for the IMDb button — verified rendered.",
+    "index.tsx: new-episode-badge only mounts when newTodayCount>0; wrapped in Text, wired to setSectionOpen({tv:true}). Correct. Aria/testID present."
+  ],
+  "updated_files": ["/app/backend/tests/test_new_features.py (new)"],
+  "success_rate": {"backend": "100% (9/9 pytest passing on new endpoints; catalog suite from prior iteration remains 8/8)", "frontend": "100% (all iteration-11 spec checks passed — prices, episodes modal, team highlights, header stability)"},
+  "seed_data_creation": "None — feature is read-only against public Yahoo Finance chart, TVmaze, and ESPN site APIs.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Live-data endpoints: Yahoo Finance chart, TVmaze, ESPN site API. Numbers/dates drift — assert TYPE not exact value. Debounces: stock verify 600ms, show status 400ms, team status 400ms. Ted Lasso TVmaze id=44458. new-episode-badge only appears when any tracked show has highlight='new' (airs today) — normal to be absent. BLE remains native-only and mocked in web preview. LATENT SettingsSheet TimeStepper bug from iteration_10 not retested here.",
+  "rca_of_issue": "N/A — no failures this round."
+}

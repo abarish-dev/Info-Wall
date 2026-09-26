@@ -2,7 +2,7 @@
 // pick a team by league. Teams are stored as "LEAGUE:ABBR" (e.g. "NFL:DAL"),
 // matching the matrix firmware contract.
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -18,6 +18,11 @@ import * as Haptics from "expo-haptics";
 import { colors, spacing, radius, fonts, fontSize } from "@/src/theme";
 import { useThemedStyles } from "@/src/hooks/useThemedStyles";
 import {
+  fetchTeamStatus,
+  type TeamStatus,
+  type TeamGameHighlight,
+} from "@/src/services/catalog";
+import {
   LEAGUES,
   LEAGUE_LABEL,
   TEAMS,
@@ -26,6 +31,16 @@ import {
   readableOn,
   type League,
 } from "@/src/data/teams";
+
+const TEAM_HL: Record<TeamGameHighlight, { icon: any; color: () => string }> = {
+  live: { icon: "radio", color: () => colors.error },
+  today: { icon: "flame", color: () => colors.brand },
+  soon: { icon: "calendar", color: () => colors.info },
+  upcoming: { icon: "calendar-outline", color: () => colors.onSurfaceSecondary },
+  recent: { icon: "checkmark-done", color: () => colors.onSurfaceSecondary },
+  offseason: { icon: "bed", color: () => colors.onSurfaceSecondary },
+  none: { icon: "ellipse", color: () => colors.info },
+};
 
 export function parseTeam(value: string): { league: League; abbr: string } | null {
   const [lg, abbr] = value.split(":");
@@ -94,6 +109,31 @@ export function TeamRows({
 }) {
   const styles = useThemedStyles(makeStyles);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [statuses, setStatuses] = useState<Record<string, TeamStatus>>({});
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const key = teams.join("|");
+
+  useEffect(() => {
+    if (teams.length === 0) {
+      setStatuses({});
+      return;
+    }
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(async () => {
+      try {
+        const res = await fetchTeamStatus(teams);
+        const map: Record<string, TeamStatus> = {};
+        res.forEach((s) => (map[s.team.toUpperCase()] = s));
+        setStatuses(map);
+      } catch {
+        /* keep prior */
+      }
+    }, 400);
+    return () => {
+      if (timer.current) clearTimeout(timer.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
 
   return (
     <View style={{ gap: spacing.md }}>
@@ -104,6 +144,9 @@ export function TeamRows({
         const parsed = parseTeam(value);
         const team = parsed ? findTeam(parsed.league, parsed.abbr) : undefined;
         const color = team?.color ?? colors.surfaceTertiary;
+        const st = statuses[value.toUpperCase()];
+        const hl = st?.highlight ?? "none";
+        const meta = TEAM_HL[hl];
         return (
           <View key={`${value}-${i}`} style={styles.row} testID={`team-${i + 1}-row`}>
             <View style={[styles.swatch, { backgroundColor: color }]}>
@@ -120,9 +163,18 @@ export function TeamRows({
               <Text style={styles.teamName}>
                 {team ? `${team.city} ${team.name}` : value}
               </Text>
-              <Text style={styles.teamMeta}>
-                {parsed ? `${parsed.league} · ${parsed.abbr}` : "Unknown"}
-              </Text>
+              {st?.label ? (
+                <View style={styles.pillRow}>
+                  <Ionicons name={meta.icon} size={12} color={meta.color()} />
+                  <Text style={[styles.pillText, { color: meta.color() }]}>
+                    {st.label}
+                  </Text>
+                </View>
+              ) : (
+                <Text style={styles.teamMeta}>
+                  {parsed ? `${parsed.league} · ${parsed.abbr}` : "Unknown"}
+                </Text>
+              )}
             </View>
             <Pressable
               testID={`team-${i + 1}-remove`}
@@ -297,6 +349,16 @@ const makeStyles = () =>
       fontFamily: fonts.text,
       fontSize: fontSize.sm,
       marginTop: 1,
+    },
+    pillRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      marginTop: 3,
+    },
+    pillText: {
+      fontFamily: fonts.textMedium,
+      fontSize: fontSize.sm,
     },
     remove: {
       width: 28,

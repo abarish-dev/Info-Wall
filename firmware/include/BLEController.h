@@ -62,6 +62,8 @@ struct MatrixSettings {
   String teams[8];
   String shows[8];
   String stocks[8];
+  float  stockPrice[8] = {0};
+  float  stockChg[8]   = {0};   // daily % change
 };
 
 extern MatrixSettings g_settings;
@@ -199,9 +201,13 @@ inline void BLEController::handleJson(const String &raw) {
 
   } else if (strcmp(cmd, "stocks") == 0) {
     for (int i = 0; i < 8; i++) {
-      char key[8];
+      char key[8], pk[8], ck[8];
       snprintf(key, sizeof(key), "stock%d", i + 1);
+      snprintf(pk, sizeof(pk), "price%d", i + 1);
+      snprintf(ck, sizeof(ck), "chg%d", i + 1);
       g_settings.stocks[i] = (const char *)(doc[key] | "");
+      g_settings.stockPrice[i] = doc[pk] | 0.0f;
+      g_settings.stockChg[i] = doc[ck] | 0.0f;
     }
 
   } else if (strcmp(cmd, "message") == 0) {

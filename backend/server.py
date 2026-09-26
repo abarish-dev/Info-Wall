@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -282,6 +282,7 @@ def _tv_status_one(name: str) -> dict:
 
     data = {
         "name": name,
+        "id": None,
         "matchedName": None,
         "status": None,
         "highlight": "none",  # new | soon | returning | between | ended | none
@@ -335,6 +336,7 @@ def _tv_status_one(name: str) -> dict:
 
         data.update(
             matchedName=show.get("name"),
+            id=show.get("id"),
             status=status,
             highlight=highlight,
             label=label,
@@ -356,6 +358,232 @@ async def tv_status(names: str):
         nm = raw.strip()
         if nm:
             results.append(_tv_status_one(nm))
+    return {"results": results}
+
+
+# ---------------------------------------------------------------------------
+# Live stock quotes (Yahoo Finance chart, keyless) — price + daily change.
+# ---------------------------------------------------------------------------
+_quote_cache: dict = {}
+_QUOTE_TTL = 60  # seconds
+
+
+def _quote_one(sym: str) -> dict:
+    import time as _time
+
+    cached = _quote_cache.get(sym)
+    if cached and _time.time() - cached["ts"] < _QUOTE_TTL:
+        return cached["data"]
+
+    data = {
+        "symbol": sym,
+        "price": None,
+        "prevClose": None,
+        "change": None,
+        "changePct": None,
+        "currency": None,
+    }
+    try:
+        r = requests.get(
+            f"https://query1.finance.yahoo.com/v8/finance/chart/{sym}",
+            params={"interval": "1d", "range": "1d"},
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=8,
+        )
+        r.raise_for_status()
+        meta = r.json()["chart"]["result"][0]["meta"]
+        price = meta.get("regularMarketPrice")
+        prev = meta.get("chartPreviousClose") or meta.get("previousClose")
+        change = pct = None
+        if price is not None and prev:
+            change = round(price - prev, 2)
+            pct = round((price - prev) / prev * 100, 2)
+        data.update(
+            price=price,
+            prevClose=prev,
+            change=change,
+            changePct=pct,
+            currency=meta.get("currency"),
+        )
+        _quote_cache[sym] = {"ts": _time.time(), "data": data}
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("quote failed %s: %s", sym, exc)
+    return data
+
+
+@api_router.get("/tickers/quotes")
+async def tickers_quotes(symbols: str):
+    """Live price + daily change for a comma-separated list of symbols."""
+    seen = set()
+    results = []
+    for raw in symbols.split(","):
+        sym = raw.strip().upper()
+        if not sym or sym in seen:
+            continue
+        seen.add(sym)
+        results.append(_quote_one(sym))
+    return {"results": results}
+
+
+# ---------------------------------------------------------------------------
+# TV episodes (TVmaze) — upcoming + recent episodes and season info for one show.
+# ---------------------------------------------------------------------------
+@api_router.get("/tv/episodes")
+async def tv_episodes(id: int):  # noqa: A002
+    from datetime import date as _date, datetime as _dt
+
+    try:
+        r = requests.get(
+            f"https://api.tvmaze.com/shows/{id}",
+            params={"embed": "episodes"},
+            timeout=8,
+        )
+        r.raise_for_status()
+        show = r.json()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("tvmaze episodes failed %s: %s", id, exc)
+        raise HTTPException(status_code=404, detail="Show not found")
+
+    eps = ((show.get("_embedded") or {}).get("episodes")) or []
+    today = _date.today()
+
+    def _row(e):
+        return {
+            "season": e.get("season"),
+            "number": e.get("number"),
+            "name": e.get("name"),
+            "airdate": e.get("airdate"),
+        }
+
+    upcoming, past = [], []
+    for e in eps:
+        ad = e.get("airdate")
+        try:
+            d = _dt.strptime(ad[:10], "%Y-%m-%d").date() if ad else None
+        except Exception:  # noqa: BLE001
+            d = None
+        if d and d >= today:
+            upcoming.append(_row(e))
+        else:
+            past.append(_row(e))
+
+    seasons = max((e.get("season") or 0) for e in eps) if eps else 0
+    return {
+        "name": show.get("name"),
+        "status": show.get("status"),
+        "network": (show.get("network") or show.get("webChannel") or {}).get("name"),
+        "seasons": seasons,
+        "totalEpisodes": len(eps),
+        "upcoming": upcoming[:8],
+        "recent": list(reversed(past))[:4],
+    }
+
+
+# ---------------------------------------------------------------------------
+# Team game highlights (ESPN public site API, keyless) — next/live game.
+# ---------------------------------------------------------------------------
+_LEAGUE_PATH = {
+    "NFL": ("football", "nfl"),
+    "NBA": ("basketball", "nba"),
+    "MLB": ("baseball", "mlb"),
+    "NHL": ("hockey", "nhl"),
+}
+_team_cache: dict = {}
+_TEAM_TTL = 120
+
+
+def _team_status_one(code: str) -> dict:
+    import time as _time
+
+    data = {
+        "team": code,
+        "name": None,
+        "logo": None,
+        "highlight": "none",  # live | today | soon | upcoming | recent | offseason | none
+        "label": None,
+        "opponent": None,
+        "date": None,
+    }
+    if ":" not in code:
+        return data
+    league, abbr = code.split(":", 1)
+    sport_lg = _LEAGUE_PATH.get(league)
+    if not sport_lg:
+        return data
+
+    cached = _team_cache.get(code)
+    if cached and _time.time() - cached["ts"] < _TEAM_TTL:
+        return cached["data"]
+
+    sport, lg = sport_lg
+    try:
+        r = requests.get(
+            f"https://site.api.espn.com/apis/site/v2/sports/{sport}/{lg}/teams/{abbr.lower()}",
+            timeout=8,
+        )
+        r.raise_for_status()
+        t = r.json().get("team", {})
+        logos = t.get("logos") or []
+        data["name"] = t.get("displayName")
+        data["logo"] = logos[0]["href"] if logos else None
+
+        ne = t.get("nextEvent") or []
+        if ne:
+            e = ne[0]
+            comp = (e.get("competitions") or [{}])[0]
+            status = (comp.get("status") or {}).get("type") or {}
+            state = status.get("state")  # pre | in | post
+            short = status.get("shortDetail") or ""
+            date = e.get("date")
+            data["date"] = date
+
+            # Resolve opponent + home/away relative to our team.
+            opp, vs = None, "vs"
+            my_id = t.get("id")
+            for c in comp.get("competitors") or []:
+                if str((c.get("team") or {}).get("id")) != str(my_id):
+                    opp = (c.get("team") or {}).get("abbreviation") or (
+                        c.get("team") or {}
+                    ).get("shortDisplayName")
+                else:
+                    vs = "@" if c.get("homeAway") == "away" else "vs"
+            data["opponent"] = opp
+            matchup = f"{vs} {opp}" if opp else ""
+            days = _days_from_today(date[:10]) if date else None
+
+            if state == "in":
+                data.update(highlight="live", label=f"🔴 Live — {short}".strip())
+            elif state == "post":
+                data.update(highlight="recent", label=f"Final {matchup}".strip())
+            elif days == 0:
+                data.update(highlight="today", label=f"Today {matchup}".strip())
+            elif days is not None and 0 < days <= 7:
+                data.update(
+                    highlight="soon",
+                    label=f"{_fmt_date(date)} {matchup}".strip(),
+                )
+            else:
+                data.update(
+                    highlight="upcoming",
+                    label=f"{_fmt_date(date)} {matchup}".strip() if date else None,
+                )
+        else:
+            data.update(highlight="offseason", label="No games scheduled")
+
+        _team_cache[code] = {"ts": _time.time(), "data": data}
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("espn team status failed %s: %s", code, exc)
+    return data
+
+
+@api_router.get("/teams/status")
+async def teams_status(teams: str):
+    """Next/live game highlight for a pipe-separated list of LEAGUE:ABBR codes."""
+    results = []
+    for raw in teams.split("|"):
+        code = raw.strip().upper()
+        if code:
+            results.append(_team_status_one(code))
     return {"results": results}
 
 # Include the router in the main app

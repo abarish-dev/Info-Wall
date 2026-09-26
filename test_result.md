@@ -215,3 +215,67 @@
 ## agent_communication:
 ##   - agent: "main"
 ##     message: "Round 10: Added ticker verification (blocks invalid), TVmaze show picker + episode highlights, fixed Wall Profiles UI. Please test the 3 new backend endpoints (tickers/verify, tv/search, tv/status) and the frontend Stocks validation (valid green / invalid red-blocked), TV show search+add+highlights, and the Settings > Wall Profiles buttons. BLE mocked (native-only) — skip BLE."
+
+## Updates (round 11 — live prices, episodes, new-episode badge, team highlights)
+## backend:
+##   - task: "GET /api/tickers/quotes — live price + daily change (Yahoo chart)"
+##     implemented: true
+##     working: true
+##     file: "backend/server.py"
+##     status_history:
+##       - working: true
+##         agent: "main"
+##         comment: "Per symbol {price,prevClose,change,changePct,currency}, 60s cache. curl: AAPL +1.53%, TSLA -1.54%."
+##   - task: "GET /api/tv/episodes?id= — upcoming+recent episodes & season info (TVmaze)"
+##     implemented: true
+##     working: true
+##     file: "backend/server.py"
+##     status_history:
+##       - working: true
+##         agent: "main"
+##         comment: "Returns {name,status,network,seasons,totalEpisodes,upcoming[<=8],recent[<=4]}. tv/status now also returns show id. curl id=44458 → 4 seasons."
+##   - task: "GET /api/teams/status — next/live game highlight (ESPN nextEvent)"
+##     implemented: true
+##     working: true
+##     file: "backend/server.py"
+##     status_history:
+##       - working: true
+##         agent: "main"
+##         comment: "Pipe-separated LEAGUE:ABBR → {highlight live|today|soon|upcoming|recent|offseason,label,opponent,date,logo}. curl NYY 'Sep 27 vs BAL', CAR 'Sep 27 @ CLE'."
+## frontend:
+##   - task: "Live stock prices in StockRows + BLE payload + preview"
+##     implemented: true
+##     working: true
+##     file: "frontend/src/components/StockRows.tsx, frontend/app/index.tsx, frontend/app/matrix-preview.tsx"
+##     status_history:
+##       - working: true
+##         agent: "main"
+##         comment: "Valid symbols show price + colored ▲/▼ change (60s refresh). onQuotes lifts to index → stocks push includes priceN/chgN. Preview stocks frame shows price. Smoke: AAPL 341.07 +1.53%, MSFT 516.17 +3.66%."
+##   - task: "Tap a show for episodes modal"
+##     implemented: true
+##     working: true
+##     file: "frontend/src/components/ShowRows.tsx"
+##     status_history:
+##       - working: true
+##         agent: "main"
+##         comment: "Tapping a show row opens a modal with seasons/episodes/network/IMDb + upcoming/recent episode list. Smoke: Shrinking modal opened."
+##   - task: "New-episode badge in header + shared useShowStatuses hook"
+##     implemented: true
+##     working: true
+##     file: "frontend/app/index.tsx, frontend/src/hooks/useShowStatuses.ts"
+##     status_history:
+##       - working: true
+##         agent: "main"
+##         comment: "Badge shows count when any tracked show airs today (highlight 'new'); tapping opens TV section. Statuses shared with ShowRows (single fetch). No 'new today' shows in default set so badge hidden — logic verified, no crash."
+##   - task: "Team game highlights in TeamRows"
+##     implemented: true
+##     working: true
+##     file: "frontend/src/components/TeamPicker.tsx"
+##     status_history:
+##       - working: true
+##         agent: "main"
+##         comment: "Each team row shows a pill (Live/Today/date vs|@ opponent). Smoke: Yankees 'Sep 27 vs BAL', Panthers 'Sep 27 @ CLE'."
+
+## agent_communication:
+##   - agent: "main"
+##     message: "Round 11: live stock prices, tap-show-for-episodes, new-episode header badge, team game highlights. Test 3 new backend endpoints (tickers/quotes, tv/episodes, teams/status) and frontend: stock price display, episodes modal (tap show-1-row → episodes-close), team pills, badge logic. Fixed a TDZ crash (useShowStatuses moved after settings). BLE mocked (native) — skip."
