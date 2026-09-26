@@ -46,11 +46,13 @@ function TimeStepper({
   value,
   onChange,
   testID,
+  styles,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   testID: string;
+  styles: ReturnType<typeof makeStyles>;
 }) {
   const bump = (delta: number) => {
     Haptics.selectionAsync().catch(() => {});
@@ -224,6 +226,10 @@ export function SettingsSheet({
           {/* Wall profiles */}
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>WALL PROFILES</Text>
+            <Text style={styles.hint}>
+              Save multiple wall setups (e.g. Home, Office) and switch between
+              them.
+            </Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -262,24 +268,34 @@ export function SettingsSheet({
                   </Pressable>
                 );
               })}
-              <Pressable
-                testID="duplicate-profile-button"
-                onPress={onDuplicateProfile}
-                style={[styles.profileChip, styles.addProfileChip]}
-              >
-                <Ionicons name="copy-outline" size={15} color={colors.brand} />
-                <Text style={styles.profileChipTextActive}>Duplicate</Text>
-              </Pressable>
+            </ScrollView>
+            <Text style={styles.hint}>Tap to switch · hold to delete</Text>
+
+            <View style={styles.profileActions}>
               <Pressable
                 testID="add-profile-button"
                 onPress={onAddProfile}
-                style={[styles.profileChip, styles.addProfileChip]}
+                style={({ pressed }) => [
+                  styles.profileActionBtn,
+                  pressed && styles.pressed,
+                ]}
               >
                 <Ionicons name="add" size={16} color={colors.brand} />
-                <Text style={styles.profileChipTextActive}>Add</Text>
+                <Text style={styles.profileActionText}>New Wall</Text>
               </Pressable>
-            </ScrollView>
-            <Text style={styles.hint}>Tap to switch · hold to delete</Text>
+              <Pressable
+                testID="duplicate-profile-button"
+                onPress={onDuplicateProfile}
+                style={({ pressed }) => [
+                  styles.profileActionBtn,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Ionicons name="copy-outline" size={15} color={colors.brand} />
+                <Text style={styles.profileActionText}>Copy Current</Text>
+              </Pressable>
+            </View>
+
             <View style={styles.swatchRow}>
               {palette.map((col) => (
                 <Pressable
@@ -386,6 +402,7 @@ export function SettingsSheet({
                   testID="schedule-start"
                   label="Start"
                   value={scheduleStart}
+                  styles={styles}
                   onChange={(v) => {
                     onChange({ scheduleStart: v });
                     pushSchedule({ start: v });
@@ -395,6 +412,7 @@ export function SettingsSheet({
                   testID="schedule-end"
                   label="End"
                   value={scheduleEnd}
+                  styles={styles}
                   onChange={(v) => {
                     onChange({ scheduleEnd: v });
                     pushSchedule({ end: v });
@@ -750,8 +768,28 @@ const makeStyles = () =>
     backgroundColor: colors.brandTertiary,
     borderColor: colors.brand,
   },
-  addProfileChip: {
+  profileActions: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  profileActionBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.xs,
+    height: 44,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surfaceTertiary,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderStyle: "dashed",
+  },
+  profileActionText: {
+    color: colors.brand,
+    fontFamily: fonts.textMedium,
+    fontSize: fontSize.base,
   },
   profileChipText: {
     color: colors.onSurfaceSecondary,

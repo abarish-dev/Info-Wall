@@ -142,6 +142,222 @@ async def flights_nearby(lat: float, lon: float, radius: float = 25):
     _flight_cache[cache_key] = {"ts": _time.time(), "payload": payload}
     return payload
 
+
+# ---------------------------------------------------------------------------
+# Ticker verification (Yahoo Finance search, keyless) — used to BLOCK invalid
+# stock/ETF symbols before they reach the matrix.
+# ---------------------------------------------------------------------------
+_ticker_cache: dict = {}
+_TICKER_TTL = 86400  # symbols rarely change; cache a day
+
+
+def _verify_ticker(sym: str) -> dict:
+    import time as _time
+
+    cached = _ticker_cache.get(sym)
+    if cached and _time.time() - cached["ts"] < _TICKER_TTL:
+        return cached["data"]
+
+    data = {
+        "symbol": sym,
+        "valid": None,  # None = couldn't verify (network); True/False = definitive
+        "name": None,
+        "exchange": None,
+        "type": None,
+    }
+    try:
+        r = requests.get(
+            "https://query1.finance.yahoo.com/v1/finance/search",
+            params={"q": sym, "quotesCount": 6, "newsCount": 0},
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=8,
+        )
+        r.raise_for_status()
+        quotes = r.json().get("quotes", [])
+        match = next(
+            (q for q in quotes if (q.get("symbol") or "").upper() == sym), None
+        )
+        if match:
+            data.update(
+                valid=True,
+                name=match.get("shortname") or match.get("longname"),
+                exchange=match.get("exchDisp"),
+                type=match.get("typeDisp") or match.get("quoteType"),
+            )
+        else:
+            data["valid"] = False
+        # Only cache definitive results (don't cache transient errors).
+        _ticker_cache[sym] = {"ts": _time.time(), "data": data}
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("ticker verify failed %s: %s", sym, exc)
+    return data
+
+
+@api_router.get("/tickers/verify")
+async def tickers_verify(symbols: str):
+    """Verify a comma-separated list of symbols. Returns per-symbol validity
+    plus the company/fund name for valid ones."""
+    seen = set()
+    results = []
+    for raw in symbols.split(","):
+        sym = raw.strip().upper()
+        if not sym or sym in seen:
+            continue
+        seen.add(sym)
+        results.append(_verify_ticker(sym))
+    return {"results": results}
+
+
+# ---------------------------------------------------------------------------
+# TV show search + release status (TVmaze, keyless) — powers the show picker
+# and the "new episode" highlights.
+# ---------------------------------------------------------------------------
+_tv_cache: dict = {}
+_TV_TTL = 3600  # 1 hour
+
+
+def _fmt_date(iso: str) -> str:
+    from datetime import datetime as _dt
+
+    try:
+        return _dt.strptime(iso[:10], "%Y-%m-%d").strftime("%b %-d")
+    except Exception:  # noqa: BLE001
+        return iso[:10]
+
+
+def _days_from_today(iso: str):
+    from datetime import date as _date, datetime as _dt
+
+    try:
+        d = _dt.strptime(iso[:10], "%Y-%m-%d").date()
+        return (d - _date.today()).days
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _simplify_show(show: dict) -> dict:
+    img = (show.get("image") or {}).get("medium")
+    ext = show.get("externals") or {}
+    imdb = ext.get("imdb")
+    premiered = show.get("premiered") or ""
+    network = (show.get("network") or show.get("webChannel") or {}) or {}
+    return {
+        "id": show.get("id"),
+        "name": show.get("name"),
+        "status": show.get("status"),
+        "premiered": premiered,
+        "year": premiered[:4] if premiered else None,
+        "network": network.get("name"),
+        "genres": show.get("genres") or [],
+        "image": img,
+        "imdb": f"https://www.imdb.com/title/{imdb}" if imdb else None,
+    }
+
+
+@api_router.get("/tv/search")
+async def tv_search(q: str):
+    """Autocomplete-style show search. Returns up to 10 simplified matches."""
+    try:
+        r = requests.get(
+            "https://api.tvmaze.com/search/shows",
+            params={"q": q},
+            timeout=8,
+        )
+        r.raise_for_status()
+        rows = r.json()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("tvmaze search failed: %s", exc)
+        return {"results": []}
+    results = [_simplify_show(row["show"]) for row in rows[:10] if row.get("show")]
+    return {"results": results}
+
+
+def _tv_status_one(name: str) -> dict:
+    import time as _time
+
+    key = name.lower()
+    cached = _tv_cache.get(key)
+    if cached and _time.time() - cached["ts"] < _TV_TTL:
+        return cached["data"]
+
+    data = {
+        "name": name,
+        "matchedName": None,
+        "status": None,
+        "highlight": "none",  # new | soon | returning | between | ended | none
+        "label": None,
+        "nextAirdate": None,
+        "image": None,
+        "imdb": None,
+    }
+    try:
+        r = requests.get(
+            "https://api.tvmaze.com/singlesearch/shows",
+            params={"q": name, "embed[]": ["nextepisode", "previousepisode"]},
+            timeout=8,
+        )
+        if r.status_code == 404:
+            data["highlight"] = "unknown"
+            _tv_cache[key] = {"ts": _time.time(), "data": data}
+            return data
+        r.raise_for_status()
+        show = r.json()
+        emb = show.get("_embedded") or {}
+        nxt = emb.get("nextepisode") or {}
+        prv = emb.get("previousepisode") or {}
+        status = show.get("status")
+        img = (show.get("image") or {}).get("medium")
+        imdb = (show.get("externals") or {}).get("imdb")
+
+        highlight, label, airdate = "none", None, None
+        if nxt.get("airdate"):
+            dd = _days_from_today(nxt["airdate"])
+            airdate = nxt["airdate"]
+            if dd == 0:
+                highlight, label = "new", "New episode today!"
+            elif dd is not None and 0 < dd <= 7:
+                highlight, label = "soon", f"New episode {_fmt_date(nxt['airdate'])}"
+            elif dd is not None and dd > 7:
+                highlight, label = "returning", f"Returns {_fmt_date(nxt['airdate'])}"
+        elif prv.get("airdate"):
+            dd = _days_from_today(prv["airdate"])
+            if dd is not None and -3 <= dd <= 0:
+                highlight, label, airdate = "new", "New episode out now", prv["airdate"]
+            elif status == "Ended":
+                highlight, label = "ended", "Series ended"
+            else:
+                highlight, label = "between", "Between seasons"
+        else:
+            if status == "Ended":
+                highlight, label = "ended", "Series ended"
+            elif status == "Running":
+                highlight, label = "between", "Between seasons"
+
+        data.update(
+            matchedName=show.get("name"),
+            status=status,
+            highlight=highlight,
+            label=label,
+            nextAirdate=airdate,
+            image=img,
+            imdb=f"https://www.imdb.com/title/{imdb}" if imdb else None,
+        )
+        _tv_cache[key] = {"ts": _time.time(), "data": data}
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("tvmaze status failed %s: %s", name, exc)
+    return data
+
+
+@api_router.get("/tv/status")
+async def tv_status(names: str):
+    """Release status for a pipe-separated list of show names."""
+    results = []
+    for raw in names.split("|"):
+        nm = raw.strip()
+        if nm:
+            results.append(_tv_status_one(nm))
+    return {"results": results}
+
 # Include the router in the main app
 app.include_router(api_router)
 

@@ -40,7 +40,6 @@ import {
   Section,
   TextField,
   IconInput,
-  AddRowButton,
 } from "@/src/components/FormControls";
 import {
   TileMap,
@@ -51,6 +50,8 @@ import {
 } from "@/src/components/MatrixMap";
 import { TransitionsSection } from "@/src/components/TransitionsSection";
 import { TeamRows } from "@/src/components/TeamPicker";
+import { ShowRows } from "@/src/components/ShowRows";
+import { StockRows } from "@/src/components/StockRows";
 import { PlanesOverhead } from "@/src/components/PlanesOverhead";
 import {
   connectToKnownDevice,
@@ -240,6 +241,8 @@ export default function ControlPanel() {
     summary: string;
   } | null>(null);
   const [themeId, setThemeId] = useState<AccentId>("orange");
+  // Symbols verified valid by StockRows — only these are pushed to the matrix.
+  const [validStocks, setValidStocks] = useState<string[]>([]);
   const [sectionOpen, setSectionOpen] = useState<Record<SectionKey, boolean>>(
     SECTION_DEFAULT_OPEN,
   );
@@ -450,18 +453,18 @@ export default function ControlPanel() {
     return () => clearTimeout(t);
   }, [settings.teams, settings.shows, status]);
 
-  // Live push of stock tickers (debounced).
+  // Live push of stock tickers (debounced) — only verified-valid symbols.
   useEffect(() => {
     if (status !== "connected") return;
     const t = setTimeout(() => {
       const cmd: Record<string, unknown> = { command: "stocks" };
-      settings.stocks.forEach((s, i) => {
-        cmd[`stock${i + 1}`] = s.trim();
+      validStocks.forEach((s, i) => {
+        cmd[`stock${i + 1}`] = s;
       });
       writeLive(cmd).catch(() => {});
     }, 800);
     return () => clearTimeout(t);
-  }, [settings.stocks, status]);
+  }, [validStocks, status]);
 
   // Live push of the custom 3-line message (debounced).
   useEffect(() => {
@@ -685,12 +688,6 @@ export default function ControlPanel() {
       return { ...s, polygon: poly };
     });
 
-  const editStock = (i: number, val: string) =>
-    setSettings((s) => {
-      const arr = [...s.stocks];
-      arr[i] = val.toUpperCase();
-      return { ...s, stocks: arr };
-    });
   const deleteProfile = (id: string) => {
     if (profiles.length <= 1) {
       toast.show("Keep at least one wall", "error");
@@ -729,16 +726,6 @@ export default function ControlPanel() {
     toast.show(`Removed ${z} from recent`, "info");
   };
 
-  const editList = (key: "teams" | "shows", i: number, val: string) =>
-    setSettings((s) => {
-      const arr = [...s[key]];
-      arr[i] = val;
-      return { ...s, [key]: arr };
-    });
-  const addRow = (key: "teams" | "shows") =>
-    setSettings((s) =>
-      s[key].length >= MAX_ROWS ? s : { ...s, [key]: [...s[key], ""] },
-    );
   const removeRow = (key: "teams" | "shows", i: number) =>
     setSettings((s) => ({
       ...s,
@@ -1469,30 +1456,22 @@ export default function ControlPanel() {
         <Section
           icon="tv"
           title="TV SHOWS"
-          subtitle="Your watchlist"
+          subtitle="New-episode alerts"
           open={sectionOpen.tv}
           onToggle={() => toggleSection("tv")}
         >
-          {settings.shows.map((show, i) => (
-            <TextField
-              key={`show-${i}`}
-              testID={`show-${i + 1}-input`}
-              label={`Show ${i + 1}`}
-              value={show}
-              placeholder="Show name"
-              onChangeText={(t) => editList("shows", i, t)}
-              onRemove={
-                settings.shows.length > 1
-                  ? () => removeRow("shows", i)
-                  : undefined
-              }
-            />
-          ))}
-          <AddRowButton
-            testID="add-show-button"
-            label="Add Show"
-            disabled={settings.shows.length >= MAX_ROWS}
-            onPress={() => addRow("shows")}
+          <ShowRows
+            shows={settings.shows}
+            max={MAX_ROWS}
+            onRemove={(i) => removeRow("shows", i)}
+            onAdd={(name) =>
+              setSettings((s) =>
+                s.shows.some((n) => n.toLowerCase() === name.toLowerCase()) ||
+                s.shows.length >= MAX_ROWS
+                  ? s
+                  : { ...s, shows: [...s.shows, name] },
+              )
+            }
           />
         </Section>
 
@@ -1500,22 +1479,15 @@ export default function ControlPanel() {
         <Section
           icon="trending-up"
           title="FINANCIAL TICKERS"
-          subtitle="Up to 8 stock / ETF symbols"
+          subtitle="Up to 8 verified symbols"
           open={sectionOpen.stocks}
           onToggle={() => toggleSection("stocks")}
         >
-          {settings.stocks.map((sym, i) => (
-            <TextField
-              key={`stock-${i}`}
-              testID={`stock-${i + 1}-input`}
-              label={`Slot ${i + 1}`}
-              value={sym}
-              placeholder="AAPL"
-              autoCapitalize="characters"
-              maxLength={6}
-              onChangeText={(t) => editStock(i, t)}
-            />
-          ))}
+          <StockRows
+            stocks={settings.stocks}
+            onChange={(next) => setSettings((s) => ({ ...s, stocks: next }))}
+            onValidChange={setValidStocks}
+          />
         </Section>
 
         {/* Custom Message */}

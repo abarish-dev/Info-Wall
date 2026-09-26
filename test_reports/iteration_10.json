@@ -1,0 +1,37 @@
+{
+  "summary": "PASS end-to-end. All three new/changed areas behave as spec'd. BACKEND (8/8 pytest against the public URL): (1) GET /api/tickers/verify?symbols=AAPL,ZZZZZ,VOO,tsla returns 4 uppercased & deduped results — AAPL/VOO/TSLA valid:true with real names ('Apple Inc.', 'Vanguard S&P 500 ETF', 'Tesla, Inc.') and exchDisp, ZZZZZ valid:false. Dedup case-insensitive (AAPL,aapl,AAPL -> 1 row). Empty ?symbols= returns {results:[]}, 200. (2) GET /api/tv/search?q=shrinking returns >=1 matches with keys {id,name,year,status,network,image,imdb} and 'Shrinking' is in the top rows; ?q=zzqqxxvvnothingatall1234 returns {results:[]}, 200; empty ?q= returns {results:[]}, 200 (no 500). (3) GET /api/tv/status?names=Ted%20Lasso|Breaking%20Bad|NotARealShowXYZ returns 3 per-name rows — Breaking Bad highlight='ended', NotARealShowXYZ highlight='unknown', Ted Lasso highlight is one of the valid enum values (currently 'soon'/'new'/'returning'/'between' depending on live air dates), 200. FRONTEND (390x844 mobile viewport): App loads to INFO WALL. Financial Tickers: slot 1 AAPL shows green check + 'Apple Inc. · Equity'; slot 2 MSFT shows green check + 'Microsoft Corporation · Equity'; typing 'ZZZZZ' into stock-3-input triggers debounced verify and yields red X border + helper 'Unknown symbol — blocked, won't show on the wall'; summary line reflects only valid ones — '2 valid symbols will show on the wall' after entering ZZZZZ. TV Shows: default 3 rows each render a poster + a highlight pill ('Between seasons' / 'Returns Dec 24' / 'New episode Sep 30'). Tapping add-show-button opens a full-screen picker with show-search-input, typing 'Breaking Bad' returns 8 results including pick-show-169 (Breaking Bad 2008 · Ended · AMC · Drama); tapping the first result adds it to the list ('Breaking Bad · Series ended') and auto-closes the modal. Reopening the modal and tapping show-picker-close closes it as well. Wall Profiles (Settings): the WALL PROFILES card renders the explanation 'Save multiple wall setups (e.g. Home, Office) and switch between them.', the horizontally-scrolling profile chips, and two 44px-tall side-by-side buttons — 'New Wall' (add-profile-button) at x=33/w=158 and 'Copy Current' (duplicate-profile-button) at x=199/w=158, both fully inside the 390px viewport (not clipped). Tapping New Wall grew the profile list from 1 -> 2; tapping Copy Current grew it from 2 -> 3 with a 'New Wall Copy' name pre-filled. BLE flows not tested (native-only, mocked in preview, per request).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "SettingsSheet TimeStepper", "issue": "Nested TimeStepper component references a bare 'styles' identifier (e.g. styles.timeRow) at module scope, but the module no longer defines a module-level `const styles = StyleSheet.create(...)` — styles are now created inside SettingsSheet via useThemedStyles(makeStyles). This will throw ReferenceError the moment the Display Schedule toggle is turned on and the two <TimeStepper> instances mount. Not tested in this round (schedule toggle is off by default), but it's a landmine for the schedule flow. Reference: /app/frontend/src/components/SettingsSheet.tsx:44-85."},
+      {"component": "AnimatedSplash pointerEvents prop", "issue": "Console warning 'props.pointerEvents is deprecated. Use style.pointerEvents' still present (pre-existing). Reference: /app/frontend/src/components/AnimatedSplash.tsx:98."},
+      {"component": "MatrixPreview textShadow* style props", "issue": "Console warning '\"textShadow*\" style props are deprecated. Use \"textShadow\".' (pre-existing). Reference: /app/frontend/app/matrix-preview.tsx."}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_catalog.py",
+    "/app/test_reports/pytest/catalog_results.xml",
+    "/app/test_reports/iteration_10.json"
+  ],
+  "action_items": [
+    "(HIGH, latent) SettingsSheet.tsx: fix TimeStepper's use of the bare `styles` identifier — either pass `styles` in as a prop (as ShowPickerModal does) or move TimeStepper into SettingsSheet so it can close over the themed styles. As written, enabling the Display Schedule toggle will crash the settings sheet on both iOS and web.",
+    "(Optional, cosmetic) Move AnimatedSplash pointerEvents from prop to style.pointerEvents.",
+    "(Optional, cosmetic) Migrate matrix-preview.tsx styles.led to the RN 0.86 shorthand `textShadow: '0 0 10px <color>'`."
+  ],
+  "critical_code_review_comments": [
+    "server.py _verify_ticker(): when Yahoo returns quotes but none match sym exactly, we correctly mark valid:false and CACHE it. This means a typo cached as invalid will stay invalid for 24h — acceptable since typos rarely become real symbols, but worth noting.",
+    "server.py _tv_status_one(): highlights key off live TVmaze data (nextepisode/previousepisode). Test expectations therefore hedge on Ted Lasso ('one of the enum values') because the exact highlight/date drifts with real airdates — this is correct and desired.",
+    "StockRows.tsx: unverified-network state ('error') is included in `valid` (line 46). That matches the helper copy 'Couldn't verify right now — will still be sent'. Good UX call to avoid dropping good tickers on a transient failure.",
+    "SettingsSheet.tsx: TimeStepper references a `styles` identifier that no longer exists at module scope after the useThemedStyles refactor — HIGH priority latent bug (see react_native_issues)."
+  ],
+  "updated_files": ["/app/backend/tests/test_catalog.py (new)"],
+  "success_rate": {"backend": "100% (8/8 pytest passing)", "frontend": "100% (all 16 UI checks passed across Stock verify, TV picker, and Wall Profiles)"},
+  "seed_data_creation": "None — feature is read-only against public Yahoo Finance + TVmaze proxies.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "TV air dates are live (TVmaze). Ted Lasso's highlight/label can be any of new|soon|returning|between|ended|none depending on real-world air schedule at test time — assert TYPE, not exact string. Ticker/TV verifies are debounced ~600ms (stock) / 400ms (show status) — wait ~3-4s after typing. BLE remains native-only and mocked in the web preview. LATENT BUG: enabling Display Schedule in Settings will ReferenceError due to TimeStepper's bare `styles` — not in this round's scope but should be fixed alongside the other Settings work.",
+  "rca_of_issue": "N/A — no failures. One latent bug (SettingsSheet TimeStepper bare-styles reference) surfaced during code review but not reproduced (schedule toggle off by default)."
+}

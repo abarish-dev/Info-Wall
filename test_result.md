@@ -167,3 +167,51 @@
 ## agent_communication:
 ##   - agent: "main"
 ##     message: "Added Planes Overhead (new backend endpoint + frontend card), Live Matrix Preview, Auto-Countdown Clear, and fleshed out ESP32 firmware (not testable here). Please test the backend endpoint thoroughly (valid coords, busy area like JFK 40.6413/-73.7781 radius 25, invalid coords, radius clamping) and the frontend Planes Overhead + Preview flows. BLE is mocked in preview (native-only) — do not test BLE connect."
+
+## Updates (round 10 — ticker verification, TV episode highlights, profiles UI)
+## backend:
+##   - task: "GET /api/tickers/verify — validate stock/ETF symbols (Yahoo Finance)"
+##     implemented: true
+##     working: true
+##     file: "backend/server.py"
+##     status_history:
+##       - working: true
+##         agent: "main"
+##         comment: "Comma-separated symbols; per-symbol {valid,name,exchange,type}. valid=true/false/null(network). Cached 1 day (definitive only). curl: AAPL/VOO/TSLA valid, ZZZZZ invalid."
+##   - task: "GET /api/tv/search & /api/tv/status — TVmaze show search + release highlights"
+##     implemented: true
+##     working: true
+##     file: "backend/server.py"
+##     status_history:
+##       - working: true
+##         agent: "main"
+##         comment: "search returns simplified shows (name/year/status/network/image/imdb). status (pipe-separated names) returns highlight new|soon|returning|between|ended|unknown + label + nextAirdate. curl: Ted Lasso 'New episode Sep 30', Breaking Bad 'Series ended', bogus 'unknown'. Cached 1h."
+## frontend:
+##   - task: "Financial Tickers — StockRows with live verification, blocks invalid symbols"
+##     implemented: true
+##     working: true
+##     file: "frontend/src/components/StockRows.tsx, frontend/src/services/catalog.ts, frontend/app/index.tsx"
+##     status_history:
+##       - working: true
+##         agent: "main"
+##         comment: "Per-slot verify (debounced), green check + company name for valid, red 'Unknown symbol — blocked' for invalid, amber for unverified. Only valid symbols pushed via validStocks state. Smoke-verified: AAPL/MSFT valid, ZZZZZ blocked."
+##   - task: "TV Shows — ShowRows search picker + episode highlights"
+##     implemented: true
+##     working: true
+##     file: "frontend/src/components/ShowRows.tsx, frontend/app/index.tsx"
+##     status_history:
+##       - working: true
+##         agent: "main"
+##         comment: "Replaced free-text with TVmaze search modal (poster/year/network). Each show shows poster + highlight pill. Smoke-verified: Shrinking 'Between seasons', Emily in Paris 'Returns Dec 24', Ted Lasso 'New episode Sep 30'."
+##   - task: "Wall Profiles UI — relabel + fix clipped button"
+##     implemented: true
+##     working: true
+##     file: "frontend/src/components/SettingsSheet.tsx"
+##     status_history:
+##       - working: true
+##         agent: "main"
+##         comment: "Moved New Wall / Copy Current buttons out of the horizontal scroll into a fixed row (no longer clipped), relabeled, added explanation line. Smoke-verified."
+
+## agent_communication:
+##   - agent: "main"
+##     message: "Round 10: Added ticker verification (blocks invalid), TVmaze show picker + episode highlights, fixed Wall Profiles UI. Please test the 3 new backend endpoints (tickers/verify, tv/search, tv/status) and the frontend Stocks validation (valid green / invalid red-blocked), TV show search+add+highlights, and the Settings > Wall Profiles buttons. BLE mocked (native-only) — skip BLE."
