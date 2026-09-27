@@ -174,11 +174,19 @@ inline void BLEController::begin() {
 }
 
 inline void BLEController::notify(const String &json) {
-  if (!ch_ || !connected_) return;
+  if (!ch_) return;
+  // ALWAYS store the value so the app can READ it back as a fallback, even if
+  // the BLE link briefly dropped when Wi-Fi started (radio coexistence) and
+  // the live notification below was lost.
   ch_->setValue((uint8_t *)json.c_str(), json.length());
-  ch_->notify();
-  Serial.print("[BLE] tx: ");
-  Serial.println(json);
+  if (connected_) {
+    ch_->notify();
+    Serial.print("[BLE] tx: ");
+    Serial.println(json);
+  } else {
+    Serial.print("[BLE] stored (not connected): ");
+    Serial.println(json);
+  }
 }
 
 // ---------------------------------------------------------------------------

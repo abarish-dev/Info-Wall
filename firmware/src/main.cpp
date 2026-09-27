@@ -25,6 +25,11 @@ static bool s_clockSynced = false;
 
 void tryJoinWifi(const String &ssid, const String &pass) {
   Serial.printf("[WiFi] joining \"%s\"...\n", ssid.c_str());
+  // Let the app know the command was received and the join is starting. This
+  // is stored on the characteristic too, so a read-poll picks it up even if
+  // the live notify is missed.
+  g_ble.notify("{\"wifiStatus\":\"connecting\"}");
+
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid.c_str(), pass.c_str());
 
@@ -35,17 +40,25 @@ void tryJoinWifi(const String &ssid, const String &pass) {
   }
   Serial.println();
 
+  String result;
   if (WiFi.status() == WL_CONNECTED) {
     String ip = WiFi.localIP().toString();
     Serial.printf("[WiFi] connected: %s\n", ip.c_str());
     // Sync the clock so the schedule + countdown are correct.
     configTime(0, 0, "pool.ntp.org", "time.nist.gov");
     s_clockSynced = true;
-    // Tell the app it worked (matches the banner the app listens for).
-    g_ble.notify(String("{\"wifiStatus\":\"connected\",\"ip\":\"") + ip + "\"}");
+    result = String("{\"wifiStatus\":\"connected\",\"ip\":\"") + ip + "\"}";
   } else {
     Serial.println("[WiFi] failed");
-    g_ble.notify("{\"wifiStatus\":\"failed\"}");
+    result = "{\"wifiStatus\":\"failed\"}";
+  }
+
+  // Retry the result notify a few times over ~3s. The BLE link can drop
+  // momentarily when the Wi-Fi radio powers up; retrying (and the stored
+  // value in notify()) makes the app reliably pick up the outcome.
+  for (int i = 0; i < 6; i++) {
+    g_ble.notify(result);
+    delay(500);
   }
 }
 

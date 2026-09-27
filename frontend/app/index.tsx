@@ -65,6 +65,7 @@ import {
   readRssi,
   flashTest,
   writeLive,
+  readSettings,
   monitorMatrix,
   stopMonitor,
   BleError,
@@ -274,9 +275,11 @@ export default function ControlPanel() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [lastSsid, setLastSsid] = useState("");
   const [wifiStatus, setWifiStatus] = useState<{
-    state: "idle" | "waiting" | "connected" | "failed";
+    state: "idle" | "waiting" | "connected" | "failed" | "timeout";
     ip?: string;
   }>({ state: "idle" });
+  // Cancels an in-flight Wi-Fi result poll when a new join starts / status set.
+  const wifiPollRef = useRef(0);
   const [lastSync, setLastSync] = useState<{
     at: string;
     summary: string;
@@ -715,10 +718,13 @@ export default function ControlPanel() {
     monitorMatrix((obj) => {
       const ws = obj?.wifiStatus ?? obj?.wifi_status;
       if (ws === "connected" || ws === true) {
+        wifiPollRef.current++; // cancel any in-flight poll
         setWifiStatus({ state: "connected", ip: obj?.ip });
       } else if (ws === "failed" || ws === false) {
+        wifiPollRef.current++;
         setWifiStatus({ state: "failed" });
       }
+      // ws === "connecting" -> leave the "waiting" banner as is.
     });
     return () => stopMonitor();
   }, [status]);
@@ -811,12 +817,38 @@ export default function ControlPanel() {
     try {
       await writeLive({ command: "wifi", ssid: ssid.trim(), password });
       setWifiStatus({ state: "waiting" });
-      // The persistent monitor (see effect below) catches the firmware's
-      // {"wifiStatus":...} notification and flips this banner.
       toast.show(
-        "Wi-Fi credentials sent. Matrix is rebooting and connecting...",
+        "Wi-Fi credentials sent. Matrix is connecting...",
         "success",
       );
+      // The persistent monitor catches the firmware's {"wifiStatus":...}
+      // notification. But that live notification can be lost if the BLE link
+      // blips when the Wi-Fi radio powers up, so ALSO poll the characteristic:
+      // the firmware stores its latest Wi-Fi result on it, so a read reliably
+      // returns the outcome. Poll every 2.5s for ~35s, then time out.
+      const token = ++wifiPollRef.current;
+      const startedAt = Date.now();
+      const poll = async () => {
+        if (wifiPollRef.current !== token) return; // superseded / resolved
+        if (Date.now() - startedAt > 35000) {
+          if (wifiPollRef.current === token) setWifiStatus({ state: "timeout" });
+          return;
+        }
+        const rb: any = await readSettings();
+        const ws = rb?.wifiStatus ?? rb?.wifi_status;
+        if (ws === "connected" || ws === true) {
+          wifiPollRef.current++;
+          setWifiStatus({ state: "connected", ip: rb?.ip });
+          return;
+        }
+        if (ws === "failed" || ws === false) {
+          wifiPollRef.current++;
+          setWifiStatus({ state: "failed" });
+          return;
+        }
+        setTimeout(poll, 2500);
+      };
+      setTimeout(poll, 2500);
     } catch {
       setWifiStatus({ state: "idle" });
       toast.show("Couldn't send Wi-Fi credentials", "error");

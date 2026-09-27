@@ -145,7 +145,7 @@ export function SettingsSheet({
   liveEnabled?: boolean;
   bleName?: string;
   wifiStatus?: {
-    state: "idle" | "waiting" | "connected" | "failed";
+    state: "idle" | "waiting" | "connected" | "failed" | "timeout";
     ip?: string;
   };
   themeId?: AccentId;
@@ -616,13 +616,17 @@ export function SettingsSheet({
                     name={
                       wifiStatus.state === "connected"
                         ? "checkmark-circle"
-                        : "close-circle"
+                        : wifiStatus.state === "timeout"
+                          ? "help-circle"
+                          : "close-circle"
                     }
                     size={18}
                     color={
                       wifiStatus.state === "connected"
                         ? colors.success
-                        : colors.error
+                        : wifiStatus.state === "timeout"
+                          ? colors.warning
+                          : colors.error
                     }
                   />
                 )}
@@ -633,7 +637,9 @@ export function SettingsSheet({
                       ? wifiStatus.ip
                         ? `Matrix joined · ${wifiStatus.ip}`
                         : "Matrix joined the network"
-                      : "Couldn't join — check the password"}
+                      : wifiStatus.state === "timeout"
+                        ? "No confirmation yet — the matrix may still be joining. Check the panel."
+                        : "Couldn't join — check the password"}
                 </Text>
               </View>
             )}
