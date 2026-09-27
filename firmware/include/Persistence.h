@@ -42,6 +42,10 @@ inline void serializeSettings(JsonDocument &d) {
   d["msg2"] = g_settings.msgLine2;
   d["msg3"] = g_settings.msgLine3;
   d["apiBase"] = g_settings.apiBase;
+  d["wxTemp"] = g_settings.wxTemp;
+  d["wxHi"] = g_settings.wxHi;
+  d["wxLo"] = g_settings.wxLo;
+  d["wxText"] = g_settings.wxText;
   for (int i = 0; i < 8; i++) {
     d["team"][i] = g_settings.teams[i];
     d["tc"][i] = g_settings.teamColor[i];
@@ -49,6 +53,10 @@ inline void serializeSettings(JsonDocument &d) {
     d["stk"][i] = g_settings.stocks[i];
     d["pr"][i] = g_settings.stockPrice[i];
     d["chg"][i] = g_settings.stockChg[i];
+    d["trec"][i] = g_settings.teamRecord[i];
+    d["tlbl"][i] = g_settings.teamLabel[i];
+    d["thl"][i] = g_settings.teamHL[i];
+    d["slbl"][i] = g_settings.showLabel[i];
   }
   for (int i = 0; i < 4; i++) {
     d["sc"][i] = g_settings.scores[i];
@@ -81,6 +89,10 @@ inline void applySettings(JsonDocument &d) {
   g_settings.msgLine2 = (const char *)(d["msg2"] | "");
   g_settings.msgLine3 = (const char *)(d["msg3"] | "");
   g_settings.apiBase = (const char *)(d["apiBase"] | "");
+  g_settings.wxTemp = d["wxTemp"] | g_settings.wxTemp;
+  g_settings.wxHi = d["wxHi"] | g_settings.wxHi;
+  g_settings.wxLo = d["wxLo"] | g_settings.wxLo;
+  g_settings.wxText = (const char *)(d["wxText"] | "");
   for (int i = 0; i < 8; i++) {
     g_settings.teams[i] = (const char *)(d["team"][i] | "");
     g_settings.teamColor[i] = (const char *)(d["tc"][i] | "");
@@ -88,6 +100,10 @@ inline void applySettings(JsonDocument &d) {
     g_settings.stocks[i] = (const char *)(d["stk"][i] | "");
     g_settings.stockPrice[i] = d["pr"][i] | 0.0f;
     g_settings.stockChg[i] = d["chg"][i] | 0.0f;
+    g_settings.teamRecord[i] = (const char *)(d["trec"][i] | "");
+    g_settings.teamLabel[i] = (const char *)(d["tlbl"][i] | "");
+    g_settings.teamHL[i] = (const char *)(d["thl"][i] | "");
+    g_settings.showLabel[i] = (const char *)(d["slbl"][i] | "");
   }
   for (int i = 0; i < 4; i++) {
     g_settings.scores[i] = (const char *)(d["sc"][i] | "");
