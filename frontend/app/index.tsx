@@ -60,7 +60,6 @@ import { PlanesOverhead } from "@/src/components/PlanesOverhead";
 import {
   connectToKnownDevice,
   scanForDevices,
-  syncSettings,
   disconnect,
   isBleSupported,
   readRssi,
@@ -637,21 +636,16 @@ export default function ControlPanel() {
     const was = prevStatusRef.current;
     prevStatusRef.current = status;
     if (status === "connected" && was !== "connected") {
-      (async () => {
-        try {
-          const payload = buildBlePayload(settings, geo);
-          await syncSettings(payload);
-          const rec = {
-            at: new Date().toISOString(),
-            summary: "Auto-synced on reconnect",
-          };
-          setLastSync(rec);
-          storage.setItem(LAST_SYNC_KEY, rec);
-          toast.show("Reconnected — wall re-synced", "success");
-        } catch {
-          /* best effort */
-        }
-      })();
+      // Every setting re-pushes via the live-sync effects below (they depend on
+      // `status`), so a single oversized flat write isn't needed here — just
+      // note the reconnect.
+      const rec = {
+        at: new Date().toISOString(),
+        summary: "Auto-synced on reconnect",
+      };
+      setLastSync(rec);
+      storage.setItem(LAST_SYNC_KEY, rec);
+      toast.show("Reconnected — wall re-synced", "success");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
@@ -1074,10 +1068,92 @@ export default function ControlPanel() {
         return;
       }
 
-      // Flat payload matching the ESP32 firmware contract exactly.
-      const payload = buildBlePayload(settings, coords);
+      // A single flat write of every setting exceeds one BLE characteristic
+      // write (MTU/attr limit) and fails. Instead send the full current state
+      // as the same small, reliable per-command writes the live-sync uses.
+      const activeTeams = settings.teams.map((x) => x.trim()).filter(Boolean);
+      const stocksCmd: Record<string, unknown> = { command: "stocks" };
+      validStocks.forEach((s, i) => {
+        stocksCmd[`stock${i + 1}`] = s;
+        const q = stockQuotes[s];
+        if (q?.price != null) stocksCmd[`price${i + 1}`] = q.price;
+        if (q?.changePct != null) stocksCmd[`chg${i + 1}`] = q.changePct;
+      });
+      const commands: Record<string, unknown>[] = [
+        { command: "server", url: process.env.EXPO_PUBLIC_BACKEND_URL ?? "" },
+        { command: "radius", radius: settings.searchRadius },
+        { command: "brightness", brightness: settings.brightness },
+        {
+          command: "schedule",
+          scheduleEnabled: settings.scheduleEnabled,
+          scheduleStart: settings.scheduleStart,
+          scheduleEnd: settings.scheduleEnd,
+          scheduleBrightness: settings.scheduleBrightness,
+        },
+        {
+          command: "flight",
+          trackFlight: settings.trackFlight,
+          flightIdent: settings.flightIdent.trim(),
+        },
+        {
+          command: "weather",
+          showWeather: settings.showWeather,
+          lat: coords?.lat ?? 0,
+          lon: coords?.lon ?? 0,
+        },
+        {
+          command: "zone",
+          trackingMode: settings.trackingMode,
+          polygon: settings.polygon,
+        },
+        {
+          command: "teams",
+          teams: activeTeams,
+          colors: activeTeams.map((code) => {
+            const [lg, ab] = code.split(":");
+            return findTeam(lg as any, ab)?.color ?? "";
+          }),
+        },
+        {
+          command: "shows",
+          shows: settings.shows.map((x) => x.trim()).filter(Boolean),
+        },
+        stocksCmd,
+        {
+          command: "message",
+          showCustomMessage: settings.showCustomMessage,
+          line1: settings.msgLine1.trim(),
+          line2: settings.msgLine2.trim(),
+          line3: settings.msgLine3.trim(),
+        },
+        {
+          command: "transitions",
+          fadeSpeed: Math.round(settings.fadeSpeed),
+          holdDurationMs: Math.round(settings.holdSeconds * 1000),
+          showLKN: settings.showLKN,
+          showFolly: settings.showFolly,
+          showCountdown: settings.showCountdown,
+          countdownLabel: settings.countdownLabel.trim(),
+          countdownDate: settings.countdownDate,
+        },
+      ];
 
-      const { confirmed } = await syncSettings(payload);
+      let sent = 0;
+      for (const c of commands) {
+        try {
+          await writeLive(c);
+          sent++;
+          await new Promise((r) => setTimeout(r, 60));
+        } catch {
+          // One failed command shouldn't abort the whole sync.
+        }
+      }
+      if (sent === 0) {
+        throw new BleError("SYNC_FAILED", "Sync failed. Please try again.");
+      }
+      const confirmed = sent === commands.length;
+
+      const payload = buildBlePayload(settings, coords);
       Haptics.notificationAsync(
         Haptics.NotificationFeedbackType.Success,
       ).catch(() => {});
