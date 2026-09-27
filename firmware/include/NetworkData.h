@@ -33,15 +33,23 @@ class NetworkData {
     if (WiFi.status() != WL_CONNECTED || g_settings.apiBase.length() == 0)
       return;
     unsigned long now = millis();
-    if (due(now, tScores_, 30000))   fetchScores();
-    if (due(now, tQuotes_, 120000))  fetchQuotes();
-    if (due(now, tWeather_, 900000)) fetchWeather();
-    if (due(now, tPlanes_, 30000))   fetchPlanes();
-    if (due(now, tTv_, 3600000))     fetchTv();
+    // Only ONE HTTPS fetch at a time, with a minimum gap between any two.
+    // Doing 5 TLS handshakes back-to-back (which is what happens on the first
+    // tick after Wi-Fi connects, when every feed is "due") fragments the heap
+    // and makes later handshakes EOF (-29312). Spacing them lets RAM recover.
+    if (now - tLastFetch_ < kFetchGapMs) return;
+
+    if (due(now, tScores_, 30000))       { fetchScores();  tLastFetch_ = now; return; }
+    if (due(now, tPlanes_, 30000))       { fetchPlanes();  tLastFetch_ = now; return; }
+    if (due(now, tQuotes_, 120000))      { fetchQuotes();  tLastFetch_ = now; return; }
+    if (due(now, tWeather_, 900000))     { fetchWeather(); tLastFetch_ = now; return; }
+    if (due(now, tTv_, 3600000))         { fetchTv();      tLastFetch_ = now; return; }
   }
 
  private:
   unsigned long tScores_ = 0, tQuotes_ = 0, tWeather_ = 0, tPlanes_ = 0, tTv_ = 0;
+  unsigned long tLastFetch_ = 0;
+  static const unsigned long kFetchGapMs = 2500;  // min spacing between fetches
 
   static bool due(unsigned long now, unsigned long &last, unsigned long every) {
     if (last != 0 && now - last < every) return false;
@@ -62,31 +70,48 @@ class NetworkData {
   }
 
   // Perform a GET and deserialize into doc. Returns true on success.
-  // Retries once — the ESP32 TLS handshake can transiently EOF under the
-  // BLE + Wi-Fi memory pressure. Logs free heap on failure for diagnosis.
+  // Retries a few times — the ESP32 TLS handshake can transiently EOF
+  // (-29312) under BLE + Wi-Fi memory pressure / Cloudflare. Guards against
+  // low heap and gives the socket time to fully reset between attempts.
   bool getJson(const String &path, JsonDocument &doc) {
     String url = g_settings.apiBase + path;
-    for (int attempt = 0; attempt < 2; attempt++) {
+    for (int attempt = 0; attempt < 3; attempt++) {
+      // A TLS handshake to Cloudflare needs a large contiguous allocation.
+      // If the heap is too low/fragmented the handshake WILL EOF, so skip and
+      // let the next cycle retry once RAM has recovered.
+      if (ESP.getFreeHeap() < 45000) {
+        Serial.printf("[NET] %s skip — low heap %u\n", path.c_str(),
+                      (unsigned)ESP.getFreeHeap());
+        return false;
+      }
       WiFiClientSecure client;
       client.setInsecure();
-      client.setHandshakeTimeout(15);
+      client.setHandshakeTimeout(20);
+      // Shrink the TX buffer (our requests are tiny) to free RAM for the
+      // handshake; keep the default 16KB RX for Cloudflare's cert chain.
+      client.setBufferSizes(16384, 512);
       HTTPClient http;
       if (!http.begin(client, url)) {
         http.end();
+        client.stop();
+        delay(600);
         continue;
       }
-      http.setTimeout(9000);
+      http.setReuse(false);
+      http.setTimeout(12000);
       int code = http.GET();
       if (code == 200) {
         bool ok = deserializeJson(doc, http.getStream()) == DeserializationError::Ok;
         http.end();
+        client.stop();
         if (ok) return true;
       } else {
-        Serial.printf("[NET] %s -> HTTP %d (heap %u)\n", path.c_str(), code,
-                      (unsigned)ESP.getFreeHeap());
+        Serial.printf("[NET] %s -> HTTP %d (heap %u, try %d)\n", path.c_str(),
+                      code, (unsigned)ESP.getFreeHeap(), attempt + 1);
         http.end();
+        client.stop();
       }
-      delay(300);
+      delay(700);  // let the socket + TLS state fully reset before retry
     }
     return false;
   }
