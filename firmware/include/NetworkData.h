@@ -95,30 +95,26 @@ class NetworkData {
     if (!teams.length()) return;
     StaticJsonDocument<2048> doc;
     if (!getJson("/api/device/scores?teams=" + enc(teams), doc)) return;
-    JsonArray t = doc["t"].as<JsonArray>();
-    int i = 0;
-    for (JsonVariant e : t) {
-      if (i >= 4) break;
-      const char *label = e["l"] | "";
+    // Store per-team (aligned to g_settings.teams[]) so the display can show
+    // the team abbr with its own record + next game / live score.
+    for (JsonVariant e : doc["t"].as<JsonArray>()) {
       const char *code = e["c"] | "";
-      const char *hl = e["h"] | "";
-      g_settings.scores[i] = label;
+      int slot = teamSlot(code);
+      if (slot < 0) continue;
+      g_settings.teamLabel[slot]  = (const char *)(e["l"] | "");
+      g_settings.teamRecord[slot] = (const char *)(e["r"] | "");
+      g_settings.teamHL[slot]     = (const char *)(e["h"] | "");
       // On-device SCORE flash: a live team's score went up since last check.
-      if (strcmp(hl, "live") == 0 && !e["s"].isNull()) {
+      if (strcmp(g_settings.teamHL[slot].c_str(), "live") == 0 && !e["s"].isNull()) {
         float sc = e["s"].as<float>();
-        int slot = teamSlot(code);
-        if (slot >= 0) {
-          if (g_settings.prevScore[slot] > 0 && sc > g_settings.prevScore[slot]) {
-            uint8_t r, gg, b;
-            teamRGB(code, r, gg, b);
-            g_display.scoreFlash(abbrOf(code), r, gg, b);
-          }
-          g_settings.prevScore[slot] = sc;
+        if (g_settings.prevScore[slot] > 0 && sc > g_settings.prevScore[slot]) {
+          uint8_t r, gg, b;
+          teamRGB(code, r, gg, b);
+          g_display.scoreFlash(abbrOf(code), r, gg, b);
         }
+        g_settings.prevScore[slot] = sc;
       }
-      i++;
     }
-    for (; i < 4; i++) g_settings.scores[i] = "";
   }
 
   void fetchQuotes() {
@@ -193,13 +189,13 @@ class NetworkData {
     if (!names.length()) return;
     StaticJsonDocument<2048> doc;
     if (!getJson("/api/device/tv?names=" + enc(names), doc)) return;
-    g_settings.tvNewLine = "";
+    // Store each show's schedule label (next episode / season start) aligned
+    // to shows[] so the panel can show WHEN, not just the show name.
     for (JsonVariant v : doc["v"].as<JsonArray>()) {
-      const char *hl = v["h"] | "";
-      if (strcmp(hl, "new") == 0) {
-        g_settings.tvNewLine = (const char *)(v["l"] | v["n"] | "");
-        break;
-      }
+      const char *nm = v["n"] | "";
+      const char *lbl = v["l"] | "";
+      for (int i = 0; i < 8; i++)
+        if (g_settings.shows[i] == nm) g_settings.showLabel[i] = lbl;
     }
   }
 
