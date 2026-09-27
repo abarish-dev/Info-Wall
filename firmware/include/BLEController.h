@@ -184,7 +184,7 @@ inline void BLEController::notify(const String &json) {
 // ---------------------------------------------------------------------------
 // Parse one incoming JSON object and update g_settings. No reboot required.
 inline void BLEController::handleJson(const String &raw) {
-  StaticJsonDocument<2048> doc;
+  JsonDocument doc;
   DeserializationError err = deserializeJson(doc, raw);
   if (err) {
     Serial.print("[JSON] parse error: ");

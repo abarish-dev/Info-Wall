@@ -105,7 +105,7 @@ inline void loadSettings() {
     Serial.println("[NVS] no saved config — using defaults");
     return;
   }
-  StaticJsonDocument<4096> d;
+  JsonDocument d;
   if (deserializeJson(d, blob) == DeserializationError::Ok) {
     applySettings(d);
     Serial.println("[NVS] restored saved config");
@@ -124,7 +124,7 @@ inline void maybeSaveSettings() {
   }
   if (pending && millis() - lastChange > 1500) {
     pending = false;
-    StaticJsonDocument<4096> d;
+    JsonDocument d;
     serializeSettings(d);
     String blob;
     serializeJson(d, blob);
