@@ -87,9 +87,6 @@ class NetworkData {
       WiFiClientSecure client;
       client.setInsecure();
       client.setHandshakeTimeout(20);
-      // Shrink the TX buffer (our requests are tiny) to free RAM for the
-      // handshake; keep the default 16KB RX for Cloudflare's cert chain.
-      client.setBufferSizes(16384, 512);
       HTTPClient http;
       if (!http.begin(client, url)) {
         http.end();
