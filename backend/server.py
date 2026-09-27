@@ -872,6 +872,170 @@ async def device_tv(names: str):
         out.append({"n": nm, "h": s.get("highlight"), "l": _ascii(s.get("label"))})
     return {"v": out}
 
+
+# ---------------------------------------------------------------------------
+# Folly Beach tides — NOAA CO-OPS station 8665424 (Folly Creek, Hwy 171
+# bridge). Returns the next couple of high/low tide events + local water temp
+# (from the nearest reporting station, Charleston 8665530). Compact fields.
+# ---------------------------------------------------------------------------
+_folly_cache: dict = {}
+_lake_cache: dict = {}
+
+FOLLY_STATION = "8665424"          # Folly Creek, Hwy 171 bridge (tide preds)
+FOLLY_TEMP_STATION = "8665530"     # Charleston — nearest water-temp station
+COOPS = "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter"
+
+
+def _fmt_clock(hhmm: str) -> str:
+    # "09:08" -> "9:08a" / "15:02" -> "3:02p"
+    h, m = int(hhmm[:2]), int(hhmm[3:5])
+    ap = "a" if h < 12 else "p"
+    h12 = h % 12 or 12
+    return f"{h12}:{m:02d}{ap}"
+
+
+def _folly_water_temp() -> int | None:
+    try:
+        r = requests.get(
+            COOPS,
+            params={
+                "product": "water_temperature",
+                "application": "InfoWall",
+                "station": FOLLY_TEMP_STATION,
+                "date": "latest",
+                "units": "english",
+                "time_zone": "lst_ldt",
+                "format": "json",
+            },
+            timeout=8,
+        )
+        r.raise_for_status()
+        data = r.json().get("data") or []
+        if data and data[0].get("v"):
+            return int(round(float(data[0]["v"])))
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("folly water temp failed: %s", exc)
+    return None
+
+
+@api_router.get("/device/folly")
+async def device_folly():
+    """Next high/low tides at Folly Creek (Hwy 171 bridge) + water temp."""
+    import time as _time
+    import datetime as _dt
+    from zoneinfo import ZoneInfo
+
+    cached = _folly_cache.get("d")
+    if cached and _time.time() - cached["ts"] < 1800:
+        return cached["data"]
+
+    et = ZoneInfo("America/New_York")
+    now = _dt.datetime.now(et)
+    events: list[dict] = []
+    try:
+        r = requests.get(
+            COOPS,
+            params={
+                "product": "predictions",
+                "application": "InfoWall",
+                "begin_date": now.strftime("%Y%m%d"),
+                "end_date": (now + _dt.timedelta(days=2)).strftime("%Y%m%d"),
+                "datum": "MLLW",
+                "station": FOLLY_STATION,
+                "time_zone": "lst_ldt",
+                "units": "english",
+                "interval": "hilo",
+                "format": "json",
+            },
+            timeout=8,
+        )
+        r.raise_for_status()
+        for p in r.json().get("predictions", []):
+            # p["t"] like "2026-09-27 09:08" (station local time = Eastern)
+            t = _dt.datetime.strptime(p["t"], "%Y-%m-%d %H:%M").replace(tzinfo=et)
+            if t <= now:
+                continue
+            events.append(
+                {
+                    "y": p["type"],  # "H" | "L"
+                    "t": _fmt_clock(p["t"][11:16]),
+                    "v": round(float(p["v"]), 1),
+                }
+            )
+            if len(events) >= 2:
+                break
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("folly tides failed: %s", exc)
+        if cached:
+            return cached["data"]
+
+    out = {"e": events, "w": _folly_water_temp()}
+    _folly_cache["d"] = {"ts": _time.time(), "data": out}
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Lake Norman — Duke Energy lake-level feed (official) for the current level vs
+# full pond, plus water temp from the USGS gauge at Cowans Ford (the Lake
+# Norman dam). Duke publishes no temperature, so USGS fills that in.
+# ---------------------------------------------------------------------------
+DUKE_LEVELS = "https://api.hydro-derived.duke-energy.app/lakes/current-level"
+USGS_IV = "https://waterservices.usgs.gov/nwis/iv/"
+LKN_TEMP_SITE = "0214264790"  # Catawba R above NC-73 at Cowans Ford (LKN dam)
+
+
+def _lake_water_temp() -> int | None:
+    try:
+        r = requests.get(
+            USGS_IV,
+            params={
+                "format": "json",
+                "sites": LKN_TEMP_SITE,
+                "parameterCd": "00010",  # water temperature, °C
+                "siteStatus": "active",
+            },
+            timeout=8,
+        )
+        r.raise_for_status()
+        ts = r.json()["value"]["timeSeries"]
+        for series in ts:
+            vals = series["values"][0]["value"]
+            if vals:
+                c = float(vals[-1]["value"])
+                return int(round(c * 9 / 5 + 32))
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("lake water temp failed: %s", exc)
+    return None
+
+
+@api_router.get("/device/lake")
+async def device_lake():
+    """Lake Norman level (Duke Energy) vs full pond + water temp (USGS)."""
+    import time as _time
+
+    cached = _lake_cache.get("d")
+    if cached and _time.time() - cached["ts"] < 3600:
+        return cached["data"]
+
+    lvl = tgt = full = None
+    try:
+        r = requests.get(DUKE_LEVELS, timeout=8)
+        r.raise_for_status()
+        for lk in r.json():
+            if "NORMAN" in (lk.get("LakeName") or "").upper():
+                lvl = round(float(lk["Actual"]), 1)
+                tgt = round(float(lk["Target"]), 1)
+                full = round(float(lk["Max"]), 1)
+                break
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("lake level failed: %s", exc)
+        if cached:
+            return cached["data"]
+
+    out = {"lvl": lvl, "tgt": tgt, "full": full, "w": _lake_water_temp()}
+    _lake_cache["d"] = {"ts": _time.time(), "data": out}
+    return out
+
 # Include the router in the main app
 app.include_router(api_router)
 

@@ -43,11 +43,14 @@ class NetworkData {
     if (due(now, tPlanes_, 30000))       { fetchPlanes();  tLastFetch_ = now; return; }
     if (due(now, tQuotes_, 120000))      { fetchQuotes();  tLastFetch_ = now; return; }
     if (due(now, tWeather_, 900000))     { fetchWeather(); tLastFetch_ = now; return; }
+    if (due(now, tFolly_, 1800000))      { fetchFolly();   tLastFetch_ = now; return; }
+    if (due(now, tLake_, 3600000))       { fetchLake();    tLastFetch_ = now; return; }
     if (due(now, tTv_, 3600000))         { fetchTv();      tLastFetch_ = now; return; }
   }
 
  private:
   unsigned long tScores_ = 0, tQuotes_ = 0, tWeather_ = 0, tPlanes_ = 0, tTv_ = 0;
+  unsigned long tFolly_ = 0, tLake_ = 0;
   unsigned long tLastFetch_ = 0;
   static const unsigned long kFetchGapMs = 2500;  // min spacing between fetches
 
@@ -214,6 +217,39 @@ class NetworkData {
     } else {
       g_settings.planeLine = "";
     }
+  }
+
+  void fetchFolly() {
+    if (!g_settings.showFolly) return;
+    JsonDocument doc;
+    if (!getJson("/api/device/folly", doc)) return;
+    String lines[2];
+    int i = 0;
+    for (JsonVariant ev : doc["e"].as<JsonArray>()) {
+      if (i >= 2) break;
+      String y = (const char *)(ev["y"] | "");
+      String t = (const char *)(ev["t"] | "");
+      float v = ev["v"] | 0.0f;
+      lines[i++] = y + " " + t + " " + String(v, 1) + "ft";
+    }
+    g_settings.follyL1 = lines[0];
+    g_settings.follyL2 = lines[1];
+    g_settings.follyWater = doc["w"] | 0;
+  }
+
+  void fetchLake() {
+    if (!g_settings.showLKN) return;
+    JsonDocument doc;
+    if (!getJson("/api/device/lake", doc)) return;
+    if (!doc["lvl"].isNull()) {
+      float lvl = doc["lvl"].as<float>();
+      g_settings.lakeLvl = String(lvl, 1);
+      if (!doc["full"].isNull()) {
+        float diff = lvl - doc["full"].as<float>();
+        g_settings.lakeFull = (diff >= 0 ? String("+") : String("")) + String(diff, 1);
+      }
+    }
+    g_settings.lakeWater = doc["w"] | 0;
   }
 
   void fetchTv() {

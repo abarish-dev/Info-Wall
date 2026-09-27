@@ -46,6 +46,12 @@ inline void serializeSettings(JsonDocument &d) {
   d["wxHi"] = g_settings.wxHi;
   d["wxLo"] = g_settings.wxLo;
   d["wxText"] = g_settings.wxText;
+  d["follyL1"] = g_settings.follyL1;
+  d["follyL2"] = g_settings.follyL2;
+  d["follyW"] = g_settings.follyWater;
+  d["lakeLvl"] = g_settings.lakeLvl;
+  d["lakeFull"] = g_settings.lakeFull;
+  d["lakeW"] = g_settings.lakeWater;
   for (int i = 0; i < 8; i++) {
     d["team"][i] = g_settings.teams[i];
     d["tc"][i] = g_settings.teamColor[i];
@@ -93,6 +99,12 @@ inline void applySettings(JsonDocument &d) {
   g_settings.wxHi = d["wxHi"] | g_settings.wxHi;
   g_settings.wxLo = d["wxLo"] | g_settings.wxLo;
   g_settings.wxText = (const char *)(d["wxText"] | "");
+  g_settings.follyL1 = (const char *)(d["follyL1"] | "");
+  g_settings.follyL2 = (const char *)(d["follyL2"] | "");
+  g_settings.follyWater = d["follyW"] | 0;
+  g_settings.lakeLvl = (const char *)(d["lakeLvl"] | "");
+  g_settings.lakeFull = (const char *)(d["lakeFull"] | "");
+  g_settings.lakeWater = d["lakeW"] | 0;
   for (int i = 0; i < 8; i++) {
     g_settings.teams[i] = (const char *)(d["team"][i] | "");
     g_settings.teamColor[i] = (const char *)(d["tc"][i] | "");

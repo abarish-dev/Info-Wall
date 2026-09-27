@@ -217,12 +217,43 @@ class DisplayManager {
       case M_STOCKS:    drawStocks();    break;
       case M_COUNTDOWN: drawCountdown(); break;
       case M_REMINDERS: drawReminders(); break;
-      case M_LKN:       drawLabel("LKN MARINE", cyan()); break;
-      case M_FOLLY:     drawLabel("FOLLY TIDES", cyan()); break;
+      case M_LKN:       drawLake();  break;
+      case M_FOLLY:     drawFolly(); break;
     }
   }
 
   void drawLabel(const String &s, uint16_t c) { centerText(s, height_/2 - 4, c, 1); }
+
+  void drawFolly() {
+    centerText("FOLLY TIDES", 6, amber());
+    if (g_settings.follyL1.length()) {
+      centerText(g_settings.follyL1, 22, cyan());
+      if (g_settings.follyL2.length()) centerText(g_settings.follyL2, 34, white());
+      if (g_settings.follyWater > 0) {
+        char w[16];
+        snprintf(w, sizeof(w), "WATER %d\xF7", g_settings.follyWater);
+        centerText(w, 48, green());
+      }
+    } else {
+      centerText("Hwy 171 bridge", 30, white());
+    }
+  }
+
+  void drawLake() {
+    centerText("LAKE NORMAN", 6, cyan());
+    if (g_settings.lakeLvl.length()) {
+      centerText(String("LEVEL ") + g_settings.lakeLvl + "ft", 22, white());
+      if (g_settings.lakeFull.length())
+        centerText(String("FULL ") + g_settings.lakeFull + "ft", 34, amber());
+      if (g_settings.lakeWater > 0) {
+        char w[16];
+        snprintf(w, sizeof(w), "WATER %d\xF7", g_settings.lakeWater);
+        centerText(w, 48, green());
+      }
+    } else {
+      centerText("Duke Energy", 30, white());
+    }
+  }
 
   void drawMessage() {
     centerText(g_settings.msgLine1, 12, green());

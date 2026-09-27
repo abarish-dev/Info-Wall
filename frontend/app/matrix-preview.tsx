@@ -109,6 +109,8 @@ export default function MatrixPreview() {
     {},
   );
   const [dueReminders, setDueReminders] = useState<string[]>([]);
+  const [folly, setFolly] = useState<any | null>(null);
+  const [lake, setLake] = useState<any | null>(null);
   const [idx, setIdx] = useState(0);
   const [paused, setPaused] = useState(false);
   const opacity = useRef(new Animated.Value(1)).current;
@@ -147,11 +149,27 @@ export default function MatrixPreview() {
           /* ignore */
         }
       }
+      const base = process.env.EXPO_PUBLIC_BACKEND_URL ?? "";
+      if (s?.showFolly) {
+        try {
+          const r = await fetch(`${base}/api/device/folly`);
+          if (r.ok) setFolly(await r.json());
+        } catch {
+          /* ignore */
+        }
+      }
+      if (s?.showLKN) {
+        try {
+          const r = await fetch(`${base}/api/device/lake`);
+          if (r.ok) setLake(await r.json());
+        } catch {
+          /* ignore */
+        }
+      }
       const rem = await storage.getItem<{ label: string; airdate: string }[]>(
         REMINDERS_KEY,
         [],
-      );
-      const today = new Date().toISOString().slice(0, 10);
+      );      const today = new Date().toISOString().slice(0, 10);
       setDueReminders(
         (Array.isArray(rem) ? rem : [])
           .filter((r) => r.airdate === today)
@@ -315,25 +333,58 @@ export default function MatrixPreview() {
     }
 
     if (s.showLKN) {
+      const lvl = lake?.lvl != null ? `${lake.lvl}ft` : null;
+      const diff =
+        lake?.lvl != null && lake?.full != null
+          ? `${lake.lvl - lake.full >= 0 ? "+" : ""}${(lake.lvl - lake.full).toFixed(1)}ft vs full`
+          : null;
       f.push({
         key: "lkn",
-        label: "Lake Norman marine",
+        label: "Lake Norman",
         node: (
-          <View style={styles.rowCenter}>
-            <Ionicons name="boat" size={24} color={CYAN} />
-            <Glow text="  LKN MARINE" color={WHITE} size={18} />
+          <View style={{ gap: 6 }}>
+            <View style={styles.rowCenter}>
+              <Ionicons name="boat" size={20} color={CYAN} />
+              <Glow text="  LAKE NORMAN" color={CYAN} size={16} />
+            </View>
+            {lvl ? (
+              <>
+                <Glow text={`LEVEL ${lvl}`} color={WHITE} size={18} />
+                {!!diff && <Glow text={diff} color={AMBER} size={14} />}
+                {lake?.w != null && lake.w > 0 && (
+                  <Glow text={`WATER ${lake.w}°`} color={GREEN} size={14} />
+                )}
+              </>
+            ) : (
+              <Glow text="Duke Energy · loading…" color={WHITE} size={14} />
+            )}
           </View>
         ),
       });
     }
     if (s.showFolly) {
+      const ev = Array.isArray(folly?.e) ? folly.e : [];
+      const line = (e: any) => (e ? `${e.y} ${e.t}  ${e.v}ft` : "");
       f.push({
         key: "folly",
         label: "Folly Beach tides",
         node: (
-          <View style={styles.rowCenter}>
-            <Ionicons name="water" size={24} color={CYAN} />
-            <Glow text="  FOLLY TIDES" color={WHITE} size={18} />
+          <View style={{ gap: 6 }}>
+            <View style={styles.rowCenter}>
+              <Ionicons name="water" size={20} color={CYAN} />
+              <Glow text="  FOLLY TIDES" color={AMBER} size={16} />
+            </View>
+            {ev.length ? (
+              <>
+                <Glow text={line(ev[0])} color={CYAN} size={16} />
+                {!!ev[1] && <Glow text={line(ev[1])} color={WHITE} size={16} />}
+                {folly?.w != null && folly.w > 0 && (
+                  <Glow text={`WATER ${folly.w}°`} color={GREEN} size={14} />
+                )}
+              </>
+            ) : (
+              <Glow text="Hwy 171 bridge · loading…" color={WHITE} size={14} />
+            )}
           </View>
         ),
       });
@@ -371,7 +422,7 @@ export default function MatrixPreview() {
     }
 
     return f;
-  }, [settings, city, quotes, teamStatuses, dueReminders]);
+  }, [settings, city, quotes, teamStatuses, dueReminders, folly, lake]);
 
   // Auto-cycle using the user's hold + fade timing.
   useEffect(() => {

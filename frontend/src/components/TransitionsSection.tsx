@@ -59,8 +59,6 @@ function daysUntil(iso: string): number | null {
 export function TransitionsSection({
   fadeSpeed,
   holdSeconds,
-  showLKN,
-  showFolly,
   showCountdown,
   countdownLabel,
   countdownDate,
@@ -71,16 +69,12 @@ export function TransitionsSection({
 }: {
   fadeSpeed: number;
   holdSeconds: number;
-  showLKN: boolean;
-  showFolly: boolean;
   showCountdown: boolean;
   countdownLabel: string;
   countdownDate: string;
   onChange: (patch: {
     fadeSpeed?: number;
     holdSeconds?: number;
-    showLKN?: boolean;
-    showFolly?: boolean;
     showCountdown?: boolean;
     countdownLabel?: string;
     countdownDate?: string;
@@ -201,20 +195,6 @@ export function TransitionsSection({
 
       {/* Module visibility */}
       <Text style={styles.subheader}>MODULE VISIBILITY</Text>
-      <ToggleRow
-        testID="toggle-lkn"
-        label="Lake Norman Marine"
-        value={showLKN}
-        onValueChange={(v) => onChange({ showLKN: v })}
-        styles={styles}
-      />
-      <ToggleRow
-        testID="toggle-folly"
-        label="Folly Beach Tides"
-        value={showFolly}
-        onValueChange={(v) => onChange({ showFolly: v })}
-        styles={styles}
-      />
       <ToggleRow
         testID="toggle-countdown"
         label="Travel Countdown"

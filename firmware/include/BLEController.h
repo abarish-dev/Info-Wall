@@ -83,6 +83,14 @@ struct MatrixSettings {
   String wxText         = "";
   String planeLine      = "";   // nearest overhead flight
   String tvNewLine      = "";   // a show with a new episode
+
+  // Folly Beach tides (NOAA 8665424) + Lake Norman (Duke Energy + USGS).
+  String follyL1        = "";   // next tide, e.g. "H 9:31p 6.2ft"
+  String follyL2        = "";   // following tide
+  int    follyWater     = 0;    // water temp F (0 = n/a)
+  String lakeLvl        = "";   // current level, e.g. "97.5"
+  String lakeFull       = "";   // vs full pond, e.g. "-2.5"
+  int    lakeWater      = 0;    // water temp F (0 = n/a)
 };
 
 extern MatrixSettings g_settings;
@@ -290,6 +298,18 @@ inline void BLEController::handleJson(const String &raw) {
       snprintf(lk, sizeof(lk), "lbl%d", i + 1);
       g_settings.showLabel[i] = (const char *)(doc[lk] | "");
     }
+
+  } else if (strcmp(cmd, "folly") == 0) {
+    // Phone-pushed Folly tides fallback (when the panel's own fetch is down).
+    g_settings.follyL1    = (const char *)(doc["l1"] | "");
+    g_settings.follyL2    = (const char *)(doc["l2"] | "");
+    g_settings.follyWater = doc["w"] | 0;
+
+  } else if (strcmp(cmd, "lake") == 0) {
+    // Phone-pushed Lake Norman level + water temp fallback.
+    g_settings.lakeLvl    = (const char *)(doc["lvl"] | "");
+    g_settings.lakeFull   = (const char *)(doc["full"] | "");
+    g_settings.lakeWater  = doc["w"] | 0;
 
   } else if (strcmp(cmd, "flight") == 0) {
     g_settings.trackFlight = doc["trackFlight"] | g_settings.trackFlight;

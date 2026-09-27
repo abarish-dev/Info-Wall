@@ -692,6 +692,56 @@ export default function ControlPanel() {
     return () => clearTimeout(t);
   }, [settings.trackingMode, settings.polygon, status]);
 
+  // Fetch Folly Beach tides + Lake Norman level here and push over BLE, so the
+  // panel shows real data even when its own HTTPS fetch is unavailable.
+  useEffect(() => {
+    if (status !== "connected") return;
+    const base = process.env.EXPO_PUBLIC_BACKEND_URL ?? "";
+    const t = setTimeout(async () => {
+      if (settings.showFolly) {
+        try {
+          const r = await fetch(`${base}/api/device/folly`);
+          if (r.ok) {
+            const d = await r.json();
+            const ev = Array.isArray(d?.e) ? d.e : [];
+            const line = (e: any) =>
+              e ? `${e.y} ${e.t} ${e.v}ft` : "";
+            await writeLive({
+              command: "folly",
+              l1: line(ev[0]),
+              l2: line(ev[1]),
+              w: d?.w ?? 0,
+            });
+          }
+        } catch {
+          /* panel can try its own fetch */
+        }
+      }
+      if (settings.showLKN) {
+        try {
+          const r = await fetch(`${base}/api/device/lake`);
+          if (r.ok) {
+            const d = await r.json();
+            let full = "";
+            if (d?.lvl != null && d?.full != null) {
+              const diff = d.lvl - d.full;
+              full = `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}`;
+            }
+            await writeLive({
+              command: "lake",
+              lvl: d?.lvl != null ? String(d.lvl) : "",
+              full,
+              w: d?.w ?? 0,
+            });
+          }
+        } catch {
+          /* panel can try its own fetch */
+        }
+      }
+    }, 900);
+    return () => clearTimeout(t);
+  }, [settings.showFolly, settings.showLKN, status]);
+
   // Auto full-sync whenever the phone (re)connects, so the wall always matches
   // the app — even after edits made while disconnected.
   const prevStatusRef = useRef<BleStatus>(status);
@@ -1784,6 +1834,40 @@ export default function ControlPanel() {
               </ScrollView>
             </View>
           )}
+
+          <View style={styles.divider} />
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleTextWrap}>
+              <Text style={styles.fieldLabel}>Lake Norman Level</Text>
+              <Text style={styles.toggleHint}>
+                Duke Energy lake level + water temp
+              </Text>
+            </View>
+            <Switch
+              testID="toggle-lkn"
+              value={settings.showLKN}
+              onValueChange={(v) => setSettings((s) => ({ ...s, showLKN: v }))}
+              trackColor={{ false: colors.surfaceTertiary, true: colors.brand }}
+              thumbColor={colors.onSurface}
+              ios_backgroundColor={colors.surfaceTertiary}
+            />
+          </View>
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleTextWrap}>
+              <Text style={styles.fieldLabel}>Folly Beach Tides</Text>
+              <Text style={styles.toggleHint}>
+                Next high/low tide at Hwy 171 bridge
+              </Text>
+            </View>
+            <Switch
+              testID="toggle-folly"
+              value={settings.showFolly}
+              onValueChange={(v) => setSettings((s) => ({ ...s, showFolly: v }))}
+              trackColor={{ false: colors.surfaceTertiary, true: colors.brand }}
+              thumbColor={colors.onSurface}
+              ios_backgroundColor={colors.surfaceTertiary}
+            />
+          </View>
         </Section>
 
         {/* Planes Overhead */}
@@ -1911,8 +1995,6 @@ export default function ControlPanel() {
         <TransitionsSection
           fadeSpeed={settings.fadeSpeed}
           holdSeconds={settings.holdSeconds}
-          showLKN={settings.showLKN}
-          showFolly={settings.showFolly}
           showCountdown={settings.showCountdown}
           countdownLabel={settings.countdownLabel}
           countdownDate={settings.countdownDate}
@@ -2699,6 +2781,10 @@ const makeStyles = () =>
     alignItems: "center",
     justifyContent: "space-between",
     gap: spacing.md,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.divider,
   },
   toggleTextWrap: {
     flex: 1,
