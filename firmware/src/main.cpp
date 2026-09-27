@@ -58,17 +58,13 @@ void setup() {
   delay(200);
   Serial.println("\n[Info Wall] booting...");
 
-  // Route large heap allocations (e.g. the mbedTLS handshake buffers used by
-  // WiFiClientSecure) to PSRAM so BLE + Wi-Fi + HUB75 don't exhaust the ~320KB
-  // of internal RAM — the SSL EOF fetch failures were internal-RAM starvation.
-  // The HUB75 DMA framebuffer still lands in internal DMA-capable RAM because
-  // the panel library allocates it with MALLOC_CAP_DMA explicitly.
+  // NOTE: do NOT globally route large allocations to PSRAM
+  // (heap_caps_malloc_extmem_enable) — it starves the BLE controller of the
+  // internal RAM it needs and stops advertising. Just report PSRAM presence.
   if (psramFound()) {
-    heap_caps_malloc_extmem_enable(4096);  // allocs >= 4KB go to PSRAM
-    Serial.printf("[MEM] PSRAM ok — large allocs -> PSRAM (psram free %u)\n",
-                  (unsigned)ESP.getFreePsram());
+    Serial.printf("[MEM] PSRAM present (free %u)\n", (unsigned)ESP.getFreePsram());
   } else {
-    Serial.println("[MEM] WARNING: no PSRAM found — TLS may fail under BLE");
+    Serial.println("[MEM] no PSRAM found");
   }
 
   loadSettings();       // restore last config from flash BEFORE drawing

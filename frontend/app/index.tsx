@@ -642,16 +642,35 @@ export default function ControlPanel() {
     return () => clearTimeout(t);
   }, [settings.trackFlight, settings.flightIdent, status]);
 
-  // Live push of weather toggle + resolved coordinates (debounced).
+  // Live push of weather toggle + resolved coordinates, plus current
+  // conditions fetched here so the panel shows weather even if its own HTTPS
+  // fetch is unavailable (debounced).
   useEffect(() => {
     if (status !== "connected") return;
-    const t = setTimeout(() => {
-      writeLive({
+    const t = setTimeout(async () => {
+      const cmd: Record<string, unknown> = {
         command: "weather",
         showWeather: settings.showWeather,
         lat: geo?.lat ?? 0,
         lon: geo?.lon ?? 0,
-      }).catch(() => {});
+      };
+      if (settings.showWeather && geo?.lat != null && geo?.lon != null) {
+        try {
+          const r = await fetch(
+            `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/weather/current?lat=${geo.lat}&lon=${geo.lon}`,
+          );
+          if (r.ok) {
+            const w = await r.json();
+            if (w?.temp != null) cmd.temp = w.temp;
+            if (w?.hi != null) cmd.hi = w.hi;
+            if (w?.lo != null) cmd.lo = w.lo;
+            if (w?.text) cmd.text = w.text;
+          }
+        } catch {
+          /* coords still pushed; panel can try its own fetch */
+        }
+      }
+      writeLive(cmd).catch(() => {});
     }, 800);
     return () => clearTimeout(t);
   }, [settings.showWeather, geo, status]);

@@ -291,6 +291,12 @@ inline void BLEController::handleJson(const String &raw) {
     g_settings.showWeather = doc["showWeather"] | g_settings.showWeather;
     g_settings.lat = doc["lat"] | g_settings.lat;
     g_settings.lon = doc["lon"] | g_settings.lon;
+    // Optional live conditions pushed by the phone so weather renders even when
+    // the panel's own HTTPS fetch is unavailable.
+    if (!doc["temp"].isNull()) g_settings.wxTemp = doc["temp"].as<int>();
+    if (!doc["hi"].isNull()) g_settings.wxHi = doc["hi"].as<int>();
+    if (!doc["lo"].isNull()) g_settings.wxLo = doc["lo"].as<int>();
+    if (!doc["text"].isNull()) g_settings.wxText = (const char *)(doc["text"] | "");
 
   } else if (strcmp(cmd, "zone") == 0) {
     g_settings.trackingMode = (const char *)(doc["trackingMode"] | g_settings.trackingMode.c_str());
