@@ -150,6 +150,7 @@ class DisplayManager {
   uint16_t amber() { return dma_->color565(255, 176, 0); }
   uint16_t cyan()  { return dma_->color565(34, 211, 238); }
   uint16_t white() { return dma_->color565(240, 240, 240); }
+  uint16_t dim()   { return dma_->color565(90, 90, 90); }
 
   // A cheap signature of the enabled-module set; rebuild the carousel only
   // when it changes so `current_` isn't reset every frame.
@@ -282,6 +283,13 @@ class DisplayManager {
     int y = 20;
     for (int i = 0; i < 8 && y < height_ - 8; i++) {
       if (!g_settings.stocks[i].length()) continue;
+      if (!g_settings.stockOk[i]) {
+        // No live data (e.g. delisted / unknown) — flag it dimly so the user
+        // knows to remove it, rather than showing a stale/blank price.
+        centerText(g_settings.stocks[i] + " NO DATA", y, dim());
+        y += 12;
+        continue;
+      }
       char line[28];
       if (g_settings.stockPrice[i] > 0) {
         char arrow = g_settings.stockChg[i] >= 0 ? '+' : '-';

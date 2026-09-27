@@ -131,15 +131,24 @@ class NetworkData {
     if (!syms.length()) return;
     JsonDocument doc;
     if (!getJson("/api/device/quotes?symbols=" + enc(syms), doc)) return;
+    // Track which configured symbols the feed actually priced this cycle.
+    bool present[8] = {false, false, false, false, false, false, false, false};
     for (JsonVariant q : doc["q"].as<JsonArray>()) {
       const char *sym = q["s"] | "";
+      float price = q["p"] | 0.0f;
       for (int i = 0; i < 8; i++) {
         if (g_settings.stocks[i] == sym) {
-          g_settings.stockPrice[i] = q["p"] | 0.0f;
+          g_settings.stockPrice[i] = price;
           g_settings.stockChg[i] = q["c"] | 0.0f;
+          if (price > 0) present[i] = true;
         }
       }
     }
+    // A configured symbol the feed didn't price (or priced <= 0) has no live
+    // data — flag it so the panel can mark it instead of showing it stale.
+    for (int i = 0; i < 8; i++)
+      if (g_settings.stocks[i].length())
+        g_settings.stockOk[i] = present[i];
   }
 
   void fetchWeather() {
