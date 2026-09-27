@@ -254,8 +254,12 @@ class DisplayManager {
   }
 
   void drawTeams() {
-    int y = 2;
-    for (int i = 0; i < 8 && y < height_ - 8; i++) {
+    int n = 0;
+    for (int i = 0; i < 8; i++) if (g_settings.teams[i].length()) n++;
+    if (n == 0) return;
+    int y = (height_ - (n * 20 - 3)) / 2;   // vertically center the block
+    if (y < 1) y = 1;
+    for (int i = 0; i < 8 && y < height_; i++) {
       String t = g_settings.teams[i];
       if (!t.length()) continue;
       // t is "LEAGUE:ABBR" (e.g. "MLB:NYY").
@@ -271,8 +275,12 @@ class DisplayManager {
   }
 
   void drawShows() {
-    int y = 2;
-    for (int i = 0; i < 8 && y < height_ - 8; i++) {
+    int n = 0;
+    for (int i = 0; i < 8; i++) if (g_settings.shows[i].length()) n++;
+    if (n == 0) return;
+    int y = (height_ - (n * 20 - 3)) / 2;   // vertically center the block
+    if (y < 1) y = 1;
+    for (int i = 0; i < 8 && y < height_; i++) {
       if (!g_settings.shows[i].length()) continue;
       // Show the title + WHEN (next episode this season, or season premiere).
       centerText(g_settings.shows[i].substring(0, 21), y, cyan());
@@ -283,9 +291,13 @@ class DisplayManager {
   }
 
   void drawStocks() {
-    centerText("MARKETS", 6, green());
-    int y = 20;
-    for (int i = 0; i < 8 && y < height_ - 8; i++) {
+    int n = 0;
+    for (int i = 0; i < 8; i++) if (g_settings.stocks[i].length()) n++;
+    int top = (height_ - (12 + n * 12)) / 2;  // center header + rows
+    if (top < 1) top = 1;
+    centerText("MARKETS", top, green());
+    int y = top + 14;
+    for (int i = 0; i < 8 && y < height_ - 6; i++) {
       if (!g_settings.stocks[i].length()) continue;
       if (!g_settings.stockOk[i]) {
         // No live data (e.g. delisted / unknown) — flag it dimly so the user
@@ -309,9 +321,16 @@ class DisplayManager {
   }
 
   void drawScores() {
-    centerText("SCORES", 6, amber());
-    int y = 22;
-    for (int i = 0; i < 8 && y < height_ - 8; i++) {
+    int n = 0;
+    for (int i = 0; i < 8; i++)
+      if (g_settings.teams[i].length() &&
+          (g_settings.teamHL[i] == "live" || g_settings.teamHL[i] == "recent"))
+        n++;
+    int top = (height_ - (12 + n * 14)) / 2;   // center header + rows
+    if (top < 1) top = 1;
+    centerText("SCORES", top, amber());
+    int y = top + 16;
+    for (int i = 0; i < 8 && y < height_ - 6; i++) {
       if (!g_settings.teams[i].length()) continue;
       if (g_settings.teamHL[i] != "live" && g_settings.teamHL[i] != "recent") continue;
       String t = g_settings.teams[i];
@@ -324,9 +343,13 @@ class DisplayManager {
   }
 
   void drawReminders() {
-    centerText("NEW TONIGHT", 6, green());
-    int y = 22;
-    for (int i = 0; i < 4 && y < height_ - 8; i++) {
+    int n = 0;
+    for (int i = 0; i < 4; i++) if (g_settings.reminders[i].length()) n++;
+    int top = (height_ - (12 + n * 14)) / 2;   // center header + rows
+    if (top < 1) top = 1;
+    centerText("NEW TONIGHT", top, green());
+    int y = top + 16;
+    for (int i = 0; i < 4 && y < height_ - 6; i++) {
       if (!g_settings.reminders[i].length()) continue;
       centerText(g_settings.reminders[i], y, white());
       y += 14;
