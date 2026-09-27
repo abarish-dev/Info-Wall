@@ -149,9 +149,10 @@ export async function connectToMatrix(
         }
         if (!device) return;
 
-        // Match FlightWall-<id> name prefix (in addition to the service UUID).
+        // Match the panel name prefix (InfoWall-, or legacy FlightWall-) in
+        // addition to the service UUID.
         const nm = device.name ?? device.localName ?? "";
-        if (!nm.startsWith("FlightWall-")) return;
+        if (!nm.startsWith("InfoWall-") && !nm.startsWith("FlightWall-")) return;
 
         settled = true;
         clearTimeout(timeout);
@@ -271,7 +272,7 @@ export async function flashTest(): Promise<void> {
   }
 }
 
-/** Scan for all nearby FlightWall- devices for a fixed duration. */
+/** Scan for all nearby Info Wall (InfoWall-/legacy FlightWall-) devices. */
 export async function scanForDevices(
   durationMs = 4000,
 ): Promise<{ id: string; name: string }[]> {
@@ -300,7 +301,7 @@ export async function scanForDevices(
       }
       if (!device) return;
       const nm = device.name ?? device.localName ?? "";
-      if (!nm.startsWith("FlightWall-")) return;
+      if (!nm.startsWith("InfoWall-") && !nm.startsWith("FlightWall-")) return;
       found.set(device.id, { id: device.id, name: nm });
     });
     setTimeout(() => {

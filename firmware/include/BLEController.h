@@ -2,7 +2,7 @@
 // Info Wall — BLEController.h  (ESP32 / Arduino, PlatformIO)
 // ---------------------------------------------------------------------------
 // Sets up the BLE service + characteristic with the app's exact UUIDs,
-// advertises as "FlightWall-XXXX", receives writes, parses the JSON the app
+// advertises as "InfoWall-XXXX", receives writes, parses the JSON the app
 // sends, and dispatches each `command`. It also notifies the app back with the
 // Wi-Fi status. Drop your actual matrix-drawing code into the marked TODOs.
 //
@@ -144,10 +144,10 @@ class CharCallbacks : public BLECharacteristicCallbacks {
 
 // ---------------------------------------------------------------------------
 inline void BLEController::begin() {
-  // Advertise a name the app scans for (prefix "FlightWall-").
+  // Advertise a name the app scans for (prefix "InfoWall-").
   uint64_t chip = ESP.getEfuseMac();
   char name[24];
-  snprintf(name, sizeof(name), "FlightWall-%04X", (uint16_t)(chip & 0xFFFF));
+  snprintf(name, sizeof(name), "InfoWall-%04X", (uint16_t)(chip & 0xFFFF));
 
   BLEDevice::init(name);
   server_ = BLEDevice::createServer();

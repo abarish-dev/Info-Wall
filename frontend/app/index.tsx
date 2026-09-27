@@ -918,7 +918,7 @@ export default function ControlPanel() {
       const devices = await scanForDevices(4000);
       if (devices.length === 0) {
         setStatus("disconnected");
-        toast.show("No FlightWall matrix found nearby", "error");
+        toast.show("No Info Wall matrix found nearby", "error");
         return;
       }
       if (devices.length === 1) {
