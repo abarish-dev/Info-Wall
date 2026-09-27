@@ -66,6 +66,8 @@ struct MatrixSettings {
   String stocks[8];
   float  stockPrice[8] = {0};
   float  stockChg[8]   = {0};   // daily % change
+  bool   stockOk[8]    = {true, true, true, true, true, true, true, true};
+                                // false = live feed returned no data (e.g. delisted)
   String scores[4];             // live/final game score lines
   String reminders[4];          // episodes airing today
 
