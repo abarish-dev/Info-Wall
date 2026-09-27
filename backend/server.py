@@ -568,6 +568,7 @@ def _team_status_one(code: str) -> dict:
         "date": None,
         "score": None,
         "oppScore": None,
+        "record": None,
     }
     if ":" not in code:
         return data
@@ -619,6 +620,8 @@ def _team_status_one(code: str) -> dict:
         logos = t.get("logos") or []
         data["name"] = t.get("displayName")
         data["logo"] = logos[0]["href"] if logos else None
+        rec_items = (t.get("record") or {}).get("items") or []
+        data["record"] = rec_items[0].get("summary") if rec_items else None
 
         ne = t.get("nextEvent") or []
         if ne:
@@ -715,45 +718,88 @@ _WMO = {
 _weather_cache: dict = {}
 
 
+def _wx_openmeteo(lat: float, lon: float) -> dict:
+    r = requests.get(
+        "https://api.open-meteo.com/v1/forecast",
+        params={
+            "latitude": lat,
+            "longitude": lon,
+            "current": "temperature_2m,weather_code",
+            "daily": "temperature_2m_max,temperature_2m_min",
+            "temperature_unit": "fahrenheit",
+            "timezone": "auto",
+        },
+        timeout=8,
+    )
+    r.raise_for_status()
+    j = r.json()
+    cur = j.get("current") or {}
+    daily = j.get("daily") or {}
+    code = cur.get("weather_code")
+    return {
+        "temp": round(cur["temperature_2m"]) if cur.get("temperature_2m") is not None else None,
+        "code": code,
+        "text": _WMO.get(code, "Clear"),
+        "hi": round(daily["temperature_2m_max"][0]) if daily.get("temperature_2m_max") else None,
+        "lo": round(daily["temperature_2m_min"][0]) if daily.get("temperature_2m_min") else None,
+    }
+
+
+def _wx_wttr(lat: float, lon: float) -> dict:
+    # Fallback provider (different infra/IP limits than Open-Meteo).
+    r = requests.get(
+        f"https://wttr.in/{lat},{lon}",
+        params={"format": "j1"},
+        headers={"User-Agent": "curl/8"},
+        timeout=8,
+    )
+    r.raise_for_status()
+    j = r.json()
+    cur = (j.get("current_condition") or [{}])[0]
+    wk = (j.get("weather") or [{}])[0]
+    desc = ((cur.get("weatherDesc") or [{}])[0]).get("value")
+
+    def _i(v):
+        try:
+            return int(round(float(v)))
+        except (TypeError, ValueError):
+            return None
+
+    return {
+        "temp": _i(cur.get("temp_F")),
+        "code": None,
+        "text": desc or "Clear",
+        "hi": _i(wk.get("maxtempF")),
+        "lo": _i(wk.get("mintempF")),
+    }
+
+
 @api_router.get("/weather/current")
 async def weather_current(lat: float, lon: float):
-    """Current temp + condition + daily hi/lo (Fahrenheit). 10-min cache."""
+    """Current temp + condition + daily hi/lo (Fahrenheit).
+
+    Resilient: tries Open-Meteo, then wttr.in; on total failure serves the last
+    good cached value so the panel keeps showing weather even when a free
+    provider rate-limits (HTTP 429). 30-min cache.
+    """
     import time as _time
 
     key = f"{round(lat, 2)}:{round(lon, 2)}"
     cached = _weather_cache.get(key)
-    if cached and _time.time() - cached["ts"] < 600:
+    if cached and _time.time() - cached["ts"] < 1800:
         return cached["data"]
-    data = {"temp": None, "code": None, "text": None, "hi": None, "lo": None}
-    try:
-        r = requests.get(
-            "https://api.open-meteo.com/v1/forecast",
-            params={
-                "latitude": lat,
-                "longitude": lon,
-                "current": "temperature_2m,weather_code",
-                "daily": "temperature_2m_max,temperature_2m_min",
-                "temperature_unit": "fahrenheit",
-                "timezone": "auto",
-            },
-            timeout=8,
-        )
-        r.raise_for_status()
-        j = r.json()
-        cur = j.get("current") or {}
-        daily = j.get("daily") or {}
-        code = cur.get("weather_code")
-        data.update(
-            temp=round(cur["temperature_2m"]) if cur.get("temperature_2m") is not None else None,
-            code=code,
-            text=_WMO.get(code, "—"),
-            hi=round(daily["temperature_2m_max"][0]) if daily.get("temperature_2m_max") else None,
-            lo=round(daily["temperature_2m_min"][0]) if daily.get("temperature_2m_min") else None,
-        )
-        _weather_cache[key] = {"ts": _time.time(), "data": data}
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("weather fetch failed: %s", exc)
-    return data
+    for fn in (_wx_openmeteo, _wx_wttr):
+        try:
+            d = fn(lat, lon)
+            if d and d.get("temp") is not None:
+                _weather_cache[key] = {"ts": _time.time(), "data": d}
+                return d
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("weather source %s failed: %s", fn.__name__, exc)
+    # All sources failed — serve last good value (stale) if we have one.
+    if cached:
+        return cached["data"]
+    return {"temp": None, "code": None, "text": None, "hi": None, "lo": None}
 
 
 # ---------------------------------------------------------------------------
@@ -763,6 +809,9 @@ async def weather_current(lat: float, lon: float):
 # ---------------------------------------------------------------------------
 @api_router.get("/device/scores")
 async def device_scores(teams: str):
+    def _ascii(s):
+        return (s or "").replace("🔴", "LIVE ").encode("ascii", "ignore").decode().strip()
+
     out = []
     for raw in teams.split("|"):
         code = raw.strip().upper()
@@ -775,7 +824,8 @@ async def device_scores(teams: str):
                 "s": s.get("score"),
                 "o": s.get("oppScore"),
                 "h": s.get("highlight"),
-                "l": s.get("label"),
+                "l": _ascii(s.get("label")),
+                "r": s.get("record"),
             }
         )
     return {"t": out}
@@ -810,13 +860,16 @@ async def device_planes(lat: float, lon: float, radius: float = 25):
 
 @api_router.get("/device/tv")
 async def device_tv(names: str):
+    def _ascii(s):
+        return (s or "").encode("ascii", "ignore").decode().strip()
+
     out = []
     for raw in names.split("|"):
         nm = raw.strip()
         if not nm:
             continue
         s = _tv_status_one(nm)
-        out.append({"n": nm, "h": s.get("highlight"), "l": s.get("label")})
+        out.append({"n": nm, "h": s.get("highlight"), "l": _ascii(s.get("label"))})
     return {"v": out}
 
 # Include the router in the main app

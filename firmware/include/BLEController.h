@@ -70,6 +70,10 @@ struct MatrixSettings {
                                 // false = live feed returned no data (e.g. delisted)
   String scores[4];             // live/final game score lines
   String reminders[4];          // episodes airing today
+  String teamRecord[8];         // "12-5" win-loss, aligned to teams[]
+  String teamLabel[8];          // per-team next-game / live / final label
+  String teamHL[8];             // per-team highlight: live|recent|today|soon|...
+  String showLabel[8];          // per-show schedule label (next ep / season start)
 
   // Wi-Fi self-fetch (panel pulls its own live data; no phone required)
   String apiBase        = "";   // e.g. "https://<host>"  (set via BLE "server")

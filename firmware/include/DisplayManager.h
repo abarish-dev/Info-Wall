@@ -192,7 +192,7 @@ class DisplayManager {
   bool anyTeam()  { for (int i=0;i<8;i++) if (g_settings.teams[i].length())  return true; return false; }
   bool anyShow()  { for (int i=0;i<8;i++) if (g_settings.shows[i].length())  return true; return false; }
   bool anyStock() { for (int i=0;i<8;i++) if (g_settings.stocks[i].length()) return true; return false; }
-  bool anyScore() { for (int i=0;i<4;i++) if (g_settings.scores[i].length()) return true; return false; }
+  bool anyScore() { for (int i=0;i<8;i++) if (g_settings.teams[i].length() && (g_settings.teamHL[i]=="live"||g_settings.teamHL[i]=="recent")) return true; return false; }
   bool anyReminder() { for (int i=0;i<4;i++) if (g_settings.reminders[i].length()) return true; return false; }
 
   // Center a size-1 GFX string (6px per char) horizontally at row y.
@@ -254,27 +254,31 @@ class DisplayManager {
   }
 
   void drawTeams() {
-    centerText("TEAMS", 6, white());
-    int y = 20;
+    int y = 2;
     for (int i = 0; i < 8 && y < height_ - 8; i++) {
       String t = g_settings.teams[i];
       if (!t.length()) continue;
-      // t is "LEAGUE:ABBR" (e.g. "MLB:NYY"). Show the abbreviation.
+      // t is "LEAGUE:ABBR" (e.g. "MLB:NYY").
       int colon = t.indexOf(':');
       String abbr = colon >= 0 ? t.substring(colon + 1) : t;
-      // --- To draw a real logo instead, blit from generated_logos.h here ---
-      centerText(abbr, y, cyan());
-      y += 12;
+      String head = abbr;
+      if (g_settings.teamRecord[i].length()) head += "  " + g_settings.teamRecord[i];
+      centerText(head, y, cyan());
+      String sub = g_settings.teamLabel[i];
+      centerText(sub.length() ? sub : String("--"), y + 9, white());
+      y += 20;
     }
   }
 
   void drawShows() {
-    centerText("WATCHLIST", 6, cyan());
-    int y = 20;
+    int y = 2;
     for (int i = 0; i < 8 && y < height_ - 8; i++) {
       if (!g_settings.shows[i].length()) continue;
-      centerText(g_settings.shows[i].substring(0, 20), y, white());
-      y += 12;
+      // Show the title + WHEN (next episode this season, or season premiere).
+      centerText(g_settings.shows[i].substring(0, 21), y, cyan());
+      String lbl = g_settings.showLabel[i];
+      centerText(lbl.length() ? lbl : String("--"), y + 9, white());
+      y += 20;
     }
   }
 
@@ -307,9 +311,14 @@ class DisplayManager {
   void drawScores() {
     centerText("SCORES", 6, amber());
     int y = 22;
-    for (int i = 0; i < 4 && y < height_ - 8; i++) {
-      if (!g_settings.scores[i].length()) continue;
-      centerText(g_settings.scores[i], y, white());
+    for (int i = 0; i < 8 && y < height_ - 8; i++) {
+      if (!g_settings.teams[i].length()) continue;
+      if (g_settings.teamHL[i] != "live" && g_settings.teamHL[i] != "recent") continue;
+      String t = g_settings.teams[i];
+      int colon = t.indexOf(':');
+      String abbr = colon >= 0 ? t.substring(colon + 1) : t;
+      // Prefix the team's own abbr so it's clear WHICH team the score is.
+      centerText(abbr + " " + g_settings.teamLabel[i], y, white());
       y += 14;
     }
   }
