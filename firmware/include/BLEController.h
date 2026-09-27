@@ -261,6 +261,28 @@ inline void BLEController::handleJson(const String &raw) {
       g_settings.reminders[i] = (const char *)(doc[k] | "");
     }
 
+  } else if (strcmp(cmd, "teamdetails") == 0) {
+    // Per-team record + next-game label + highlight, pushed by the phone so the
+    // panel shows details even when its own Wi-Fi fetch is unavailable. Slot i
+    // matches the "teams" array order (teamN <-> slot i).
+    for (int i = 0; i < 8; i++) {
+      char rk[8], lk[8], hk[8];
+      snprintf(rk, sizeof(rk), "rec%d", i + 1);
+      snprintf(lk, sizeof(lk), "lbl%d", i + 1);
+      snprintf(hk, sizeof(hk), "hl%d", i + 1);
+      g_settings.teamRecord[i] = (const char *)(doc[rk] | "");
+      g_settings.teamLabel[i] = (const char *)(doc[lk] | "");
+      g_settings.teamHL[i] = (const char *)(doc[hk] | "");
+    }
+
+  } else if (strcmp(cmd, "showdetails") == 0) {
+    // Per-show schedule label pushed by the phone (fallback to Wi-Fi fetch).
+    for (int i = 0; i < 8; i++) {
+      char lk[8];
+      snprintf(lk, sizeof(lk), "lbl%d", i + 1);
+      g_settings.showLabel[i] = (const char *)(doc[lk] | "");
+    }
+
   } else if (strcmp(cmd, "flight") == 0) {
     g_settings.trackFlight = doc["trackFlight"] | g_settings.trackFlight;
     g_settings.flightIdent = (const char *)(doc["flightIdent"] | g_settings.flightIdent.c_str());

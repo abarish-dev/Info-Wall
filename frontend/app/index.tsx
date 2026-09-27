@@ -577,6 +577,45 @@ export default function ControlPanel() {
     return () => clearTimeout(t);
   }, [scoreLabels, status]);
 
+  // Live push of per-team details (record + next game + highlight) so the panel
+  // shows the SPORTS frame details even when its own Wi-Fi fetch is down.
+  // Order matches the teams array (teamN <-> firmware slot i).
+  useEffect(() => {
+    if (status !== "connected") return;
+    const t = setTimeout(() => {
+      const cmd: Record<string, unknown> = { command: "teamdetails" };
+      settings.teams
+        .map((x) => x.trim())
+        .filter(Boolean)
+        .forEach((code, i) => {
+          const s = teamStatuses[code.toUpperCase()];
+          cmd[`rec${i + 1}`] = s?.record ?? "";
+          cmd[`lbl${i + 1}`] = s?.label ?? "";
+          cmd[`hl${i + 1}`] = s?.highlight ?? "";
+        });
+      writeLive(cmd).catch(() => {});
+    }, 800);
+    return () => clearTimeout(t);
+  }, [teamStatuses, settings.teams, status]);
+
+  // Live push of per-show schedule labels (next episode / season premiere).
+  useEffect(() => {
+    if (status !== "connected") return;
+    const t = setTimeout(() => {
+      const cmd: Record<string, unknown> = { command: "showdetails" };
+      settings.shows
+        .map((x) => x.trim())
+        .filter(Boolean)
+        .forEach((name, i) => {
+          const s = showStatuses[name.toLowerCase()];
+          cmd[`lbl${i + 1}`] = s?.label ?? "";
+        });
+      writeLive(cmd).catch(() => {});
+    }, 800);
+    return () => clearTimeout(t);
+  }, [showStatuses, settings.shows, status]);
+
+
   // Live push of episode reminders that are due today.
   useEffect(() => {
     if (status !== "connected") return;

@@ -129,6 +129,7 @@ export type TeamStatus = {
   logo: string | null;
   highlight: TeamGameHighlight;
   label: string | null;
+  record: string | null;
   opponent: string | null;
   date: string | null;
   score: number | null;
