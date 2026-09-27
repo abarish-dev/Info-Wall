@@ -66,6 +66,7 @@ import {
   flashTest,
   writeLive,
   monitorMatrix,
+  stopMonitor,
   BleError,
   type BleStatus,
 } from "@/src/services/ble";
@@ -646,9 +647,24 @@ export default function ControlPanel() {
       setLastSync(rec);
       storage.setItem(LAST_SYNC_KEY, rec);
       toast.show("Reconnected — wall re-synced", "success");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
+
+  // Persistent notification subscription while connected, so we never miss the
+  // firmware's Wi-Fi result (it notifies ~15s after the join completes).
+  useEffect(() => {
+    if (status !== "connected") return;
+    monitorMatrix((obj) => {
+      const ws = obj?.wifiStatus ?? obj?.wifi_status;
+      if (ws === "connected" || ws === true) {
+        setWifiStatus({ state: "connected", ip: obj?.ip });
+      } else if (ws === "failed" || ws === false) {
+        setWifiStatus({ state: "failed" });
+      }
+    });
+    return () => stopMonitor();
+  }, [status]);
+
 
   // Detect when a tracked team SCORES during a live game and flash the wall
   // with the team color + logo + "SCORE".
@@ -737,16 +753,8 @@ export default function ControlPanel() {
     try {
       await writeLive({ command: "wifi", ssid: ssid.trim(), password });
       setWifiStatus({ state: "waiting" });
-      // Listen for the firmware to report the join result. Format expected:
-      // {"wifiStatus":"connected","ip":"192.168.1.42"} or {"wifiStatus":"failed"}
-      monitorMatrix((obj) => {
-        const ws = obj?.wifiStatus ?? obj?.wifi_status;
-        if (ws === "connected" || ws === true) {
-          setWifiStatus({ state: "connected", ip: obj?.ip });
-        } else if (ws === "failed" || ws === false) {
-          setWifiStatus({ state: "failed" });
-        }
-      });
+      // The persistent monitor (see effect below) catches the firmware's
+      // {"wifiStatus":...} notification and flips this banner.
       toast.show(
         "Wi-Fi credentials sent. Matrix is rebooting and connecting...",
         "success",
@@ -2167,6 +2175,7 @@ export default function ControlPanel() {
         onSaveWifi={handleSaveWifi}
         initialSsid={lastSsid}
         liveEnabled={isConnected}
+        bleName={device?.name}
         wifiStatus={wifiStatus}
         themeId={themeId}
         onSetTheme={setTheme}

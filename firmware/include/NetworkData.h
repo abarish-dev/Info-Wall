@@ -62,22 +62,33 @@ class NetworkData {
   }
 
   // Perform a GET and deserialize into doc. Returns true on success.
+  // Retries once — the ESP32 TLS handshake can transiently EOF under the
+  // BLE + Wi-Fi memory pressure. Logs free heap on failure for diagnosis.
   bool getJson(const String &path, JsonDocument &doc) {
-    WiFiClientSecure client;
-    client.setInsecure();
-    HTTPClient http;
     String url = g_settings.apiBase + path;
-    if (!http.begin(client, url)) return false;
-    http.setTimeout(9000);
-    int code = http.GET();
-    bool ok = false;
-    if (code == 200) {
-      ok = deserializeJson(doc, http.getStream()) == DeserializationError::Ok;
-    } else {
-      Serial.printf("[NET] %s -> HTTP %d\n", path.c_str(), code);
+    for (int attempt = 0; attempt < 2; attempt++) {
+      WiFiClientSecure client;
+      client.setInsecure();
+      client.setHandshakeTimeout(15);
+      HTTPClient http;
+      if (!http.begin(client, url)) {
+        http.end();
+        continue;
+      }
+      http.setTimeout(9000);
+      int code = http.GET();
+      if (code == 200) {
+        bool ok = deserializeJson(doc, http.getStream()) == DeserializationError::Ok;
+        http.end();
+        if (ok) return true;
+      } else {
+        Serial.printf("[NET] %s -> HTTP %d (heap %u)\n", path.c_str(), code,
+                      (unsigned)ESP.getFreeHeap());
+        http.end();
+      }
+      delay(300);
     }
-    http.end();
-    return ok;
+    return false;
   }
 
   String csvTeams() {

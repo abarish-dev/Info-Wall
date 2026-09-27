@@ -110,6 +110,7 @@ export function SettingsSheet({
   onSaveWifi,
   initialSsid,
   liveEnabled,
+  bleName,
   wifiStatus,
   themeId,
   onSetTheme,
@@ -142,6 +143,7 @@ export function SettingsSheet({
   onSaveWifi?: (ssid: string, password: string) => void;
   initialSsid?: string;
   liveEnabled?: boolean;
+  bleName?: string;
   wifiStatus?: {
     state: "idle" | "waiting" | "connected" | "failed";
     ip?: string;
@@ -506,7 +508,39 @@ export function SettingsSheet({
 
           {/* Wi-Fi setup */}
           <View style={styles.card}>
-            <Text style={styles.sectionTitle}>WI-FI SETUP</Text>
+            <View style={styles.wifiHeaderRow}>
+              <Text style={styles.sectionTitle}>WI-FI SETUP</Text>
+              <View
+                style={[
+                  styles.blePill,
+                  {
+                    borderColor: liveEnabled ? colors.success : colors.error,
+                    backgroundColor: liveEnabled
+                      ? colors.success + "22"
+                      : colors.error + "22",
+                  },
+                ]}
+              >
+                <Ionicons
+                  name="bluetooth"
+                  size={12}
+                  color={liveEnabled ? colors.success : colors.error}
+                />
+                <Text
+                  style={[
+                    styles.blePillText,
+                    { color: liveEnabled ? colors.success : colors.error },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {liveEnabled
+                    ? bleName
+                      ? `BLE · ${bleName}`
+                      : "BLE CONNECTED"
+                    : "BLE OFF"}
+                </Text>
+              </View>
+            </View>
             <Text style={styles.hint}>
               Provision the matrix onto your network over Bluetooth.
             </Text>
@@ -735,6 +769,27 @@ const makeStyles = () =>
     backgroundColor: colors.surfaceTertiary,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  wifiHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.sm,
+  },
+  blePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 3,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.pill ?? 999,
+    borderWidth: 1,
+    maxWidth: "60%",
+  },
+  blePillText: {
+    fontFamily: fonts.display,
+    fontSize: fontSize.sm,
+    letterSpacing: 0.6,
   },
   wifiStatusOk: {
     borderColor: colors.success,
