@@ -697,21 +697,23 @@ export default function ControlPanel() {
   useEffect(() => {
     if (status !== "connected") return;
     const base = process.env.EXPO_PUBLIC_BACKEND_URL ?? "";
+    let cancelled = false;
     const t = setTimeout(async () => {
       if (settings.showFolly) {
         try {
           const r = await fetch(`${base}/api/device/folly`);
-          if (r.ok) {
+          if (r.ok && !cancelled) {
             const d = await r.json();
             const ev = Array.isArray(d?.e) ? d.e : [];
             const line = (e: any) =>
               e ? `${e.y} ${e.t} ${e.v}ft` : "";
-            await writeLive({
-              command: "folly",
-              l1: line(ev[0]),
-              l2: line(ev[1]),
-              w: d?.w ?? 0,
-            });
+            if (!cancelled)
+              await writeLive({
+                command: "folly",
+                l1: line(ev[0]),
+                l2: line(ev[1]),
+                w: d?.w ?? 0,
+              });
           }
         } catch {
           /* panel can try its own fetch */
@@ -720,26 +722,30 @@ export default function ControlPanel() {
       if (settings.showLKN) {
         try {
           const r = await fetch(`${base}/api/device/lake`);
-          if (r.ok) {
+          if (r.ok && !cancelled) {
             const d = await r.json();
             let full = "";
             if (d?.lvl != null && d?.full != null) {
               const diff = d.lvl - d.full;
               full = `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}`;
             }
-            await writeLive({
-              command: "lake",
-              lvl: d?.lvl != null ? String(d.lvl) : "",
-              full,
-              w: d?.w ?? 0,
-            });
+            if (!cancelled)
+              await writeLive({
+                command: "lake",
+                lvl: d?.lvl != null ? String(d.lvl) : "",
+                full,
+                w: d?.w ?? 0,
+              });
           }
         } catch {
           /* panel can try its own fetch */
         }
       }
     }, 900);
-    return () => clearTimeout(t);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
   }, [settings.showFolly, settings.showLKN, status]);
 
   // Auto full-sync whenever the phone (re)connects, so the wall always matches

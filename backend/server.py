@@ -970,7 +970,11 @@ async def device_folly():
             return cached["data"]
 
     out = {"e": events, "w": _folly_water_temp()}
-    _folly_cache["d"] = {"ts": _time.time(), "data": out}
+    # Only cache a result that actually has tide data; caching an empty result
+    # (transient upstream failure on a cold cache) would blank the module for
+    # the whole TTL. Without data, return but let the next request retry.
+    if events:
+        _folly_cache["d"] = {"ts": _time.time(), "data": out}
     return out
 
 
@@ -1033,7 +1037,9 @@ async def device_lake():
             return cached["data"]
 
     out = {"lvl": lvl, "tgt": tgt, "full": full, "w": _lake_water_temp()}
-    _lake_cache["d"] = {"ts": _time.time(), "data": out}
+    # Don't cache a failed cold-cache fetch (would blank the module for the TTL).
+    if lvl is not None:
+        _lake_cache["d"] = {"ts": _time.time(), "data": out}
     return out
 
 # Include the router in the main app
