@@ -50,6 +50,10 @@ void tryJoinWifi(const String &ssid, const String &pass) {
 
 void setup() {
   Serial.begin(115200);
+  // Wait up to ~1.5s for the USB-CDC serial monitor to attach (S3 native USB),
+  // but don't block forever when running on external power with no USB.
+  unsigned long t0 = millis();
+  while (!Serial && millis() - t0 < 1500) delay(10);
   delay(200);
   Serial.println("\n[Info Wall] booting...");
 
