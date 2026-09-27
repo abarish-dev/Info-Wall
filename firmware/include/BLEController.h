@@ -80,6 +80,7 @@ struct MatrixSettings {
 };
 
 extern MatrixSettings g_settings;
+extern volatile bool g_settingsDirty;
 
 // ===========================================================================
 class BLEController {
