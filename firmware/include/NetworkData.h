@@ -93,7 +93,7 @@ class NetworkData {
   void fetchScores() {
     String teams = csvTeams();
     if (!teams.length()) return;
-    StaticJsonDocument<2048> doc;
+    JsonDocument doc;
     if (!getJson("/api/device/scores?teams=" + enc(teams), doc)) return;
     JsonArray t = doc["t"].as<JsonArray>();
     int i = 0;
@@ -129,7 +129,7 @@ class NetworkData {
         syms += g_settings.stocks[i];
       }
     if (!syms.length()) return;
-    StaticJsonDocument<1024> doc;
+    JsonDocument doc;
     if (!getJson("/api/device/quotes?symbols=" + enc(syms), doc)) return;
     for (JsonVariant q : doc["q"].as<JsonArray>()) {
       const char *sym = q["s"] | "";
@@ -147,7 +147,7 @@ class NetworkData {
     char path[64];
     snprintf(path, sizeof(path), "/api/weather/current?lat=%.4f&lon=%.4f",
              g_settings.lat, g_settings.lon);
-    StaticJsonDocument<512> doc;
+    JsonDocument doc;
     if (!getJson(path, doc)) return;
     if (!doc["temp"].isNull()) g_settings.wxTemp = doc["temp"].as<int>();
     if (!doc["hi"].isNull()) g_settings.wxHi = doc["hi"].as<int>();
@@ -159,7 +159,7 @@ class NetworkData {
     char path[80];
     snprintf(path, sizeof(path), "/api/device/planes?lat=%.4f&lon=%.4f&radius=%d",
              g_settings.lat, g_settings.lon, g_settings.radius);
-    StaticJsonDocument<1024> doc;
+    JsonDocument doc;
     if (!getJson(path, doc)) return;
     JsonArray p = doc["p"].as<JsonArray>();
     if (p.size() > 0) {
@@ -182,7 +182,7 @@ class NetworkData {
         names += g_settings.shows[i];
       }
     if (!names.length()) return;
-    StaticJsonDocument<2048> doc;
+    JsonDocument doc;
     if (!getJson("/api/device/tv?names=" + enc(names), doc)) return;
     g_settings.tvNewLine = "";
     for (JsonVariant v : doc["v"].as<JsonArray>()) {
