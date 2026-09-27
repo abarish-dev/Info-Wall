@@ -101,7 +101,11 @@ class NetworkData {
         bool ok = deserializeJson(doc, http.getStream()) == DeserializationError::Ok;
         http.end();
         client.stop();
-        if (ok) return true;
+        if (ok) {
+          Serial.printf("[NET] %s OK (heap %u)\n", path.c_str(),
+                        (unsigned)ESP.getFreeHeap());
+          return true;
+        }
       } else {
         Serial.printf("[NET] %s -> HTTP %d (heap %u, try %d)\n", path.c_str(),
                       code, (unsigned)ESP.getFreeHeap(), attempt + 1);
