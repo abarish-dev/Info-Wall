@@ -274,6 +274,7 @@ export default function ControlPanel() {
   >([]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [lastSsid, setLastSsid] = useState("");
+  const [lastPass, setLastPass] = useState("");
   const [wifiStatus, setWifiStatus] = useState<{
     state: "idle" | "waiting" | "connected" | "failed" | "timeout";
     ip?: string;
@@ -791,13 +792,17 @@ export default function ControlPanel() {
   ]);
 
 
-  // Load remembered Wi-Fi SSID (password never stored).
+  // Load remembered Wi-Fi SSID + password (password kept in secure storage).
   useEffect(() => {
     (async () => {
       const s = (await storage.getItem<any>("last_ssid_v1", null)) as
         | string
         | null;
       if (s) setLastSsid(s);
+      const p = (await storage.secureGet<any>("last_wifi_pass_v1", null)) as
+        | string
+        | null;
+      if (p) setLastPass(p);
     })();
   }, []);
 
@@ -806,10 +811,12 @@ export default function ControlPanel() {
       toast.show("Enter a Wi-Fi SSID", "error");
       return;
     }
-    // Remember the typed SSID immediately so it's never lost, even if the
-    // matrix isn't connected yet.
+    // Remember the typed SSID + password immediately so they're never lost,
+    // even if the matrix isn't connected yet. Password goes to secure storage.
     storage.setItem("last_ssid_v1", ssid.trim());
     setLastSsid(ssid.trim());
+    storage.secureSet("last_wifi_pass_v1", password);
+    setLastPass(password);
     if (!isConnected) {
       toast.show("Connect to the matrix first", "error");
       return;
@@ -2264,6 +2271,7 @@ export default function ControlPanel() {
         onLiveSchedule={handleLiveSchedule}
         onSaveWifi={handleSaveWifi}
         initialSsid={lastSsid}
+        initialPassword={lastPass}
         liveEnabled={isConnected}
         bleName={device?.name}
         wifiStatus={wifiStatus}

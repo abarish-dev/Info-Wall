@@ -2,7 +2,7 @@
 // an evening "Display schedule" that dims or blacks out the matrix during a
 // settable time range. State is owned by the main screen and passed in.
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Modal,
   View,
@@ -109,6 +109,7 @@ export function SettingsSheet({
   onLiveSchedule,
   onSaveWifi,
   initialSsid,
+  initialPassword,
   liveEnabled,
   bleName,
   wifiStatus,
@@ -142,6 +143,7 @@ export function SettingsSheet({
   }) => void;
   onSaveWifi?: (ssid: string, password: string) => void;
   initialSsid?: string;
+  initialPassword?: string;
   liveEnabled?: boolean;
   bleName?: string;
   wifiStatus?: {
@@ -154,7 +156,15 @@ export function SettingsSheet({
   const styles = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const [wifiSsid, setWifiSsid] = useState(initialSsid ?? "");
-  const [wifiPassword, setWifiPassword] = useState("");
+  const [wifiPassword, setWifiPassword] = useState(initialPassword ?? "");
+  // Remembered SSID/password load asynchronously; prefill the fields once they
+  // arrive, but never clobber whatever the user is currently typing.
+  useEffect(() => {
+    if (initialSsid) setWifiSsid((v) => (v ? v : initialSsid));
+  }, [initialSsid]);
+  useEffect(() => {
+    if (initialPassword) setWifiPassword((v) => (v ? v : initialPassword));
+  }, [initialPassword]);
   const [showPw, setShowPw] = useState(false);
   const [copied, setCopied] = useState(false);
   const appVersion = Constants.expoConfig?.version ?? "1.0.0";
