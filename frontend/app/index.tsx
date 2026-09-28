@@ -661,7 +661,8 @@ export default function ControlPanel() {
   // fetch is unavailable (debounced).
   useEffect(() => {
     if (status !== "connected") return;
-    const t = setTimeout(async () => {
+    let cancelled = false;
+    const pushWeather = async () => {
       const cmd: Record<string, unknown> = {
         command: "weather",
         showWeather: settings.showWeather,
@@ -684,9 +685,17 @@ export default function ControlPanel() {
           /* coords still pushed; panel can try its own fetch */
         }
       }
-      writeLive(cmd).catch(() => {});
-    }, 800);
-    return () => clearTimeout(t);
+      if (!cancelled) writeLive(cmd).catch(() => {});
+    };
+    // Push once shortly after connect, then refresh every 10 min so the panel
+    // never gets stuck on a stale temperature.
+    const first = setTimeout(pushWeather, 800);
+    const iv = setInterval(pushWeather, 600000);
+    return () => {
+      cancelled = true;
+      clearTimeout(first);
+      clearInterval(iv);
+    };
   }, [settings.showWeather, geo, status]);
 
   // Live push of the tracking zone: radius mode vs polygon (debounced).

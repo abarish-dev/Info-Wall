@@ -226,13 +226,30 @@ def _fmt_date(iso: str) -> str:
 
 
 def _days_from_today(iso: str):
-    from datetime import date as _date, datetime as _dt
+    from datetime import datetime as _dt
+    from zoneinfo import ZoneInfo
 
     try:
         d = _dt.strptime(iso[:10], "%Y-%m-%d").date()
-        return (d - _date.today()).days
+        today = _dt.now(ZoneInfo("America/New_York")).date()
+        return (d - today).days
     except Exception:  # noqa: BLE001
         return None
+
+
+def _iso_to_eastern_date(iso: str) -> str:
+    """ESPN event times are UTC (e.g. 2026-09-30T00:05Z). Convert to the US
+    Eastern calendar date so an evening ET game isn't shown a day late."""
+    from datetime import datetime as _dt
+    from zoneinfo import ZoneInfo
+
+    try:
+        dt = _dt.fromisoformat(iso.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            return iso[:10]
+        return dt.astimezone(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
+    except Exception:  # noqa: BLE001
+        return iso[:10]
 
 
 def _simplify_show(show: dict) -> dict:
@@ -632,6 +649,9 @@ def _team_status_one(code: str) -> dict:
             short = status.get("shortDetail") or ""
             date = e.get("date")
             data["date"] = date
+            # ESPN dates are UTC — use the Eastern calendar date for display
+            # and day-diff so evening ET games aren't shown a day late.
+            local_date = _iso_to_eastern_date(date) if date else None
 
             # Resolve opponent + home/away + scores relative to our team.
             opp, vs = None, "vs"
@@ -658,7 +678,7 @@ def _team_status_one(code: str) -> dict:
             matchup = f"{vs} {opp}" if opp else ""
             has_scores = my_score is not None and opp_score is not None
             score_str = f"{my_score}-{opp_score}" if has_scores else ""
-            days = _days_from_today(date[:10]) if date else None
+            days = _days_from_today(local_date) if local_date else None
 
             if state == "in":
                 bits = " ".join(x for x in [score_str, short] if x)
@@ -676,12 +696,14 @@ def _team_status_one(code: str) -> dict:
             elif days is not None and 0 < days <= 7:
                 data.update(
                     highlight="soon",
-                    label=f"{_fmt_date(date)} {matchup}".strip(),
+                    label=f"{_fmt_date(local_date)} {matchup}".strip(),
                 )
             else:
                 data.update(
                     highlight="upcoming",
-                    label=f"{_fmt_date(date)} {matchup}".strip() if date else None,
+                    label=f"{_fmt_date(local_date)} {matchup}".strip()
+                    if local_date
+                    else None,
                 )
         else:
             data.update(highlight="offseason", label="No games scheduled")
