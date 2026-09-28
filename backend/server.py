@@ -800,21 +800,26 @@ def _wx_wttr(lat: float, lon: float) -> dict:
 async def weather_current(lat: float, lon: float):
     """Current temp + condition + daily hi/lo (Fahrenheit).
 
-    Resilient: tries Open-Meteo, then wttr.in; on total failure serves the last
-    good cached value so the panel keeps showing weather even when a free
-    provider rate-limits (HTTP 429). 30-min cache.
+    Prefers Open-Meteo (tracks phone weather apps closely). Falls back to
+    wttr.in only when Open-Meteo is unavailable, and caches that fallback for
+    just a few minutes so we retry the accurate source quickly instead of
+    getting "stuck" on the fallback's reading. On total failure, serves the
+    last good value so the panel still shows something.
     """
     import time as _time
 
     key = f"{round(lat, 2)}:{round(lon, 2)}"
     cached = _weather_cache.get(key)
-    if cached and _time.time() - cached["ts"] < 1800:
+    now = _time.time()
+    if cached and now - cached["ts"] < cached.get("ttl", 600):
         return cached["data"]
-    for fn in (_wx_openmeteo, _wx_wttr):
+
+    # Primary source (accurate) cached 10 min; fallback cached only 4 min.
+    for fn, ttl in ((_wx_openmeteo, 600), (_wx_wttr, 240)):
         try:
             d = fn(lat, lon)
             if d and d.get("temp") is not None:
-                _weather_cache[key] = {"ts": _time.time(), "data": d}
+                _weather_cache[key] = {"ts": now, "data": d, "ttl": ttl}
                 return d
         except Exception as exc:  # noqa: BLE001
             logger.warning("weather source %s failed: %s", fn.__name__, exc)

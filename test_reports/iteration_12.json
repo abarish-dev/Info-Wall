@@ -1,0 +1,33 @@
+{
+  "summary": "PASS 8/8 pytest on the weather bug fix + regression endpoints (test_weather_fix.py). Live evidence from public URL: GET /api/weather/current?lat=35.5841&lon=-80.8685 returns {temp:70, code:0, text:'Clear', hi:78, lo:51} which matches Open-Meteo direct call (69.6°F → rounded 70°F). The user's complaint of a stuck 74°F reading is resolved — the endpoint no longer serves the ~4°F-high wttr.in fallback for 30 min. Verified: (a) shape has all 5 fields with numeric non-None temp/hi/lo, (b) endpoint temp is within 2°F of Open-Meteo direct (actual diff = 0°F), (c) warm repeat calls return in <3s with consistent value (cache working). Regression: /api/device/folly returns {e:[{y,t,v}], w, dir} with dir in {'in','out',None}; /api/device/lake returns {lvl,tgt,full,w} with numeric values; /api/teams/status?teams=MLB:NYY returns 200 with valid highlight enum and _iso_to_eastern_date('2026-09-30T00:05Z')=='2026-09-29' proving UTC→ET date rollback; /api/device/planes returns {p:[{f,al,d}]} with proper types. No 500s, no upstream failures observed this run.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_weather_fix.py",
+    "/app/test_reports/pytest/weather_fix_results.xml",
+    "/app/test_reports/iteration_12.json"
+  ],
+  "action_items": [
+    "None for this bug fix — weather endpoint is now accurate and cached correctly.",
+    "(Carry-over from iteration_11, not re-tested here) SettingsSheet TimeStepper bare `styles` ReferenceError, AnimatedSplash pointerEvents prop deprecation, matrix-preview textShadow* deprecation."
+  ],
+  "critical_code_review_comments": [
+    "server.py weather_current(): now honours per-source TTL via cached['ttl'] (600s for Open-Meteo, 240s for wttr.in). Correct — a cache hit uses whatever TTL the last successful source stored. This is the exact fix for 'stuck on wttr.in' behaviour.",
+    "server.py weather_current(): loops sources in order [(_wx_openmeteo, 600), (_wx_wttr, 240)] and only accepts a payload where d['temp'] is not None. Safe: prevents caching a 'null temp' from a partial upstream response.",
+    "server.py weather_current(): on total failure, returns last-good cached data (stale but not None) — good UX; no 500 leaked to the app.",
+    "server.py _iso_to_eastern_date(): correctly handles ISO with 'Z' by replacing with '+00:00' before fromisoformat, then converts via zoneinfo. Verified: '2026-09-30T00:05Z' → '2026-09-29'. Fixes 'game shown a day late' bug.",
+    "server.py device_folly(): 'dir' derived from events[0].y — 'in' if next event is High tide, 'out' if Low. Falls back to None when events list is empty. Sensible and cheap."
+  ],
+  "updated_files": ["/app/backend/tests/test_weather_fix.py (new)"],
+  "success_rate": {"backend": "100% (8/8 pytest passing on weather fix + regression endpoints)", "frontend": "skipped per request"},
+  "seed_data_creation": "None — read-only against public upstreams (Open-Meteo, wttr.in, NOAA CO-OPS, Duke Energy, USGS, ESPN, adsb.lol).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Weather endpoint: temp value drifts with real weather; assert |api_temp - open_meteo_direct| <= 2°F rather than an exact number. Cache is per-rounded-coord (2dp). To force a re-fetch during testing, jitter lat/lon by 0.01. Test file at /app/backend/tests/test_weather_fix.py — runs against EXPO_PUBLIC_BACKEND_URL (falls back to preview URL if unset). For teams/status the specific ET date can change day-to-day; only the util-level test asserts the exact known-good UTC→ET rollback.",
+  "rca_of_issue": "Root cause of the 74°F 'stuck' bug: prior weather_current() used a single 30-minute TTL for whichever source responded first. When Open-Meteo transiently failed and wttr.in returned (which reads ~4°F high at these coords), that warmer value got cached for 30 min — matching the user's report of a stale, wrong reading. Fix: prefer Open-Meteo (10-min TTL) and only cache the wttr.in fallback for 4 min, so we quickly retry the accurate source. Verified live: endpoint now reports 70°F matching Open-Meteo's 69.6°F (rounded), not the wttr.in-warmer number the user was seeing."
+}
