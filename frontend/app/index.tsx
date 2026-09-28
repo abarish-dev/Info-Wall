@@ -285,6 +285,7 @@ export default function ControlPanel() {
   const [follyData, setFollyData] = useState<{
     e?: { y: string; t: string; v: number }[];
     w?: number | null;
+    dir?: "in" | "out" | null;
   } | null>(null);
   const [lakeData, setLakeData] = useState<{
     lvl?: number | null;
@@ -732,6 +733,7 @@ export default function ControlPanel() {
                 l1: line(ev[0]),
                 l2: line(ev[1]),
                 w: d?.w ?? 0,
+                dir: d?.dir ?? "",
               });
           }
         } catch {
@@ -1998,18 +2000,23 @@ export default function ControlPanel() {
             follyData.e.length > 0 && (
               <View style={styles.dataReadout} testID="folly-readout">
                 <Ionicons name="water" size={16} color={colors.brand} />
-                <View style={{ flex: 1 }}>
-                  {follyData.e.slice(0, 2).map((ev, i) => (
-                    <Text key={i} style={styles.readoutMain}>
-                      {ev.y === "H" ? "High" : "Low"} {ev.t}  ·  {ev.v} ft
-                    </Text>
-                  ))}
-                  {follyData.w != null && follyData.w > 0 && (
-                    <Text style={styles.readoutSub}>
-                      Water {follyData.w}°F
-                    </Text>
-                  )}
-                </View>
+              <View style={{ flex: 1 }}>
+                {follyData.dir && (
+                  <Text style={styles.readoutMain}>
+                    {follyData.dir === "in"
+                      ? "▲ Incoming tide"
+                      : "▼ Outgoing tide"}
+                  </Text>
+                )}
+                {follyData.e.slice(0, 2).map((ev, i) => (
+                  <Text key={i} style={styles.readoutSub}>
+                    {ev.y === "H" ? "High" : "Low"} {ev.t}  ·  {ev.v} ft
+                  </Text>
+                ))}
+                {follyData.w != null && follyData.w > 0 && (
+                  <Text style={styles.readoutSub}>Water {follyData.w}°F</Text>
+                )}
+              </View>
               </View>
             )}
         </Section>

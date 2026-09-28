@@ -235,6 +235,7 @@ class NetworkData {
     g_settings.follyL1 = lines[0];
     g_settings.follyL2 = lines[1];
     g_settings.follyWater = doc["w"] | 0;
+    g_settings.follyDir = (const char *)(doc["dir"] | "");
   }
 
   void fetchLake() {

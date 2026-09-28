@@ -228,14 +228,20 @@ class DisplayManager {
   void drawLabel(const String &s, uint16_t c) { centerText(s, height_/2 - 4, c, 1); }
 
   void drawFolly() {
-    centerText("FOLLY TIDES", 6, amber());
+    centerText("FOLLY TIDES", 4, amber());
     if (g_settings.follyL1.length()) {
-      centerText(g_settings.follyL1, 22, cyan());
-      if (g_settings.follyL2.length()) centerText(g_settings.follyL2, 34, white());
+      // Tide direction: up-arrow (\x18) rising/incoming, down-arrow (\x19)
+      // falling/outgoing — from the classic GFX code-page-437 glyphs.
+      if (g_settings.follyDir == "in")
+        centerText("\x18 INCOMING", 16, green());
+      else if (g_settings.follyDir == "out")
+        centerText("\x19 OUTGOING", 16, amber());
+      centerText(g_settings.follyL1, 28, cyan());
+      if (g_settings.follyL2.length()) centerText(g_settings.follyL2, 39, white());
       if (g_settings.follyWater > 0) {
         char w[16];
         snprintf(w, sizeof(w), "WATER %d\xF7", g_settings.follyWater);
-        centerText(w, 48, green());
+        centerText(w, 51, green());
       }
     } else {
       centerText("Hwy 171 bridge", 30, white());

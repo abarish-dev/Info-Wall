@@ -376,6 +376,13 @@ export default function MatrixPreview() {
             </View>
             {ev.length ? (
               <>
+                {folly?.dir && (
+                  <Glow
+                    text={folly.dir === "in" ? "▲ INCOMING" : "▼ OUTGOING"}
+                    color={folly.dir === "in" ? GREEN : AMBER}
+                    size={14}
+                  />
+                )}
                 <Glow text={line(ev[0])} color={CYAN} size={16} />
                 {!!ev[1] && <Glow text={line(ev[1])} color={WHITE} size={16} />}
                 {folly?.w != null && folly.w > 0 && (

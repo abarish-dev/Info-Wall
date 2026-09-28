@@ -991,7 +991,13 @@ async def device_folly():
         if cached:
             return cached["data"]
 
-    out = {"e": events, "w": _folly_water_temp()}
+    # Tide direction now: if the NEXT event is a high tide the water is still
+    # coming in (rising/flood); if it's a low tide it's going out (ebb).
+    direction = None
+    if events:
+        direction = "in" if events[0]["y"] == "H" else "out"
+
+    out = {"e": events, "w": _folly_water_temp(), "dir": direction}
     # Only cache a result that actually has tide data; caching an empty result
     # (transient upstream failure on a cold cache) would blank the module for
     # the whole TTL. Without data, return but let the next request retry.

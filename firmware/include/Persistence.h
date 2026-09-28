@@ -49,6 +49,7 @@ inline void serializeSettings(JsonDocument &d) {
   d["follyL1"] = g_settings.follyL1;
   d["follyL2"] = g_settings.follyL2;
   d["follyW"] = g_settings.follyWater;
+  d["follyDir"] = g_settings.follyDir;
   d["lakeLvl"] = g_settings.lakeLvl;
   d["lakeFull"] = g_settings.lakeFull;
   d["lakeW"] = g_settings.lakeWater;
@@ -102,6 +103,7 @@ inline void applySettings(JsonDocument &d) {
   g_settings.follyL1 = (const char *)(d["follyL1"] | "");
   g_settings.follyL2 = (const char *)(d["follyL2"] | "");
   g_settings.follyWater = d["follyW"] | 0;
+  g_settings.follyDir = (const char *)(d["follyDir"] | "");
   g_settings.lakeLvl = (const char *)(d["lakeLvl"] | "");
   g_settings.lakeFull = (const char *)(d["lakeFull"] | "");
   g_settings.lakeWater = d["lakeW"] | 0;
