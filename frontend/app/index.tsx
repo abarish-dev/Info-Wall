@@ -281,6 +281,16 @@ export default function ControlPanel() {
   }>({ state: "idle" });
   // Cancels an in-flight Wi-Fi result poll when a new join starts / status set.
   const wifiPollRef = useRef(0);
+  // Live Folly tides + Lake Norman readouts shown in the Weather section.
+  const [follyData, setFollyData] = useState<{
+    e?: { y: string; t: string; v: number }[];
+    w?: number | null;
+  } | null>(null);
+  const [lakeData, setLakeData] = useState<{
+    lvl?: number | null;
+    full?: number | null;
+    w?: number | null;
+  } | null>(null);
   const [lastSync, setLastSync] = useState<{
     at: string;
     summary: string;
@@ -747,6 +757,50 @@ export default function ControlPanel() {
       clearTimeout(t);
     };
   }, [settings.showFolly, settings.showLKN, status]);
+
+  // Fetch Folly tides for the in-app readout whenever the module is on.
+  useEffect(() => {
+    if (!settings.showFolly) {
+      setFollyData(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch(
+          `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/device/folly`,
+        );
+        if (r.ok && !cancelled) setFollyData(await r.json());
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [settings.showFolly]);
+
+  // Fetch Lake Norman level for the in-app readout whenever the module is on.
+  useEffect(() => {
+    if (!settings.showLKN) {
+      setLakeData(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch(
+          `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/device/lake`,
+        );
+        if (r.ok && !cancelled) setLakeData(await r.json());
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [settings.showLKN]);
 
   // Auto full-sync whenever the phone (re)connects, so the wall always matches
   // the app — even after edits made while disconnected.
@@ -1858,6 +1912,26 @@ export default function ControlPanel() {
               ios_backgroundColor={colors.surfaceTertiary}
             />
           </View>
+          {settings.showLKN && lakeData?.lvl != null && (
+            <View style={styles.dataReadout} testID="lake-readout">
+              <Ionicons name="boat" size={16} color={colors.brand} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.readoutMain}>
+                  {lakeData.lvl} ft
+                  {lakeData.full != null
+                    ? `  ·  ${lakeData.lvl - lakeData.full >= 0 ? "+" : ""}${(
+                        lakeData.lvl - lakeData.full
+                      ).toFixed(1)} ft vs full`
+                    : ""}
+                </Text>
+                {lakeData.w != null && lakeData.w > 0 && (
+                  <Text style={styles.readoutSub}>
+                    Water {lakeData.w}°F
+                  </Text>
+                )}
+              </View>
+            </View>
+          )}
           <View style={styles.toggleRow}>
             <View style={styles.toggleTextWrap}>
               <Text style={styles.fieldLabel}>Folly Beach Tides</Text>
@@ -1874,6 +1948,25 @@ export default function ControlPanel() {
               ios_backgroundColor={colors.surfaceTertiary}
             />
           </View>
+          {settings.showFolly &&
+            Array.isArray(follyData?.e) &&
+            follyData.e.length > 0 && (
+              <View style={styles.dataReadout} testID="folly-readout">
+                <Ionicons name="water" size={16} color={colors.brand} />
+                <View style={{ flex: 1 }}>
+                  {follyData.e.slice(0, 2).map((ev, i) => (
+                    <Text key={i} style={styles.readoutMain}>
+                      {ev.y === "H" ? "High" : "Low"} {ev.t}  ·  {ev.v} ft
+                    </Text>
+                  ))}
+                  {follyData.w != null && follyData.w > 0 && (
+                    <Text style={styles.readoutSub}>
+                      Water {follyData.w}°F
+                    </Text>
+                  )}
+                </View>
+              </View>
+            )}
         </Section>
 
         {/* Planes Overhead */}
@@ -2791,6 +2884,26 @@ const makeStyles = () =>
   divider: {
     height: 1,
     backgroundColor: colors.divider,
+  },
+  dataReadout: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    backgroundColor: colors.surfaceTertiary,
+    borderRadius: radius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  readoutMain: {
+    color: colors.onSurface,
+    fontFamily: fonts.textMedium,
+    fontSize: fontSize.md,
+  },
+  readoutSub: {
+    color: colors.info,
+    fontFamily: fonts.text,
+    fontSize: fontSize.sm,
+    marginTop: 2,
   },
   toggleTextWrap: {
     flex: 1,
