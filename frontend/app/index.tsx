@@ -802,6 +802,42 @@ export default function ControlPanel() {
     };
   }, [settings.showLKN]);
 
+  // Push the nearest overhead flight to the panel so "flights within range"
+  // shows on the matrix even if the panel's own fetch is unavailable. Refreshes
+  // periodically while connected (planes move in and out of range).
+  useEffect(() => {
+    if (status !== "connected") return;
+    if (geo?.lat == null || geo?.lon == null) return;
+    const base = process.env.EXPO_PUBLIC_BACKEND_URL ?? "";
+    let cancelled = false;
+    const pushNearest = async () => {
+      try {
+        const r = await fetch(
+          `${base}/api/device/planes?lat=${geo.lat}&lon=${geo.lon}&radius=${settings.searchRadius}`,
+        );
+        if (!r.ok || cancelled) return;
+        const d = await r.json();
+        const p = Array.isArray(d?.p) ? d.p : [];
+        const f = p[0];
+        let line = "";
+        if (f) {
+          line = f.al || f.f || "";
+          if (f.d != null) line += ` ${f.d}mi`;
+        }
+        if (!cancelled) await writeLive({ command: "planes", line });
+      } catch {
+        /* panel can try its own fetch */
+      }
+    };
+    const first = setTimeout(pushNearest, 1000);
+    const iv = setInterval(pushNearest, 60000);
+    return () => {
+      cancelled = true;
+      clearTimeout(first);
+      clearInterval(iv);
+    };
+  }, [status, geo, settings.searchRadius]);
+
   // Auto full-sync whenever the phone (re)connects, so the wall always matches
   // the app — even after edits made while disconnected.
   const prevStatusRef = useRef<BleStatus>(status);

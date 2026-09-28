@@ -131,12 +131,12 @@ class DisplayManager {
   }
 
  private:
-  enum Module { M_MESSAGE, M_FLIGHT, M_WEATHER, M_SPORTS, M_SCORES, M_TV,
-                M_STOCKS, M_COUNTDOWN, M_REMINDERS, M_LKN, M_FOLLY };
+  enum Module { M_MESSAGE, M_FLIGHT, M_PLANES, M_WEATHER, M_SPORTS, M_SCORES,
+                M_TV, M_STOCKS, M_COUNTDOWN, M_REMINDERS, M_LKN, M_FOLLY };
 
   MatrixPanel_I2S_DMA *dma_ = nullptr;
   int width_ = 128, height_ = 64;
-  Module frames_[11];
+  Module frames_[12];
   int  frameCount_ = 0;
   int  current_ = 0;
   unsigned long lastSwitch_ = 0;
@@ -158,6 +158,7 @@ class DisplayManager {
     String sig;
     sig += g_settings.showCustomMessage && msgHasText() ? "M" : "";
     sig += (g_settings.trackFlight && g_settings.flightIdent.length()) ? "F" : "";
+    sig += g_settings.planeLine.length() ? "P" : "";
     sig += g_settings.showWeather ? "W" : "";
     sig += anyTeam() ? "S" : "";
     sig += anyScore() ? "G" : "";
@@ -173,6 +174,7 @@ class DisplayManager {
     frameCount_ = 0;
     if (g_settings.showCustomMessage && msgHasText()) frames_[frameCount_++] = M_MESSAGE;
     if (g_settings.trackFlight && g_settings.flightIdent.length()) frames_[frameCount_++] = M_FLIGHT;
+    if (g_settings.planeLine.length()) frames_[frameCount_++] = M_PLANES;
     if (g_settings.showWeather) frames_[frameCount_++] = M_WEATHER;
     if (anyTeam())  frames_[frameCount_++] = M_SPORTS;
     if (anyScore()) frames_[frameCount_++] = M_SCORES;
@@ -210,6 +212,7 @@ class DisplayManager {
     switch (m) {
       case M_MESSAGE:   drawMessage();   break;
       case M_FLIGHT:    drawFlight();    break;
+      case M_PLANES:    drawPlanes();    break;
       case M_WEATHER:   drawWeather();   break;
       case M_SPORTS:    drawTeams();     break;
       case M_SCORES:    drawScores();    break;
@@ -264,6 +267,12 @@ class DisplayManager {
   void drawFlight() {
     centerText("FLIGHT", 14, cyan());
     centerText(g_settings.flightIdent, 34, white(), 2);
+  }
+
+  void drawPlanes() {
+    centerText("OVERHEAD", 12, cyan());
+    // planeLine is e.g. "Delta 3.2mi" (airline/callsign + distance).
+    centerText(g_settings.planeLine, 34, white());
   }
 
   void drawWeather() {

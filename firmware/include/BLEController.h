@@ -311,6 +311,10 @@ inline void BLEController::handleJson(const String &raw) {
     g_settings.lakeFull   = (const char *)(doc["full"] | "");
     g_settings.lakeWater  = doc["w"] | 0;
 
+  } else if (strcmp(cmd, "planes") == 0) {
+    // Phone-pushed nearest overhead flight (fallback to the panel's own fetch).
+    g_settings.planeLine  = (const char *)(doc["line"] | "");
+
   } else if (strcmp(cmd, "flight") == 0) {
     g_settings.trackFlight = doc["trackFlight"] | g_settings.trackFlight;
     g_settings.flightIdent = (const char *)(doc["flightIdent"] | g_settings.flightIdent.c_str());
