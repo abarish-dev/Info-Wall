@@ -283,13 +283,23 @@ class DisplayManager {
 
   void drawWeather() {
     if (g_settings.wxText.length()) {
+      // Current local time (once NTP has synced over Wi-Fi) above the temp.
+      struct tm now;
+      if (getLocalTime(&now, 5)) {
+        int h12 = now.tm_hour % 12;
+        if (h12 == 0) h12 = 12;
+        char clk[12];
+        snprintf(clk, sizeof(clk), "%d:%02d%s", h12, now.tm_min,
+                 now.tm_hour < 12 ? "a" : "p");
+        centerText(clk, 1, dim());
+      }
       char t[16];
       snprintf(t, sizeof(t), "%d\xF7", g_settings.wxTemp);  // temp
-      centerText(t, 10, amber(), 2);
-      centerText(g_settings.wxText, 32, white());
+      centerText(t, 11, amber(), 2);
+      centerText(g_settings.wxText, 31, white());
       char hl[20];
       snprintf(hl, sizeof(hl), "H%d  L%d", g_settings.wxHi, g_settings.wxLo);
-      centerText(hl, 46, cyan());
+      centerText(hl, 45, cyan());
     } else {
       // Not fetched yet (no Wi-Fi/apiBase) — show the module is active.
       centerText("WEATHER", 12, amber());
