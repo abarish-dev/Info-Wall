@@ -585,6 +585,35 @@ def _scoreboard_map(sport: str, lg: str) -> dict:
     return m
 
 
+def _next_event_from_schedule(sport: str, lg: str, abbr: str):
+    """Find a team's current/next game from the schedule endpoint, which — unlike
+    the regular-season `nextEvent` field — includes POSTSEASON games (MLB/NBA/NHL
+    playoffs, NFL playoffs, Super Bowl, World Series). Returns the ESPN event
+    dict for a live game, the soonest upcoming game, or a final within ~14h."""
+    try:
+        r = requests.get(
+            f"https://site.api.espn.com/apis/site/v2/sports/{sport}/{lg}/teams/{abbr.lower()}/schedule",
+            timeout=8,
+        )
+        r.raise_for_status()
+        events = r.json().get("events") or []  # chronological
+        best = None
+        for e in events:
+            comp = (e.get("competitions") or [{}])[0]
+            state = ((comp.get("status") or {}).get("type") or {}).get("state")
+            if state == "in":
+                return e  # a live game always wins
+            if best is None:
+                hrs = _hours_since(e.get("date")) if e.get("date") else None
+                # First game that hasn't finished more than ~14h ago = current/next.
+                if hrs is None or hrs <= 14:
+                    best = e
+        return best
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("espn schedule failed %s/%s %s: %s", sport, lg, abbr, exc)
+        return None
+
+
 def _team_status_one(code: str) -> dict:
     import time as _time
 
@@ -672,8 +701,20 @@ def _team_status_one(code: str) -> dict:
         data["record"] = rec_items[0].get("summary") if rec_items else None
 
         ne = t.get("nextEvent") or []
-        if ne:
-            e = ne[0]
+        # The team-endpoint nextEvent is often missing during the postseason gap,
+        # or points at a already-finished game ESPN hasn't rolled past yet. In
+        # either case consult the schedule endpoint (covers regular + POSTSEASON:
+        # playoffs, World Series, Super Bowl) to find the real current/next game.
+        e = ne[0] if ne else None
+        if e is not None:
+            _c = (e.get("competitions") or [{}])[0]
+            _st = ((_c.get("status") or {}).get("type") or {}).get("state")
+            _h = _hours_since(e.get("date")) if e.get("date") else None
+            if _st == "post" and (_h is None or _h > 14):
+                e = None  # stale final — look for the next scheduled game instead
+        if e is None:
+            e = _next_event_from_schedule(sport, lg, abbr)
+        if e:
             comp = (e.get("competitions") or [{}])[0]
             status = (comp.get("status") or {}).get("type") or {}
             state = status.get("state")  # pre | in | post

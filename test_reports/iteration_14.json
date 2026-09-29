@@ -1,0 +1,33 @@
+{
+  "summary": "PASS 23/23 pytest on the postseason-schedule fallback fix (test_postseason_schedule_fix.py). Bug resolved: /api/teams/status?teams=MLB:NYY now returns highlight='today', label='Today vs BOS' (postseason Wild Card game surfaced via ESPN teams/{abbr}/schedule endpoint, seasonType=3) instead of the previous 'offseason/No games scheduled'. NFL:DAL — which previously wrongly showed offseason because its nextEvent held a stale Final — now correctly returns highlight='soon', label='Oct 4 @ HOU'. Verified all 6 in-season/postseason teams (MLB:NYY|MLB:LAD|NFL:DAL|NFL:KC|NBA:LAL|NHL:BOS): NONE return 'offseason'; each has a valid live/today/soon/upcoming highlight from the schedule endpoint. Score/oppScore pairing invariant enforced (both null OR both numeric). Stale-game invariant enforced: no 'recent' 0-0 leaks, and any 'recent' highlight is verified to have a date within ±14h via server._hours_since. Direct unit call of the new _next_event_from_schedule('baseball','mlb','NYY') and ('football','nfl','DAL') helper returns non-None events with valid date+state. /api/device/scores compact shape {t:[{c,s,o,h,l,r}]} verified with s/o both null when h != live|recent. Regression PASS: /api/weather/current (temp numeric, in-range), /api/device/folly (dir in {in,out,null}), /api/device/lake ({lvl,tgt,full,w}).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_postseason_schedule_fix.py",
+    "/app/test_reports/pytest/postseason_schedule_fix_results.xml",
+    "/app/test_reports/iteration_14.json"
+  ],
+  "action_items": [
+    "None for the postseason-schedule fix — verified live and by unit tests. Fix is complete and correct.",
+    "(Carry-over, not tested this iteration) SettingsSheet TimeStepper bare `styles` ReferenceError, AnimatedSplash pointerEvents prop deprecation, matrix-preview textShadow* deprecation — still open from prior iterations."
+  ],
+  "critical_code_review_comments": [
+    "server.py _next_event_from_schedule() (lines 588-614): correctly hits site.api.espn.com/.../teams/{abbr}/schedule which returns BOTH regular season (seasonType 2) and postseason (seasonType 3) events in a single chronological list. Iterates events, returns immediately on state=='in' (live wins), otherwise picks the first event whose _hours_since ≤ 14 (i.e. current/next). Falls through to None only if the whole schedule is >14h old — genuine offseason. Robust exception handling returns None on network failure.",
+    "server.py _team_status_one() lines 703-716: order-of-fallback is correct — try nextEvent[0] first (fast common path); if that event is state=='post' and older than 14h, discard it and consult the schedule helper. This means the schedule helper only fires when needed (schedule endpoint is heavier), keeping p95 low.",
+    "The fix preserves the score-nulling invariant from iteration 13: when the resolved event is NOT a recent_final (14h window + real scores), data['score'] and data['oppScore'] are forced to null before choosing today/soon/upcoming. Verified live: NYY's today game returns score:null, oppScore:null.",
+    "Team-status cache (_team_cache TTL=120s) applies AFTER the whole resolution, so the schedule-endpoint fallback is also cached — this is desirable (avoids hammering ESPN). A test needing immediate re-evaluation would need to wait ≤120s.",
+    "Minor deprecation: server.py still uses @app.on_event('shutdown'); FastAPI recommends lifespan handlers. Non-blocking, but worth cleaning up in a future pass."
+  ],
+  "updated_files": ["/app/backend/tests/test_postseason_schedule_fix.py (new)"],
+  "success_rate": {"backend": "100% (23/23 pytest passing on postseason-schedule fix + regression)", "frontend": "skipped per request"},
+  "seed_data_creation": "None — read-only against public upstreams (ESPN site API, Open-Meteo, NOAA CO-OPS, Duke Energy, USGS).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "The new helper _next_event_from_schedule() calls ESPN's teams/{abbr}/schedule (includes postseason). Assertions target invariants — highlight enum membership, score/oppScore pairing, NOT specific opponents/dates (they shift daily as ESPN updates). Simulated season clock is ~2026-09-29 so MLB postseason is starting (NYY vs BOS Wild Card), NFL/NBA/NHL are early season. _team_cache TTL is 120s per team code — restart backend or wait if testing live state changes.",
+  "rca_of_issue": "Root cause: ESPN's /teams/{abbr} endpoint returns a `nextEvent` field that (a) is often EMPTY during the regular-season→postseason gap, and (b) even when populated, only covers regular-season events (seasonType=2) — it does NOT surface playoff/World Series/Super Bowl games (seasonType=3). Previously, when nextEvent was empty OR pointed at a stale finished game, _team_status_one fell through to `highlight='offseason', label='No games scheduled'` — wrongly claiming a postseason team had nothing on the schedule. Fix (verified): new _next_event_from_schedule() calls the /teams/{abbr}/schedule endpoint (which INCLUDES all season types 1/2/3) and returns the live game, soonest upcoming event, or a still-fresh (≤14h) final. _team_status_one now consults this helper whenever nextEvent is empty or is a stale post-state event. Live confirmation: NYY now returns 'Today vs BOS' (postseason WC game), DAL returns 'Oct 4 @ HOU' — matching the requested behaviour across MLB/NFL/NBA/NHL."
+}
