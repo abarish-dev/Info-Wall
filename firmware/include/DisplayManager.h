@@ -382,10 +382,18 @@ class DisplayManager {
     int page = current_ - tvFirstFrame_;
     if (page < 0 || page >= pages) page = 0;
 
-    // Build the list of show indices for this page (up to SHOWS_PER_PAGE).
+    // Balance shows evenly across pages (earlier pages take the remainder):
+    // 4->[4], 5->[3,2], 6->[3,3], 7->[4,3], 8->[4,4].
+    int base = total / pages;
+    int rem = total % pages;
+    int start = 0;
+    for (int j = 0; j < page; j++) start += base + (j < rem ? 1 : 0);
+    int want = base + (page < rem ? 1 : 0);
+
+    // Build the list of show indices for this page.
     int idxs[SHOWS_PER_PAGE];
-    int cnt = 0, seen = 0, start = page * SHOWS_PER_PAGE;
-    for (int i = 0; i < 8 && cnt < SHOWS_PER_PAGE; i++) {
+    int cnt = 0, seen = 0;
+    for (int i = 0; i < 8 && cnt < want; i++) {
       if (!g_settings.shows[i].length()) continue;
       if (seen++ < start) continue;
       idxs[cnt++] = i;
