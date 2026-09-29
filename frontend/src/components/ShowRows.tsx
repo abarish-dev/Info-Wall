@@ -236,6 +236,9 @@ function EpisodesModal({
   }) =>
     `S${e.season ?? "?"}·E${e.number ?? "?"}  ${e.name ?? ""}`.trim();
 
+  const epTag = (e: { season: number | null; number: number | null }) =>
+    `S${e.season ?? "?"}·E${e.number ?? "?"}`;
+
   return (
     <Modal
       visible={!!show}
@@ -313,37 +316,43 @@ function EpisodesModal({
                   const reminded = reminderKeys?.has(rKey);
                   return (
                     <View key={`u-${i}`} style={styles.epRow}>
-                      <View style={styles.epDate}>
-                        <Ionicons name="calendar" size={13} color={colors.brand} />
-                        <Text style={styles.epDateText}>{e.airdate}</Text>
+                      <View style={styles.epTopRow}>
+                        <View style={styles.epDate}>
+                          <Ionicons name="calendar" size={13} color={colors.brand} />
+                          <Text style={styles.epDateText}>{e.airdate}</Text>
+                        </View>
+                        <Text style={styles.epTag}>{epTag(e)}</Text>
+                        <View style={{ flex: 1 }} />
+                        {onToggleReminder && (
+                          <Pressable
+                            testID={`remind-${i}`}
+                            hitSlop={8}
+                            onPress={() =>
+                              onToggleReminder({
+                                key: rKey,
+                                show: show?.name ?? "",
+                                label: `${show?.name} ${epLine(e)}`,
+                                airdate: e.airdate,
+                              })
+                            }
+                            style={({ pressed }) => [
+                              styles.bellBtn,
+                              reminded && styles.bellBtnOn,
+                              pressed && styles.pressed,
+                            ]}
+                          >
+                            <Ionicons
+                              name={reminded ? "notifications" : "notifications-outline"}
+                              size={16}
+                              color={reminded ? colors.onBrand : colors.brand}
+                            />
+                          </Pressable>
+                        )}
                       </View>
-                      <Text style={styles.epName} numberOfLines={1}>
-                        {epLine(e)}
-                      </Text>
-                      {onToggleReminder && (
-                        <Pressable
-                          testID={`remind-${i}`}
-                          hitSlop={8}
-                          onPress={() =>
-                            onToggleReminder({
-                              key: rKey,
-                              show: show?.name ?? "",
-                              label: `${show?.name} ${epLine(e)}`,
-                              airdate: e.airdate,
-                            })
-                          }
-                          style={({ pressed }) => [
-                            styles.bellBtn,
-                            reminded && styles.bellBtnOn,
-                            pressed && styles.pressed,
-                          ]}
-                        >
-                          <Ionicons
-                            name={reminded ? "notifications" : "notifications-outline"}
-                            size={16}
-                            color={reminded ? colors.onBrand : colors.brand}
-                          />
-                        </Pressable>
+                      {!!e.name && (
+                        <Text style={styles.epName} numberOfLines={2}>
+                          {e.name}
+                        </Text>
                       )}
                     </View>
                   );
@@ -356,17 +365,22 @@ function EpisodesModal({
                 <Text style={styles.sectionLabel}>RECENT</Text>
                 {info.recent.map((e, i) => (
                   <View key={`r-${i}`} style={[styles.epRow, { opacity: 0.7 }]}>
-                    <View style={styles.epDate}>
-                      <Ionicons
-                        name="checkmark-done"
-                        size={13}
-                        color={colors.info}
-                      />
-                      <Text style={styles.epDateText}>{e.airdate}</Text>
+                    <View style={styles.epTopRow}>
+                      <View style={styles.epDate}>
+                        <Ionicons
+                          name="checkmark-done"
+                          size={13}
+                          color={colors.info}
+                        />
+                        <Text style={styles.epDateText}>{e.airdate}</Text>
+                      </View>
+                      <Text style={styles.epTag}>{epTag(e)}</Text>
                     </View>
-                    <Text style={styles.epName} numberOfLines={1}>
-                      {epLine(e)}
-                    </Text>
+                    {!!e.name && (
+                      <Text style={styles.epName} numberOfLines={2}>
+                        {e.name}
+                      </Text>
+                    )}
                   </View>
                 ))}
               </>
@@ -717,30 +731,38 @@ const makeStyles = () =>
       marginBottom: spacing.xs,
     },
     epRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: spacing.md,
+      flexDirection: "column",
+      gap: spacing.xs,
       backgroundColor: colors.surfaceTertiary,
       borderRadius: radius.sm,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
       marginBottom: spacing.xs,
     },
+    epTopRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+    },
     epDate: {
       flexDirection: "row",
       alignItems: "center",
       gap: 4,
-      width: 96,
     },
     epDateText: {
       color: colors.onSurfaceSecondary,
       fontFamily: fonts.mono,
       fontSize: fontSize.sm,
     },
+    epTag: {
+      color: colors.brand,
+      fontFamily: fonts.mono,
+      fontSize: fontSize.sm,
+    },
     epName: {
-      flex: 1,
       color: colors.onSurface,
       fontFamily: fonts.text,
-      fontSize: fontSize.sm,
+      fontSize: fontSize.base,
+      lineHeight: 20,
     },
   });

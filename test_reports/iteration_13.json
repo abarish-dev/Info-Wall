@@ -1,0 +1,34 @@
+{
+  "summary": "PASS 12/12 pytest on the stale-score bug fix + regression endpoints (test_stale_scores_fix.py). Bug 1 resolved: /api/teams/status?teams=MLB:NYY now returns {highlight:'offseason', label:'No games scheduled', score:null, oppScore:null, record:'93-68'} — no more stale 'Final 0-0'. /api/device/scores?teams=MLB:NYY returns {c:'MLB:NYY', s:null, o:null, h:'offseason', l:'No games scheduled', r:'93-68'} so the on-device SCORES module (which renders only h in {live,recent}) will correctly skip it. Multi-team shape verified with MLB:NYY|NFL:DAL|NBA:LAL|NHL:BOS: all rows well-formed, score/oppScore either both numbers or both null, no Final 0-0 ever surfaces as 'recent'. Unit tests confirm _hours_since() returns negative for future ISO, >24 for a 48h-old past ISO, and None for invalid input. Regression: /api/weather/current?lat=35.5841&lon=-80.8685 → temp numeric within sane range; /api/device/folly → {e:[{y,t,v}], w, dir in {in,out,null}}; /api/device/lake → {lvl,tgt,full,w} numeric. No 500s.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_stale_scores_fix.py",
+    "/app/test_reports/pytest/stale_scores_fix_results.xml",
+    "/app/test_reports/iteration_13.json"
+  ],
+  "action_items": [
+    "None for Bug 1 — stale-score fix is verified live and by unit tests.",
+    "Bug 2 (Shows/Episodes modal cutting off episode titles) is a frontend layout change and was explicitly out of scope for this iteration — main agent should self-verify or request UI testing next.",
+    "(Carry-over) SettingsSheet TimeStepper bare `styles` ReferenceError, AnimatedSplash pointerEvents prop deprecation, matrix-preview textShadow* deprecation — still open from prior iterations."
+  ],
+  "critical_code_review_comments": [
+    "server.py _team_status_one() scoreboard path (lines 633-655): now gates 'recent' on `'final' in detail.lower() AND has scores AND 0<=hrs<=14`. Correct: a postponed game (state='post', 0-0, detail='Postponed') fails the 'final' check and falls through to the nextEvent path; a day-old final fails the 14h window and also falls through. This is the primary fix for the reported 0-0 stale score.",
+    "server.py _team_status_one() nextEvent path (lines 719-752): `recent_final` requires state=='post' AND has_scores AND 0<=hrs<=14. If false, explicitly nulls `data['score']` and `data['oppScore']` before choosing today/soon/upcoming/offseason — this is exactly what prevents a (0-0) score from ever leaking out. Verified live for NYY (score:null, oppScore:null).",
+    "server.py _hours_since(iso): correctly handles the trailing 'Z' by swapping to '+00:00' and adds tzinfo=utc when missing. Returns fractional hours. Robust against bad inputs (returns None).",
+    "server.py device_scores(): forwards the same team status through a compact {c,s,o,h,l,r} shape and strips the '🔴' unicode from labels so the ESP32 firmware can render ASCII. Verified no red-circle bytes in device output.",
+    "Cache interaction: _team_cache TTL=120s means the nextEvent-derived state is memoised for 2 min per team code. That's fine for the fix (stale state clears well within a scheduled game window) but worth noting — a test that expects immediate re-evaluation after a state change would need to wait ≤120s or bypass the cache."
+  ],
+  "updated_files": ["/app/backend/tests/test_stale_scores_fix.py (new)"],
+  "success_rate": {"backend": "100% (12/12 pytest passing on stale-score fix + regression)", "frontend": "skipped per request"},
+  "seed_data_creation": "None — read-only against public upstreams (ESPN, Open-Meteo, NOAA CO-OPS, Duke Energy, USGS).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "ESPN's MLB nextEvent for NYY currently flaps between empty and the postponed Sep 27 event; both cases now resolve to highlight='offseason' + null scores. Tests assert invariants (never Final 0-0 as 'recent'; s/o both null when h != recent/live) rather than a specific highlight, because the exact enum can shift day-to-day. Team-status cache is 120s per team code — clear it by restarting backend or waiting if a live-state change is being tested. Frontend episode-modal (ShowRows.tsx) change was intentionally NOT tested here.",
+  "rca_of_issue": "Root cause: ESPN reports postponed and day-old MLB games as state='post' inside teams/{abbr}.nextEvent with score '0' for both competitors and detail like 'Postponed' or 'Final'. The prior code branched on state=='post' alone and emitted highlight='recent' with label='Final 0-0 vs BAL'. Fix (verified): the scoreboard path now requires detail contains 'final' AND real scores AND _hours_since(date) in [0,14]; the nextEvent path uses the same 14h + real-scores gate via `recent_final` and explicitly nulls score/oppScore for the non-recent branches. Live check on NYY confirms score/oppScore null and highlight='offseason' — matching the requested behaviour."
+}

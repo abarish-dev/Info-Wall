@@ -252,6 +252,19 @@ def _iso_to_eastern_date(iso: str) -> str:
         return iso[:10]
 
 
+def _hours_since(iso: str):
+    """Hours elapsed since an ESPN UTC event start time (negative if future)."""
+    from datetime import datetime as _dt, timezone as _tz
+
+    try:
+        g = _dt.fromisoformat(iso.replace("Z", "+00:00"))
+        if g.tzinfo is None:
+            g = g.replace(tzinfo=_tz.utc)
+        return (_dt.now(_tz.utc) - g).total_seconds() / 3600.0
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def _simplify_show(show: dict) -> dict:
     img = (show.get("image") or {}).get("medium")
     ext = show.get("externals") or {}
@@ -597,7 +610,7 @@ def _team_status_one(code: str) -> dict:
 
     # Live/just-finished games come from the scoreboard (has scores + clock).
     g = _scoreboard_map(sport, lg).get(abbr.upper())
-    if g and g["state"] in ("in", "post"):
+    if g and g["state"] == "in":
         opp = g["opp"]
         vs = "vs" if g["home"] else "@"
         score_str = (
@@ -613,15 +626,33 @@ def _team_status_one(code: str) -> dict:
             oppScore=g["oppScore"],
             date=g.get("date"),
         )
-        if g["state"] == "in":
-            bits = " ".join(x for x in [f"{vs} {opp}", score_str, g["detail"]] if x)
-            data.update(highlight="live", label=f"🔴 {bits}".strip())
-        else:
+        bits = " ".join(x for x in [f"{vs} {opp}", score_str, g["detail"]] if x)
+        data.update(highlight="live", label=f"🔴 {bits}".strip())
+        return data  # not cached — refreshes with the 60s scoreboard cache
+
+    if g and g["state"] == "post":
+        # Only a genuinely completed game within the last ~14h counts as a
+        # "recent" score. A day-old game — or a Postponed/Suspended game (which
+        # ESPN reports as state=post with a 0-0 score) — must NOT show; fall
+        # through to the next-scheduled-game logic instead.
+        detail = g.get("detail") or ""
+        hrs = _hours_since(g.get("date")) if g.get("date") else None
+        has = g["score"] is not None and g["oppScore"] is not None
+        if "final" in detail.lower() and has and hrs is not None and 0 <= hrs <= 14:
+            opp = g["opp"]
+            vs = "vs" if g["home"] else "@"
+            score_str = f"{g['score']}-{g['oppScore']}"
             data.update(
+                name=g.get("name"),
+                logo=g.get("logo"),
+                opponent=opp,
+                score=g["score"],
+                oppScore=g["oppScore"],
+                date=g.get("date"),
                 highlight="recent",
                 label=f"Final {score_str} {vs} {opp}".strip(),
             )
-        return data  # not cached — refreshes with the 60s scoreboard cache
+            return data
 
     cached = _team_cache.get(code)
     if cached and _time.time() - cached["ts"] < _TEAM_TTL:
@@ -679,32 +710,46 @@ def _team_status_one(code: str) -> dict:
             has_scores = my_score is not None and opp_score is not None
             score_str = f"{my_score}-{opp_score}" if has_scores else ""
             days = _days_from_today(local_date) if local_date else None
+            hrs = _hours_since(date) if date else None
+
+            # A finished game only counts as a "recent" score for a short window
+            # (~14h). After that ESPN often still returns it as nextEvent until
+            # the next game is scheduled — showing a day-old "Final 0-0" is the
+            # stale info we must drop.
+            recent_final = (
+                state == "post"
+                and has_scores
+                and hrs is not None
+                and 0 <= hrs <= 14
+            )
 
             if state == "in":
                 bits = " ".join(x for x in [score_str, short] if x)
+                data.update(highlight="live", label=f"🔴 {opp} {bits}".strip())
+            elif recent_final:
                 data.update(
-                    highlight="live",
-                    label=f"🔴 {opp} {bits}".strip(),
-                )
-            elif state == "post":
-                data.update(
-                    highlight="recent",
-                    label=f"Final {score_str} {matchup}".strip(),
-                )
-            elif days == 0:
-                data.update(highlight="today", label=f"Today {matchup}".strip())
-            elif days is not None and 0 < days <= 7:
-                data.update(
-                    highlight="soon",
-                    label=f"{_fmt_date(local_date)} {matchup}".strip(),
+                    highlight="recent", label=f"Final {score_str} {matchup}".strip()
                 )
             else:
-                data.update(
-                    highlight="upcoming",
-                    label=f"{_fmt_date(local_date)} {matchup}".strip()
-                    if local_date
-                    else None,
-                )
+                # No current game to score: either a genuinely upcoming game, or
+                # a stale finished game. Never expose a (0-0) score here.
+                data["score"] = None
+                data["oppScore"] = None
+                upcoming_ok = state != "post" and days is not None and days >= 0
+                if upcoming_ok and days == 0:
+                    data.update(highlight="today", label=f"Today {matchup}".strip())
+                elif upcoming_ok and 0 < days <= 7:
+                    data.update(
+                        highlight="soon",
+                        label=f"{_fmt_date(local_date)} {matchup}".strip(),
+                    )
+                elif upcoming_ok:
+                    data.update(
+                        highlight="upcoming",
+                        label=f"{_fmt_date(local_date)} {matchup}".strip(),
+                    )
+                else:
+                    data.update(highlight="offseason", label="No games scheduled")
         else:
             data.update(highlight="offseason", label="No games scheduled")
 
