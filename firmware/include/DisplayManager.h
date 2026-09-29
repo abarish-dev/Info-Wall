@@ -242,11 +242,19 @@ class DisplayManager {
   void drawFolly() {
     centerText("FOLLY TIDES", 4, amber());
     if (g_settings.follyL1.length()) {
-      // Tide direction: up-arrow (\x18) rising/incoming, down-arrow (\x19)
-      // falling/outgoing — from the classic GFX code-page-437 glyphs.
-      if (g_settings.follyDir == "in")
+      // Tide direction. Prefer the backend's value, but if it's missing infer
+      // it from the next tide: next High => water coming IN (rising); next Low
+      // => going OUT (falling). This keeps the indicator working even if an
+      // older phone app pushed tides without a direction field.
+      String dir = g_settings.follyDir;
+      if (dir.length() == 0) {
+        char c = g_settings.follyL1.charAt(0);
+        if (c == 'H') dir = "in";
+        else if (c == 'L') dir = "out";
+      }
+      if (dir == "in")
         centerText("\x18 INCOMING", 16, green());
-      else if (g_settings.follyDir == "out")
+      else if (dir == "out")
         centerText("\x19 OUTGOING", 16, amber());
       centerText(g_settings.follyL1, 28, cyan());
       if (g_settings.follyL2.length()) centerText(g_settings.follyL2, 39, white());
