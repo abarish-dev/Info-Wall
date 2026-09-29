@@ -252,6 +252,31 @@ def _iso_to_eastern_date(iso: str) -> str:
         return iso[:10]
 
 
+def _iso_to_eastern_time(iso: str):
+    """ESPN event times are UTC. Return the ET clock like '7:05p' (or '12p' /
+    '7p' on the hour), or None if the time isn't a real scheduled kickoff
+    (ESPN uses midnight ET / 'TBD' as a placeholder before the time is set)."""
+    from datetime import datetime as _dt
+    from zoneinfo import ZoneInfo
+
+    try:
+        dt = _dt.fromisoformat(iso.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            return None
+        et = dt.astimezone(ZoneInfo("America/New_York"))
+        # ESPN placeholder for an unscheduled time is midnight ET — skip it.
+        if et.hour == 0 and et.minute == 0:
+            return None
+        h12 = et.hour % 12 or 12
+        ampm = "a" if et.hour < 12 else "p"
+        if et.minute == 0:
+            return f"{h12}{ampm}"
+        return f"{h12}:{et.minute:02d}{ampm}"
+    except Exception:  # noqa: BLE001
+        return None
+
+
+
 def _hours_since(iso: str):
     """Hours elapsed since an ESPN UTC event start time (negative if future)."""
     from datetime import datetime as _dt, timezone as _tz
@@ -777,17 +802,19 @@ def _team_status_one(code: str) -> dict:
                 data["score"] = None
                 data["oppScore"] = None
                 upcoming_ok = state != "post" and days is not None and days >= 0
+                time_str = _iso_to_eastern_time(date) if date else None
+                mt = f"{time_str} {matchup}".strip() if time_str else matchup
                 if upcoming_ok and days == 0:
-                    data.update(highlight="today", label=f"Today {matchup}".strip())
+                    data.update(highlight="today", label=f"Today {mt}".strip())
                 elif upcoming_ok and 0 < days <= 7:
                     data.update(
                         highlight="soon",
-                        label=f"{_fmt_date(local_date)} {matchup}".strip(),
+                        label=f"{_fmt_date(local_date)} {mt}".strip(),
                     )
                 elif upcoming_ok:
                     data.update(
                         highlight="upcoming",
-                        label=f"{_fmt_date(local_date)} {matchup}".strip(),
+                        label=f"{_fmt_date(local_date)} {mt}".strip(),
                     )
                 else:
                     data.update(highlight="offseason", label="No games scheduled")
