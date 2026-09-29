@@ -944,6 +944,16 @@ async def device_scores(teams: str):
     return {"t": out}
 
 
+@api_router.get("/device/time")
+async def device_time():
+    # Current UTC epoch seconds — the panel sets its RTC from this when NTP
+    # (UDP 123) is blocked on the local network. The firmware applies the
+    # US-Eastern timezone locally.
+    import time as _time
+    return {"epoch": int(_time.time())}
+
+
+
 @api_router.get("/device/quotes")
 async def device_quotes(symbols: str):
     seen, out = set(), []

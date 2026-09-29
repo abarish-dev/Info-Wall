@@ -22,6 +22,7 @@
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
+#include <sys/time.h>
 #include "BLEController.h"
 #include "DisplayManager.h"
 
@@ -48,6 +49,20 @@ class NetworkData {
     // and makes later handshakes EOF (-29312). Spacing them lets RAM recover.
     if (now - tLastFetch_ < kFetchGapMs) return;
 
+    // Clock fallback: some networks block NTP (UDP 123) while allowing HTTPS,
+    // so getLocalTime() may never succeed. If the clock still isn't valid,
+    // fetch the current epoch over HTTPS (proven to work) and set the RTC.
+    if (!clockValid_) {
+      struct tm t;
+      if (getLocalTime(&t, 5)) {
+        clockValid_ = true;
+      } else if (due(now, tTimeHttp_, 15000)) {
+        httpSyncTime();
+        tLastFetch_ = now;
+        return;
+      }
+    }
+
     if (due(now, tScores_, 30000))       { fetchScores();  tLastFetch_ = now; return; }
     if (due(now, tPlanes_, 30000))       { fetchPlanes();  tLastFetch_ = now; return; }
     if (due(now, tQuotes_, 120000))      { fetchQuotes();  tLastFetch_ = now; return; }
@@ -61,7 +76,9 @@ class NetworkData {
   unsigned long tScores_ = 0, tQuotes_ = 0, tWeather_ = 0, tPlanes_ = 0, tTv_ = 0;
   unsigned long tFolly_ = 0, tLake_ = 0;
   unsigned long tLastFetch_ = 0;
-  bool clockSynced_ = false;   // NTP time set once Wi-Fi is up (any path)
+  bool clockSynced_ = false;   // NTP started once Wi-Fi is up (any path)
+  bool clockValid_ = false;    // RTC actually holds a real time (NTP or HTTP)
+  unsigned long tTimeHttp_ = 0;  // last HTTP time-sync attempt
   static const unsigned long kFetchGapMs = 2500;  // min spacing between fetches
 
   static bool due(unsigned long now, unsigned long &last, unsigned long every) {
@@ -128,6 +145,21 @@ class NetworkData {
       delay(700);  // let the socket + TLS state fully reset before retry
     }
     return false;
+  }
+
+  // Set the RTC from the backend's epoch (used when NTP is blocked). The TZ
+  // env is already configured by configTzTime(), so localtime() stays Eastern.
+  void httpSyncTime() {
+    JsonDocument doc;
+    if (!getJson("/api/device/time", doc)) return;
+    long epoch = doc["epoch"] | 0L;
+    if (epoch < 1000000000L) return;  // sanity: must be after 2001
+    struct timeval tv;
+    tv.tv_sec = (time_t)epoch;
+    tv.tv_usec = 0;
+    settimeofday(&tv, nullptr);
+    clockValid_ = true;
+    Serial.printf("[NET] clock set via HTTP epoch=%ld\n", epoch);
   }
 
   String csvTeams() {

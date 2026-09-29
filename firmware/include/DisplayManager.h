@@ -136,7 +136,7 @@ class DisplayManager {
 
   MatrixPanel_I2S_DMA *dma_ = nullptr;
   int width_ = 128, height_ = 64;
-  static const int SHOWS_PER_PAGE = 4;   // Shows module paginates in the carousel
+  static const int SHOWS_PER_PAGE = 3;   // Shows module paginates in the carousel
   static const int MAX_FRAMES = 20;
   Module frames_[MAX_FRAMES];
   int  frameCount_ = 0;
