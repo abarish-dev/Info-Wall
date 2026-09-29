@@ -1,0 +1,34 @@
+{
+  "summary": "Airline badge feature verified end-to-end. BACKEND: 4/4 pytest cases pass on GET /api/device/planes — 200, {p:[...]}, entries carry f/al/ia/d, ICAO 'ia' correctly derived (UAL, FFT, CXK) from 3-letters+digit callsigns and null for private tails (N717VZ, N79949, N110SQ), and results capped at 6. FRONTEND: /matrix-preview renders the new 'Planes overhead' frame on first cycle with all required elements — 'OVERHEAD' glow, amber airBadge pill containing the Ionicons airplane icon and the ICAO code (observed 'UAL'), and the 'United Airlines 1.3mi' line; nothing is cut off. Regression: cycled through all 7 frames (including Folly Beach Tides, Lake Norman, weather) with zero JS/ReferenceError and no red screen. Only pre-existing RN-web deprecation warnings (textShadow*, pointerEvents) — already tracked in iteration_15.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "matrix-preview.tsx (Glow) and others", "issue": "'textShadow*' style props are deprecated. Migrate to shorthand 'textShadow'. Reference: /app/frontend/app/matrix-preview.tsx:664-669 (styles.led uses textShadowOffset/textShadowRadius/textShadowColor). Pre-existing warning; not introduced by this change."},
+      {"component": "RN-Web internal Modal/Pressable", "issue": "'props.pointerEvents is deprecated. Use style.pointerEvents' — pre-existing warning, likely from an internal library."}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_device_planes.py",
+    "/app/test_reports/pytest/device_planes_results.xml"
+  ],
+  "action_items": [
+    "No blocking action required — feature works as specified on both backend and frontend.",
+    "Optional cleanup (already tracked): migrate textShadow* to the 'textShadow' shorthand in matrix-preview.tsx styles.led and any other LED-glow styles."
+  ],
+  "critical_code_review_comments": [
+    "Frontend uses EXPO_PUBLIC_BACKEND_URL (via process.env) with fetch — correct pattern for RN Web; base URL correctly resolves in preview.",
+    "matrix-preview.tsx guards the overhead frame with `plane && (plane.al || plane.f)` so a null/empty plane won't render an empty frame — good.",
+    "Regex on the backend `^([A-Z]{3})\\d` correctly rejects private tail numbers like N788CG (starts with a digit at position 4 doesn't match, N-prefix fails the [A-Z]{3}\\d pattern) — verified live: N717VZ, N79949, N110SQ all returned ia=null.",
+    "airBadge conditionally renders the code text only when badge is truthy (`!!badge && ...`), so private tails would show just the airplane icon in the pill and the tail number in the line — matches spec."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% (4/4)", "frontend": "100%"},
+  "seed_data_creation": "None — used live adsb.lol feed for lat=35.58,lon=-80.86,radius=50 (Lake Norman area). Live sample: UAL2181/UAL, FFT3819/FFT, CXK219/CXK, N717VZ/null, N79949/null, N110SQ/null.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "New backend field: /api/device/planes returns 'ia' = ICAO airline code (3 letters) parsed from callsign via regex ^([A-Z]{3})\\d, else null. New frontend frame in matrix-preview.tsx keyed 'overhead' uses styles.airBadge (amber pill) + Ionicons airplane + SpaceMono airBadgeText. Preview is served at /matrix-preview and coords resolve from stored zipCode (default 28117). Pre-existing testIDs on this screen: preview-back, preview-frame, preview-prev, preview-playpause, preview-next.",
+  "rca_of_issue": "N/A — feature-addition verification, no bug found."
+}

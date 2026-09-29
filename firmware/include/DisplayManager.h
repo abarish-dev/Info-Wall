@@ -276,14 +276,42 @@ class DisplayManager {
   }
 
   void drawPlanes() {
-    centerText("OVERHEAD", 12, cyan());
-    // planeLine is e.g. "Delta 3.2mi" (airline/callsign + distance).
-    centerText(g_settings.planeLine, 34, white());
+    centerText("OVERHEAD", 4, cyan());
+    String code = g_settings.planeCode;
+    uint16_t ink = dma_->color565(15, 15, 15);
+    if (code.length()) {
+      // Airline badge: a colored pill with a plane glyph + the airline code.
+      int textW = code.length() * 6;
+      int iconW = 10;
+      int padX = 5;
+      int pillW = iconW + textW + padX * 2;
+      int pillH = 15;
+      int px = (width_ - pillW) / 2;
+      if (px < 0) px = 0;
+      int py = 19;
+      dma_->fillRoundRect(px, py, pillW, pillH, 4, amber());
+      int ix = px + padX;
+      int iy = py + pillH / 2;
+      // Simple stylized jet pointing right.
+      dma_->fillTriangle(ix, iy - 4, ix, iy + 4, ix + 8, iy, ink);
+      dma_->fillTriangle(ix + 2, iy, ix + 5, iy - 5, ix + 5, iy, ink);
+      dma_->setTextSize(1);
+      dma_->setTextColor(ink);
+      dma_->setCursor(ix + iconW, py + 4);
+      dma_->print(code);
+    } else {
+      // No airline code (private tail number) — a plain plane glyph.
+      int cx = width_ / 2;
+      dma_->fillTriangle(cx - 7, 21, cx - 7, 31, cx + 7, 26, cyan());
+    }
+    // Airline name + distance below the badge.
+    centerText(g_settings.planeLine, 42, white());
   }
 
   void drawWeather() {
     if (g_settings.wxText.length()) {
       // Current local time (once NTP has synced over Wi-Fi) above the temp.
+      bool haveClock = false;
       struct tm now;
       if (getLocalTime(&now, 5)) {
         int h12 = now.tm_hour % 12;
@@ -291,15 +319,18 @@ class DisplayManager {
         char clk[12];
         snprintf(clk, sizeof(clk), "%d:%02d%s", h12, now.tm_min,
                  now.tm_hour < 12 ? "a" : "p");
-        centerText(clk, 1, dim());
+        centerText(clk, 5, cyan());   // padded off the top edge, readable color
+        haveClock = true;
       }
+      // Shift the rest down a touch when the clock is shown so nothing crowds.
+      int base = haveClock ? 17 : 10;
       char t[16];
       snprintf(t, sizeof(t), "%d\xF7", g_settings.wxTemp);  // temp
-      centerText(t, 11, amber(), 2);
-      centerText(g_settings.wxText, 31, white());
+      centerText(t, base, amber(), 2);
+      centerText(g_settings.wxText, base + 21, white());
       char hl[20];
       snprintf(hl, sizeof(hl), "H%d  L%d", g_settings.wxHi, g_settings.wxLo);
-      centerText(hl, 45, cyan());
+      centerText(hl, base + 34, cyan());
     } else {
       // Not fetched yet (no Wi-Fi/apiBase) — show the module is active.
       centerText("WEATHER", 12, amber());
@@ -334,15 +365,21 @@ class DisplayManager {
     int n = 0;
     for (int i = 0; i < 8; i++) if (g_settings.shows[i].length()) n++;
     if (n == 0) return;
-    int y = (height_ - (n * 20 - 3)) / 2;   // vertically center the block
-    if (y < 1) y = 1;
+    // Adaptive row height so all shows fit (4 shows * 20px overflowed 64px and
+    // clipped the last one). Each row is a title + a "when" sub-line.
+    int rowH = n > 0 ? (height_ - 2) / n : 20;
+    if (rowH > 20) rowH = 20;
+    if (rowH < 14) rowH = 14;
+    int lblOff = rowH >= 18 ? 9 : 8;
+    int blockH = rowH * n;
+    int y = (height_ - blockH) / 2;
+    if (y < 0) y = 0;
     for (int i = 0; i < 8 && y < height_; i++) {
       if (!g_settings.shows[i].length()) continue;
-      // Show the title + WHEN (next episode this season, or season premiere).
       centerText(g_settings.shows[i].substring(0, 21), y, cyan());
       String lbl = g_settings.showLabel[i];
-      centerText(lbl.length() ? lbl : String("--"), y + 9, white());
-      y += 20;
+      centerText(lbl.length() ? lbl : String("--"), y + lblOff, white());
+      y += rowH;
     }
   }
 

@@ -831,11 +831,13 @@ export default function ControlPanel() {
         const p = Array.isArray(d?.p) ? d.p : [];
         const f = p[0];
         let line = "";
+        let code = "";
         if (f) {
           line = f.al || f.f || "";
           if (f.d != null) line += ` ${f.d}mi`;
+          code = f.ia || "";
         }
-        if (!cancelled) await writeLive({ command: "planes", line });
+        if (!cancelled) await writeLive({ command: "planes", line, code });
       } catch {
         /* panel can try its own fetch */
       }

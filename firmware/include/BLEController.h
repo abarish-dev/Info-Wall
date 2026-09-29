@@ -82,6 +82,7 @@ struct MatrixSettings {
   int    wxLo           = 0;
   String wxText         = "";
   String planeLine      = "";   // nearest overhead flight
+  String planeCode      = "";   // airline IATA/ICAO code for the badge (e.g. DAL)
   String tvNewLine      = "";   // a show with a new episode
 
   // Folly Beach tides (NOAA 8665424) + Lake Norman (Duke Energy + USGS).
@@ -316,6 +317,7 @@ inline void BLEController::handleJson(const String &raw) {
   } else if (strcmp(cmd, "planes") == 0) {
     // Phone-pushed nearest overhead flight (fallback to the panel's own fetch).
     g_settings.planeLine  = (const char *)(doc["line"] | "");
+    g_settings.planeCode  = (const char *)(doc["code"] | "");
 
   } else if (strcmp(cmd, "flight") == 0) {
     g_settings.trackFlight = doc["trackFlight"] | g_settings.trackFlight;

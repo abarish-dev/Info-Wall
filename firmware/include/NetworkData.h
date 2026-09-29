@@ -211,11 +211,14 @@ class NetworkData {
       JsonVariant f = p[0];
       String al = (const char *)(f["al"] | "");
       String cs = (const char *)(f["f"] | "");
+      String ia = (const char *)(f["ia"] | "");
+      g_settings.planeCode = ia;
       g_settings.planeLine = (al.length() ? al : cs);
       if (!f["d"].isNull())
         g_settings.planeLine += " " + String(f["d"].as<float>(), 1) + "mi";
     } else {
       g_settings.planeLine = "";
+      g_settings.planeCode = "";
     }
   }
 

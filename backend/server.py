@@ -959,11 +959,19 @@ async def device_quotes(symbols: str):
 
 @api_router.get("/device/planes")
 async def device_planes(lat: float, lon: float, radius: float = 25):
+    import re as _re
+
+    def _iata(callsign):
+        # ICAO airline callsigns are 3 letters + a flight number (DAL123, UAL45).
+        m = _re.match(r"^([A-Z]{3})\d", (callsign or "").strip().upper())
+        return m.group(1) if m else None
+
     data = await flights_nearby(lat, lon, radius)  # reuse + cache
     out = [
         {
             "f": f["callsign"],
             "al": f.get("airline"),
+            "ia": _iata(f["callsign"]),
             "d": round(f["distance"] * 1.15078, 1) if f.get("distance") is not None else None,
         }
         for f in data.get("flights", [])[:6]

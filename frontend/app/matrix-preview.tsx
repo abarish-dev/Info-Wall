@@ -111,6 +111,7 @@ export default function MatrixPreview() {
   const [dueReminders, setDueReminders] = useState<string[]>([]);
   const [folly, setFolly] = useState<any | null>(null);
   const [lake, setLake] = useState<any | null>(null);
+  const [plane, setPlane] = useState<any | null>(null);
   const [idx, setIdx] = useState(0);
   const [paused, setPaused] = useState(false);
   const opacity = useRef(new Animated.Value(1)).current;
@@ -121,9 +122,14 @@ export default function MatrixPreview() {
       const s = await storage.getItem<any>(STORAGE_KEY, null);
       setSettings(s ?? {});
       const zip = (s?.zipCode ?? "").trim();
+      let coords: { lat: number; lon: number } | null = null;
       if (zip.length === 5) {
         const c = await getCachedZip(zip);
-        if (c) setCity(`${c.city}${c.state ? `, ${c.state}` : ""}`);
+        if (c) {
+          setCity(`${c.city}${c.state ? `, ${c.state}` : ""}`);
+          if (c.lat != null && c.lon != null)
+            coords = { lat: c.lat, lon: c.lon };
+        }
       }
       const syms = ((s?.stocks ?? []) as string[])
         .map((x) => x.trim().toUpperCase())
@@ -162,6 +168,21 @@ export default function MatrixPreview() {
         try {
           const r = await fetch(`${base}/api/device/lake`);
           if (r.ok) setLake(await r.json());
+        } catch {
+          /* ignore */
+        }
+      }
+      if (coords) {
+        try {
+          const rad = s?.searchRadius ?? 25;
+          const r = await fetch(
+            `${base}/api/device/planes?lat=${coords.lat}&lon=${coords.lon}&radius=${rad}`,
+          );
+          if (r.ok) {
+            const d = await r.json();
+            const arr = Array.isArray(d?.p) ? d.p : [];
+            setPlane(arr[0] ?? null);
+          }
         } catch {
           /* ignore */
         }
@@ -205,6 +226,29 @@ export default function MatrixPreview() {
           <View style={styles.rowCenter}>
             <Ionicons name="airplane" size={26} color={CYAN} />
             <Glow text={`  ${s.flightIdent}`} color={WHITE} size={24} />
+          </View>
+        ),
+      });
+    }
+
+    if (plane && (plane.al || plane.f)) {
+      const badge = plane.ia || "";
+      const line =
+        (plane.al || plane.f || "") +
+        (plane.d != null ? `  ${plane.d}mi` : "");
+      f.push({
+        key: "overhead",
+        label: "Planes overhead",
+        node: (
+          <View style={{ alignItems: "center", gap: 8 }}>
+            <Glow text="OVERHEAD" color={CYAN} size={14} />
+            <View style={styles.airBadge}>
+              <Ionicons name="airplane" size={18} color="#141414" />
+              {!!badge && (
+                <Text style={styles.airBadgeText}>{badge}</Text>
+              )}
+            </View>
+            <Glow text={line} color={WHITE} size={16} />
           </View>
         ),
       });
@@ -429,7 +473,7 @@ export default function MatrixPreview() {
     }
 
     return f;
-  }, [settings, city, quotes, teamStatuses, dueReminders, folly, lake]);
+  }, [settings, city, quotes, teamStatuses, dueReminders, folly, lake, plane]);
 
   // Auto-cycle using the user's hold + fade timing.
   useEffect(() => {
@@ -624,6 +668,21 @@ const styles = StyleSheet.create({
     textShadowRadius: 10,
   },
   rowCenter: { flexDirection: "row", alignItems: "center" },
+  airBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: AMBER,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+  airBadgeText: {
+    color: "#141414",
+    fontFamily: "SpaceMono",
+    fontSize: 20,
+    fontWeight: "700",
+  },
   rowBetween: {
     flexDirection: "row",
     alignItems: "center",
