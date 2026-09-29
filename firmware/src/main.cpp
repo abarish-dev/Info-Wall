@@ -44,8 +44,9 @@ void tryJoinWifi(const String &ssid, const String &pass) {
   if (WiFi.status() == WL_CONNECTED) {
     String ip = WiFi.localIP().toString();
     Serial.printf("[WiFi] connected: %s\n", ip.c_str());
-    // Sync the clock so the schedule + countdown are correct.
-    configTime(0, 0, "pool.ntp.org", "time.nist.gov");
+    // Sync the clock (US Eastern, auto-DST) so the weather clock, schedule and
+    // countdown are correct.
+    configTzTime(INFOWALL_TZ, "pool.ntp.org", "time.nist.gov");
     s_clockSynced = true;
     result = String("{\"wifiStatus\":\"connected\",\"ip\":\"") + ip + "\"}";
   } else {

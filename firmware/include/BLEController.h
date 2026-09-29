@@ -24,6 +24,11 @@
 static const char *SERVICE_UUID        = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
 static const char *CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 
+// POSIX timezone for the wall's clock + evening schedule. US Eastern with
+// automatic daylight-saving (DST starts 2nd Sun of Mar, ends 1st Sun of Nov).
+// Used by both the BLE-triggered Wi-Fi join and the auto-reconnect sync path.
+#define INFOWALL_TZ "EST5EDT,M3.2.0,M11.1.0"
+
 // --- Global settings the rest of your firmware reads ----------------------
 struct MatrixSettings {
   // Flight / weather / zone

@@ -30,7 +30,16 @@ extern DisplayManager g_display;
 class NetworkData {
  public:
   void tick() {
-    if (WiFi.status() != WL_CONNECTED || g_settings.apiBase.length() == 0)
+    if (WiFi.status() != WL_CONNECTED) return;
+    // Sync the clock the first time Wi-Fi comes up — regardless of HOW it
+    // connected. The ESP32 silently auto-reconnects to stored creds on boot
+    // (no BLE join), so without this the weather clock + evening schedule
+    // would never get an NTP time. Cheap + idempotent to call once.
+    if (!clockSynced_) {
+      configTzTime(INFOWALL_TZ, "pool.ntp.org", "time.nist.gov");
+      clockSynced_ = true;
+    }
+    if (g_settings.apiBase.length() == 0)
       return;
     unsigned long now = millis();
     // Only ONE HTTPS fetch at a time, with a minimum gap between any two.
@@ -52,6 +61,7 @@ class NetworkData {
   unsigned long tScores_ = 0, tQuotes_ = 0, tWeather_ = 0, tPlanes_ = 0, tTv_ = 0;
   unsigned long tFolly_ = 0, tLake_ = 0;
   unsigned long tLastFetch_ = 0;
+  bool clockSynced_ = false;   // NTP time set once Wi-Fi is up (any path)
   static const unsigned long kFetchGapMs = 2500;  // min spacing between fetches
 
   static bool due(unsigned long now, unsigned long &last, unsigned long every) {
