@@ -136,9 +136,12 @@ class DisplayManager {
 
   MatrixPanel_I2S_DMA *dma_ = nullptr;
   int width_ = 128, height_ = 64;
-  Module frames_[12];
+  static const int SHOWS_PER_PAGE = 4;   // Shows module paginates in the carousel
+  static const int MAX_FRAMES = 20;
+  Module frames_[MAX_FRAMES];
   int  frameCount_ = 0;
   int  current_ = 0;
+  int  tvFirstFrame_ = 0;   // index of the first Shows page in frames_
   unsigned long lastSwitch_ = 0;
   bool fading_ = false, fadeOut_ = false;
   unsigned long fadeStart_ = 0;
@@ -178,7 +181,15 @@ class DisplayManager {
     if (g_settings.showWeather) frames_[frameCount_++] = M_WEATHER;
     if (anyTeam())  frames_[frameCount_++] = M_SPORTS;
     if (anyScore()) frames_[frameCount_++] = M_SCORES;
-    if (anyShow())  frames_[frameCount_++] = M_TV;
+    if (anyShow()) {
+      // Paginate: one carousel frame per page of shows so ANY number of shows
+      // displays cleanly (4 fit per 64px screen). Pages are consecutive, so all
+      // shows scroll by, 4 at a time, within one carousel rotation.
+      tvFirstFrame_ = frameCount_;
+      int pages = (showCount() + SHOWS_PER_PAGE - 1) / SHOWS_PER_PAGE;
+      for (int k = 0; k < pages && frameCount_ < MAX_FRAMES; k++)
+        frames_[frameCount_++] = M_TV;
+    }
     if (anyStock()) frames_[frameCount_++] = M_STOCKS;
     if (g_settings.showCountdown && g_settings.countdownLabel.length()) frames_[frameCount_++] = M_COUNTDOWN;
     if (anyReminder()) frames_[frameCount_++] = M_REMINDERS;
@@ -193,6 +204,7 @@ class DisplayManager {
   }
   bool anyTeam()  { for (int i=0;i<8;i++) if (g_settings.teams[i].length())  return true; return false; }
   bool anyShow()  { for (int i=0;i<8;i++) if (g_settings.shows[i].length())  return true; return false; }
+  int  showCount(){ int n=0; for (int i=0;i<8;i++) if (g_settings.shows[i].length()) n++; return n; }
   bool anyStock() { for (int i=0;i<8;i++) if (g_settings.stocks[i].length()) return true; return false; }
   bool anyScore() { for (int i=0;i<8;i++) if (g_settings.teams[i].length() && (g_settings.teamHL[i]=="live"||g_settings.teamHL[i]=="recent")) return true; return false; }
   bool anyReminder() { for (int i=0;i<4;i++) if (g_settings.reminders[i].length()) return true; return false; }
@@ -362,20 +374,39 @@ class DisplayManager {
   }
 
   void drawShows() {
-    int n = 0;
-    for (int i = 0; i < 8; i++) if (g_settings.shows[i].length()) n++;
-    if (n == 0) return;
-    // Adaptive row height so all shows fit (4 shows * 20px overflowed 64px and
-    // clipped the last one). Each row is a title + a "when" sub-line.
-    int rowH = n > 0 ? (height_ - 2) / n : 20;
+    int total = showCount();
+    if (total == 0) return;
+    int pages = (total + SHOWS_PER_PAGE - 1) / SHOWS_PER_PAGE;
+    // Which page is this? Derived from the carousel position (M_TV pages are
+    // consecutive), so it never flickers between redraws.
+    int page = current_ - tvFirstFrame_;
+    if (page < 0 || page >= pages) page = 0;
+
+    // Build the list of show indices for this page (up to SHOWS_PER_PAGE).
+    int idxs[SHOWS_PER_PAGE];
+    int cnt = 0, seen = 0, start = page * SHOWS_PER_PAGE;
+    for (int i = 0; i < 8 && cnt < SHOWS_PER_PAGE; i++) {
+      if (!g_settings.shows[i].length()) continue;
+      if (seen++ < start) continue;
+      idxs[cnt++] = i;
+    }
+    if (cnt == 0) return;
+
+    int hdr = pages > 1 ? 8 : 0;   // reserve a row for the "1/2" page tag
+    if (pages > 1) {
+      char tag[8];
+      snprintf(tag, sizeof(tag), "%d/%d", page + 1, pages);
+      centerText(tag, 1, dim());
+    }
+    int avail = height_ - hdr - 2;
+    int rowH = avail / cnt;
     if (rowH > 20) rowH = 20;
     if (rowH < 14) rowH = 14;
     int lblOff = rowH >= 18 ? 9 : 8;
-    int blockH = rowH * n;
-    int y = (height_ - blockH) / 2;
-    if (y < 0) y = 0;
-    for (int i = 0; i < 8 && y < height_; i++) {
-      if (!g_settings.shows[i].length()) continue;
+    int y = hdr + (avail - rowH * cnt) / 2;
+    if (y < hdr) y = hdr;
+    for (int k = 0; k < cnt; k++) {
+      int i = idxs[k];
       centerText(g_settings.shows[i].substring(0, 21), y, cyan());
       String lbl = g_settings.showLabel[i];
       centerText(lbl.length() ? lbl : String("--"), y + lblOff, white());
