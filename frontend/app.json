@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "frontend",
-    "slug": "frontend",
+    "name": "Info Wall",
+    "slug": "info-wall",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -10,7 +10,7 @@
     "ios": {
       "supportsTablet": true,
       "buildNumber": "1",
-      "bundleIdentifier": "com.emergent.bluetoothledsync.hltjsu",
+      "bundleIdentifier": "com.abarish.infowall",
       "infoPlist": {
         "NSBluetoothAlwaysUsageDescription": "Connect to your LED matrix to sync settings",
         "NSBluetoothPeripheralUsageDescription": "Connect to your LED matrix to sync settings"
@@ -21,12 +21,14 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#000000"
       },
-      "package": "com.emergent.bluetoothledsync.hltjsu",
+      "package": "com.abarish.infowall",
       "versionCode": 1,
       "permissions": [
         "android.permission.BLUETOOTH_SCAN",
         "android.permission.BLUETOOTH_CONNECT",
-        "android.permission.ACCESS_FINE_LOCATION"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN"
       ]
     },
     "web": {
@@ -63,6 +65,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "70f4ea76-67ea-47a6-acdd-bd9a7c0f9ad2"
+      }
+    },
+    "owner": "abarish"
   }
 }
