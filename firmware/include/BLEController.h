@@ -19,6 +19,8 @@
 #include <BLEUtils.h>
 #include <BLE2902.h>
 #include <WiFi.h>
+#include <time.h>
+#include <sys/time.h>
 
 // --- Must match the app exactly -------------------------------------------
 static const char *SERVICE_UUID        = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
@@ -323,6 +325,22 @@ inline void BLEController::handleJson(const String &raw) {
     // Phone-pushed nearest overhead flight (fallback to the panel's own fetch).
     g_settings.planeLine  = (const char *)(doc["line"] | "");
     g_settings.planeCode  = (const char *)(doc["code"] | "");
+
+  } else if (strcmp(cmd, "settime") == 0) {
+    // Phone-pushed wall clock. The phone always knows the correct time, so this
+    // sets the RTC even when NTP (UDP 123) is blocked on the local network.
+    // Force US-Eastern (auto-DST) so localtime() is correct regardless of how
+    // (or whether) Wi-Fi connected.
+    long epoch = doc["epoch"] | 0L;
+    if (epoch > 1000000000L) {
+      setenv("TZ", INFOWALL_TZ, 1);
+      tzset();
+      struct timeval tv;
+      tv.tv_sec = (time_t)epoch;
+      tv.tv_usec = 0;
+      settimeofday(&tv, nullptr);
+      Serial.printf("[BLE] clock set via phone epoch=%ld\n", epoch);
+    }
 
   } else if (strcmp(cmd, "flight") == 0) {
     g_settings.trackFlight = doc["trackFlight"] | g_settings.trackFlight;

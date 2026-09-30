@@ -742,6 +742,42 @@ export default function ControlPanel() {
     };
   }, [status, geo, settings.searchRadius]);
 
+  // Push the phone's clock to the panel so the weather-page time shows even
+  // when the panel can't reach NTP (UDP 123 blocked) or the time endpoint.
+  // Refreshes on connect and every 60s while connected.
+  useEffect(() => {
+    if (status !== "connected") return;
+    const pushTime = () =>
+      writeLive({
+        command: "settime",
+        epoch: Math.floor(Date.now() / 1000),
+      }).catch(() => {});
+    const first = setTimeout(pushTime, 800);
+    const iv = setInterval(pushTime, 60000);
+    return () => {
+      clearTimeout(first);
+      clearInterval(iv);
+    };
+  }, [status]);
+
+  // Push Lake Norman level + water temp over BLE so the WATER line shows even
+  // if the panel's own fetch returns a stale/blank temp. Mirrors the panel's
+  // own formatting (level to 1dp; "full" as the signed delta from full pond).
+  useEffect(() => {
+    if (status !== "connected" || !settings.showLKN || !lakeData) return;
+    const d: any = lakeData;
+    if (d.lvl == null) return;
+    const lvl = Number(d.lvl).toFixed(1);
+    let full = "";
+    if (d.full != null) {
+      const diff = Number(d.lvl) - Number(d.full);
+      full = (diff >= 0 ? "+" : "") + diff.toFixed(1);
+    }
+    const w = d.w != null ? Math.round(Number(d.w)) : 0;
+    writeLive({ command: "lake", lvl, full, w }).catch(() => {});
+  }, [status, settings.showLKN, lakeData]);
+
+
   // Auto full-sync whenever the phone (re)connects, so the wall always matches
   // the app — even after edits made while disconnected.
   const prevStatusRef = useRef<BleStatus>(status);
