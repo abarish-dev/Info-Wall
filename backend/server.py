@@ -1,26 +1,15 @@
 from fastapi import FastAPI, APIRouter, HTTPException
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
-import os
 import logging
 import requests
 from pathlib import Path
-from pydantic import BaseModel, Field
-from typing import List
-import uuid
-from datetime import datetime
 
 from airlines import resolve_airline
 
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
-
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
 
 # Create the main app without a prefix
 app = FastAPI()
@@ -29,31 +18,10 @@ app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
 
-# Define Models
-class StatusCheck(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
-
-class StatusCheckCreate(BaseModel):
-    client_name: str
-
 # Add your routes to the router instead of directly to app
 @api_router.get("/")
 async def root():
     return {"message": "Hello World"}
-
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.dict()
-    status_obj = StatusCheck(**status_dict)
-    _ = await db.status_checks.insert_one(status_obj.dict())
-    return status_obj
-
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    status_checks = await db.status_checks.find().to_list(1000)
-    return [StatusCheck(**status_check) for status_check in status_checks]
 
 
 ADSB_BASE = "https://api.adsb.lol/v2"
@@ -66,7 +34,7 @@ _FLIGHT_CACHE_TTL = 120  # seconds a cached result is considered fresh
 
 
 @api_router.get("/flights/nearby")
-async def flights_nearby(lat: float, lon: float, radius: float = 25):
+def flights_nearby(lat: float, lon: float, radius: float = 25):
     """Live aircraft within `radius` miles of (lat, lon) via the public
     adsb.lol feed. Resolves each callsign to an airline name + logo URL.
     Proxied server-side to avoid mobile/web CORS restrictions."""
@@ -194,7 +162,7 @@ def _verify_ticker(sym: str) -> dict:
 
 
 @api_router.get("/tickers/verify")
-async def tickers_verify(symbols: str):
+def tickers_verify(symbols: str):
     """Verify a comma-separated list of symbols. Returns per-symbol validity
     plus the company/fund name for valid ones."""
     seen = set()
@@ -310,7 +278,7 @@ def _simplify_show(show: dict) -> dict:
 
 
 @api_router.get("/tv/search")
-async def tv_search(q: str):
+def tv_search(q: str):
     """Autocomplete-style show search. Returns up to 10 simplified matches."""
     try:
         r = requests.get(
@@ -406,7 +374,7 @@ def _tv_status_one(name: str) -> dict:
 
 
 @api_router.get("/tv/status")
-async def tv_status(names: str):
+def tv_status(names: str):
     """Release status for a pipe-separated list of show names."""
     results = []
     for raw in names.split("|"):
@@ -467,7 +435,7 @@ def _quote_one(sym: str) -> dict:
 
 
 @api_router.get("/tickers/quotes")
-async def tickers_quotes(symbols: str):
+def tickers_quotes(symbols: str):
     """Live price + daily change for a comma-separated list of symbols."""
     seen = set()
     results = []
@@ -484,7 +452,7 @@ async def tickers_quotes(symbols: str):
 # TV episodes (TVmaze) — upcoming + recent episodes and season info for one show.
 # ---------------------------------------------------------------------------
 @api_router.get("/tv/episodes")
-async def tv_episodes(id: int):  # noqa: A002
+def tv_episodes(id: int):  # noqa: A002
     from datetime import date as _date, datetime as _dt
 
     try:
@@ -828,7 +796,7 @@ def _team_status_one(code: str) -> dict:
 
 
 @api_router.get("/teams/status")
-async def teams_status(teams: str):
+def teams_status(teams: str):
     """Next/live game highlight for a pipe-separated list of LEAGUE:ABBR codes."""
     results = []
     for raw in teams.split("|"):
@@ -910,7 +878,7 @@ def _wx_wttr(lat: float, lon: float) -> dict:
 
 
 @api_router.get("/weather/current")
-async def weather_current(lat: float, lon: float):
+def weather_current(lat: float, lon: float):
     """Current temp + condition + daily hi/lo (Fahrenheit).
 
     Prefers Open-Meteo (tracks phone weather apps closely). Falls back to
@@ -948,7 +916,7 @@ async def weather_current(lat: float, lon: float):
 # keep the JSON tiny for on-device parsing.
 # ---------------------------------------------------------------------------
 @api_router.get("/device/scores")
-async def device_scores(teams: str):
+def device_scores(teams: str):
     def _ascii(s):
         return (s or "").replace("🔴", "LIVE ").encode("ascii", "ignore").decode().strip()
 
@@ -982,7 +950,7 @@ async def device_time():
 
 
 @api_router.get("/device/quotes")
-async def device_quotes(symbols: str):
+def device_quotes(symbols: str):
     seen, out = set(), []
     for raw in symbols.split(","):
         sym = raw.strip().upper()
@@ -995,7 +963,7 @@ async def device_quotes(symbols: str):
 
 
 @api_router.get("/device/planes")
-async def device_planes(lat: float, lon: float, radius: float = 25):
+def device_planes(lat: float, lon: float, radius: float = 25):
     import re as _re
 
     def _iata(callsign):
@@ -1003,7 +971,7 @@ async def device_planes(lat: float, lon: float, radius: float = 25):
         m = _re.match(r"^([A-Z]{3})\d", (callsign or "").strip().upper())
         return m.group(1) if m else None
 
-    data = await flights_nearby(lat, lon, radius)  # reuse + cache
+    data = flights_nearby(lat, lon, radius)  # reuse + cache
     out = [
         {
             "f": f["callsign"],
@@ -1017,7 +985,7 @@ async def device_planes(lat: float, lon: float, radius: float = 25):
 
 
 @api_router.get("/device/tv")
-async def device_tv(names: str):
+def device_tv(names: str):
     def _ascii(s):
         return (s or "").encode("ascii", "ignore").decode().strip()
 
@@ -1077,7 +1045,7 @@ def _folly_water_temp() -> int | None:
 
 
 @api_router.get("/device/folly")
-async def device_folly():
+def device_folly():
     """Next high/low tides at Folly Creek (Hwy 171 bridge) + water temp."""
     import time as _time
     import datetime as _dt
@@ -1177,7 +1145,7 @@ def _lake_water_temp() -> int | None:
 
 
 @api_router.get("/device/lake")
-async def device_lake():
+def device_lake():
     """Lake Norman level (Duke Energy) vs full pond + water temp (USGS)."""
     import time as _time
 
@@ -1234,7 +1202,3 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
-
-@app.on_event("shutdown")
-async def shutdown_db_client():
-    client.close()
