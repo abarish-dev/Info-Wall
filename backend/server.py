@@ -1188,6 +1188,12 @@ def device_lake():
 # Include the router in the main app
 app.include_router(api_router)
 
+
+# Health check for deployment/uptime probes (no /api prefix), matching Aura.
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
