@@ -1200,10 +1200,21 @@ async def device_lake():
         if cached:
             return cached["data"]
 
-    out = {"lvl": lvl, "tgt": tgt, "full": full, "w": _lake_water_temp()}
+    # USGS water temp is intermittently empty. Keep the last known-good reading
+    # (sticky) so a transient miss doesn't blank the WATER line on the panel.
+    w = _lake_water_temp()
+    if w is None:
+        w = _lake_cache.get("w")
+    else:
+        _lake_cache["w"] = w
+
+    out = {"lvl": lvl, "tgt": tgt, "full": full, "w": w}
     # Don't cache a failed cold-cache fetch (would blank the module for the TTL).
     if lvl is not None:
-        _lake_cache["d"] = {"ts": _time.time(), "data": out}
+        # If we still have no water temp, expire sooner (~5 min) so it retries
+        # instead of serving a blank temp for the full hour.
+        ts = _time.time() if w is not None else _time.time() - 3300
+        _lake_cache["d"] = {"ts": ts, "data": out}
     return out
 
 # Include the router in the main app
