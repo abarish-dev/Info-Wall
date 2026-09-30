@@ -330,20 +330,24 @@ class DisplayManager {
 
   void drawWeather() {
     if (g_settings.wxText.length()) {
-      // Current local time (once NTP has synced over Wi-Fi) above the temp.
-      bool haveClock = false;
+      // Current local time above the temp. Always draw the clock row: the real
+      // time once the RTC is set (NTP, or the HTTP time fallback for networks
+      // that block NTP), or a dim "--:--" placeholder while it's still syncing
+      // so the layout is stable and it's obvious the clock code is running.
       struct tm now;
-      if (getLocalTime(&now, 5)) {
+      bool haveClock = getLocalTime(&now, 5);
+      char clk[12];
+      if (haveClock) {
         int h12 = now.tm_hour % 12;
         if (h12 == 0) h12 = 12;
-        char clk[12];
         snprintf(clk, sizeof(clk), "%d:%02d%s", h12, now.tm_min,
                  now.tm_hour < 12 ? "a" : "p");
-        centerText(clk, 5, cyan());   // padded off the top edge, readable color
-        haveClock = true;
+      } else {
+        snprintf(clk, sizeof(clk), "--:--");
       }
-      // Shift the rest down a touch when the clock is shown so nothing crowds.
-      int base = haveClock ? 17 : 10;
+      centerText(clk, 5, haveClock ? cyan() : dim());
+      // Rest of the layout sits below the (always-present) clock row.
+      int base = 17;
       char t[16];
       snprintf(t, sizeof(t), "%d\xF7", g_settings.wxTemp);  // temp
       centerText(t, base, amber(), 2);

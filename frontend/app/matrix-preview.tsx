@@ -116,6 +116,24 @@ export default function MatrixPreview() {
   const [paused, setPaused] = useState(false);
   const opacity = useRef(new Animated.Value(1)).current;
 
+  // Live local (US-Eastern) clock, mirrored from the panel's weather page.
+  const [clock, setClock] = useState("");
+  useEffect(() => {
+    const fmt = () =>
+      new Date()
+        .toLocaleTimeString("en-US", {
+          timeZone: "America/New_York",
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        })
+        .replace(" AM", "a")
+        .replace(" PM", "p");
+    setClock(fmt());
+    const t = setInterval(() => setClock(fmt()), 30000);
+    return () => clearInterval(t);
+  }, []);
+
   // Load current settings + resolve the weather city from the geocode cache.
   useEffect(() => {
     (async () => {
@@ -259,12 +277,15 @@ export default function MatrixPreview() {
         key: "weather",
         label: "Local weather",
         node: (
-          <View style={styles.rowBetween}>
-            <View style={styles.rowCenter}>
-              <Ionicons name="partly-sunny" size={26} color={AMBER} />
-              <Glow text={`  ${city.toUpperCase()}`} color={WHITE} size={15} />
+          <View style={{ alignItems: "center", gap: 4 }}>
+            {!!clock && <Glow text={clock} color={CYAN} size={16} />}
+            <View style={styles.rowBetween}>
+              <View style={styles.rowCenter}>
+                <Ionicons name="partly-sunny" size={26} color={AMBER} />
+                <Glow text={`  ${city.toUpperCase()}`} color={WHITE} size={15} />
+              </View>
+              <Glow text="LIVE" color={AMBER} size={18} />
             </View>
-            <Glow text="LIVE" color={AMBER} size={18} />
           </View>
         ),
       });
@@ -473,7 +494,7 @@ export default function MatrixPreview() {
     }
 
     return f;
-  }, [settings, city, quotes, teamStatuses, dueReminders, folly, lake, plane]);
+  }, [settings, city, quotes, teamStatuses, dueReminders, folly, lake, plane, clock]);
 
   // Auto-cycle using the user's hold + fade timing.
   useEffect(() => {
