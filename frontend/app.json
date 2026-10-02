@@ -22,7 +22,7 @@
         "backgroundColor": "#000000"
       },
       "package": "com.abarish.infowall",
-      "versionCode": 2,
+      "versionCode": 3,
       "permissions": [
         "android.permission.BLUETOOTH_SCAN",
         "android.permission.BLUETOOTH_CONNECT",
