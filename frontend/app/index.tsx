@@ -934,6 +934,7 @@ export default function ControlPanel() {
         holdDurationMs: Math.round(settings.holdSeconds * 1000),
         showLKN: settings.showLKN,
         showFolly: settings.showFolly,
+        showMarkets: !!settings.showMarkets,
         showCountdown: settings.showCountdown,
         countdownLabel: settings.countdownLabel.trim(),
         countdownDate: settings.countdownDate,
@@ -945,6 +946,7 @@ export default function ControlPanel() {
     settings.holdSeconds,
     settings.showLKN,
     settings.showFolly,
+    settings.showMarkets,
     settings.showCountdown,
     settings.countdownLabel,
     settings.countdownDate,
@@ -1419,6 +1421,7 @@ export default function ControlPanel() {
           holdDurationMs: Math.round(settings.holdSeconds * 1000),
           showLKN: settings.showLKN,
           showFolly: settings.showFolly,
+          showMarkets: !!settings.showMarkets,
           showCountdown: settings.showCountdown,
           countdownLabel: settings.countdownLabel.trim(),
           countdownDate: settings.countdownDate,
@@ -2146,6 +2149,22 @@ export default function ControlPanel() {
           open={sectionOpen.stocks}
           onToggle={() => toggleSection("stocks")}
         >
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleTextWrap}>
+              <Text style={styles.fieldLabel}>Markets page</Text>
+              <Text style={styles.toggleHint}>
+                S&amp;P 500, Dow and Nasdaq with today&apos;s trend (firmware 1.1+)
+              </Text>
+            </View>
+            <Switch
+              testID="toggle-markets"
+              value={!!settings.showMarkets}
+              onValueChange={(v) => setSettings((s) => ({ ...s, showMarkets: v }))}
+              trackColor={{ false: colors.surfaceTertiary, true: colors.brand }}
+              thumbColor={colors.onSurface}
+              ios_backgroundColor={colors.surfaceTertiary}
+            />
+          </View>
           <StockRows
             stocks={settings.stocks}
             onChange={(next) => setSettings((s) => ({ ...s, stocks: next }))}

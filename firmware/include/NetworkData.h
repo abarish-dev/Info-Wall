@@ -66,6 +66,7 @@ class NetworkData {
     if (due(now, tScores_, 30000))       { fetchScores();  tLastFetch_ = now; return; }
     if (due(now, tPlanes_, 30000))       { fetchPlanes();  tLastFetch_ = now; return; }
     if (due(now, tQuotes_, 120000))      { fetchQuotes();  tLastFetch_ = now; return; }
+    if (g_settings.showMarkets && due(now, tMarkets_, 60000)) { fetchMarkets(); tLastFetch_ = now; return; }
     if (due(now, tWeather_, 900000))     { fetchWeather(); tLastFetch_ = now; return; }
     if (due(now, tFolly_, 1800000))      { fetchFolly();   tLastFetch_ = now; return; }
     if (due(now, tLake_, 3600000))       { fetchLake();    tLastFetch_ = now; return; }
@@ -74,7 +75,7 @@ class NetworkData {
 
  private:
   unsigned long tScores_ = 0, tQuotes_ = 0, tWeather_ = 0, tPlanes_ = 0, tTv_ = 0;
-  unsigned long tFolly_ = 0, tLake_ = 0;
+  unsigned long tFolly_ = 0, tLake_ = 0, tMarkets_ = 0;
   unsigned long tLastFetch_ = 0;
   bool clockSynced_ = false;   // NTP started once Wi-Fi is up (any path)
   bool clockValid_ = false;    // RTC actually holds a real time (NTP or HTTP)
@@ -274,6 +275,30 @@ class NetworkData {
     // Replaces the in-range list; new callsigns interrupt the rotation once,
     // gone ones drop out of the cycle immediately.
     g_display.notePlanes(list, n);
+  }
+
+  void fetchMarkets() {
+    JsonDocument doc;
+    if (!getJson("/api/device/markets", doc)) return;
+    int n = 0;
+    for (JsonVariant m : doc["m"].as<JsonArray>()) {
+      if (n >= 3) break;
+      MarketInfo &mi = g_settings.markets[n];
+      mi.name = (const char *)(m["n"] | "");
+      if (m["v"].isNull()) continue;
+      mi.value = m["v"].as<float>();
+      mi.hasPct = !m["c"].isNull();
+      mi.pct = mi.hasPct ? m["c"].as<float>() : 0.0f;
+      mi.base = m["b"].isNull() ? -1 : m["b"].as<int>();
+      mi.sparkLen = 0;
+      for (JsonVariant v : m["sp"].as<JsonArray>()) {
+        if (mi.sparkLen >= 34) break;
+        mi.spark[mi.sparkLen++] = (int8_t)(v.as<int>());
+      }
+      n++;
+    }
+    g_settings.marketCount = n;
+    g_settings.marketStatus = (const char *)(doc["st"] | "");
   }
 
   void fetchFolly() {

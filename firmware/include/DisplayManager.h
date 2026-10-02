@@ -175,7 +175,7 @@ class DisplayManager {
   }
 
  private:
-  enum Module { M_MESSAGE, M_FLIGHT, M_PLANES, M_WEATHER, M_SPORTS, M_SCORES,
+  enum Module { M_MARKETS, M_MESSAGE, M_FLIGHT, M_PLANES, M_WEATHER, M_SPORTS, M_SCORES,
                 M_TV, M_STOCKS, M_COUNTDOWN, M_REMINDERS, M_LKN, M_FOLLY };
 
   MatrixPanel_I2S_DMA *dma_ = nullptr;
@@ -216,6 +216,7 @@ class DisplayManager {
     if (g_settings.trackFlight && g_settings.flightIdent.length()) out[n++] = M_FLIGHT;
     if (g_settings.showWeather) out[n++] = M_WEATHER;
     if (anyStock()) out[n++] = M_STOCKS;
+    if (g_settings.showMarkets && g_settings.marketCount > 0) out[n++] = M_MARKETS;
     if (g_settings.showCountdown && g_settings.countdownLabel.length()) out[n++] = M_COUNTDOWN;
     if (anyReminder()) out[n++] = M_REMINDERS;
     if (g_settings.showLKN)   out[n++] = M_LKN;
@@ -225,7 +226,7 @@ class DisplayManager {
   int teamPages() { return (teamCount() + TEAMS_PER_PAGE - 1) / TEAMS_PER_PAGE; }
   int showPages() { return (showCount() + SHOWS_PER_PAGE - 1) / SHOWS_PER_PAGE; }
   int catCount(Cat c) {
-    Module tmp[12];
+    Module tmp[14];
     switch (c) {
       case C_INFO:   return infoModules(tmp);
       case C_TEAMS:  return (anyScore() ? 1 : 0) + teamPages();   // live/final first
@@ -236,7 +237,7 @@ class DisplayManager {
   }
   Page pageFor(Cat c, int k) {
     Page p;
-    if (c == C_INFO) { Module tmp[12]; infoModules(tmp); p.m = tmp[k]; }
+    if (c == C_INFO) { Module tmp[14]; infoModules(tmp); p.m = tmp[k]; }
     else if (c == C_TEAMS) {
       if (anyScore()) { if (k == 0) { p.m = M_SCORES; return p; } k--; }
       p.m = M_SPORTS; p.idx = k;
@@ -251,7 +252,7 @@ class DisplayManager {
     return -1;
   }
   bool pageValid(const Page &p) {
-    Module tmp[12];
+    Module tmp[14];
     int n;
     switch (p.m) {
       case M_PLANES: return planeSlot(p.plane) >= 0;
@@ -361,6 +362,7 @@ class DisplayManager {
       case M_REMINDERS: drawReminders(); break;
       case M_LKN:       drawLake();  break;
       case M_FOLLY:     drawFolly(); break;
+      case M_MARKETS:   drawMarkets(); break;
     }
   }
 
@@ -697,6 +699,56 @@ class DisplayManager {
     }
     if (cnt == 2) dma_->drawFastHLine(40, 30, width_ - 80, faint());
     pageDots(page, pages, width_ / 2, 60);
+  }
+
+  // Optional Markets page:
+  //  MARKETS                    o OPEN
+  //  S&P 500  +0.68%      /\_/\_ <- intraday sparkline (fills through the day)
+  //  7,718.37                       dotted line = previous close
+  //  Dow ...  / Nasdaq ...
+  static String commas(float v) {
+    char b[24];
+    snprintf(b, sizeof(b), "%.2f", v);
+    String s = b;
+    int dot = s.indexOf('.');
+    for (int i = dot - 3; i > 0; i -= 3) s = s.substring(0, i) + "," + s.substring(i);
+    return s;
+  }
+
+  void drawMarkets() {
+    const String &st = g_settings.marketStatus;
+    bool open = st == "Open";
+    textAt("MARKETS", 2, 1, muted());
+    String stU = st;
+    stU.toUpperCase();
+    int sx = width_ - 2 - textW(stU);
+    textAt(stU, sx, 1, open ? softGreen() : muted());
+    dma_->fillRect(sx - 5, 3, 3, 3, open ? softGreen() : faint());
+    for (int k = 0; k < g_settings.marketCount && k < 3; k++) {
+      const MarketInfo &m = g_settings.markets[k];
+      int y = 11 + k * 18;
+      bool up = m.pct >= 0;
+      uint16_t c = !m.hasPct ? muted() : (up ? softGreen() : softRed());
+      textAt(m.name, 2, y, softWhite());
+      if (m.hasPct) {
+        char p[12];
+        snprintf(p, sizeof(p), "%+.2f%%", m.pct);
+        textAt(p, 52, y, c);
+      }
+      textAt(commas(m.value), 2, y + 9, muted());
+      // Sparkline box: x 93..126 (34 cols), y+1 .. y+14
+      int bx = 93, by = y + 1, bh = 14;
+      if (m.base >= 0)
+        for (int x = 0; x < 34; x += 2) dma_->drawPixel(bx + x, by + bh - 1 - m.base, faint());
+      int px = -1, py = -1;
+      for (int i = 0; i < m.sparkLen; i++) {
+        if (m.spark[i] < 0) continue;
+        int x = bx + i, yy = by + bh - 1 - m.spark[i];
+        if (px >= 0) dma_->drawLine(px, py, x, yy, c);
+        else dma_->drawPixel(x, yy, c);
+        px = x; py = yy;
+      }
+    }
   }
 
   void drawStocks() {

@@ -34,6 +34,7 @@ inline void serializeSettings(JsonDocument &d) {
   d["holdDurationMs"] = g_settings.holdDurationMs;
   d["showLKN"] = g_settings.showLKN;
   d["showFolly"] = g_settings.showFolly;
+  d["showMkts"] = g_settings.showMarkets;
   d["showCountdown"] = g_settings.showCountdown;
   d["countdownLabel"] = g_settings.countdownLabel;
   d["countdownDate"] = g_settings.countdownDate;
@@ -88,6 +89,7 @@ inline void applySettings(JsonDocument &d) {
   g_settings.holdDurationMs = d["holdDurationMs"] | g_settings.holdDurationMs;
   g_settings.showLKN = d["showLKN"] | g_settings.showLKN;
   g_settings.showFolly = d["showFolly"] | g_settings.showFolly;
+  g_settings.showMarkets = d["showMkts"] | g_settings.showMarkets;
   g_settings.showCountdown = d["showCountdown"] | g_settings.showCountdown;
   g_settings.countdownLabel = (const char *)(d["countdownLabel"] | "");
   g_settings.countdownDate = (const char *)(d["countdownDate"] | "");

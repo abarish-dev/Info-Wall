@@ -46,6 +46,17 @@ struct PlaneInfo {
   float  dist = -1;           // mi (-1 = n/a)
 };
 
+// One index row on the optional Markets page.
+struct MarketInfo {
+  String name;            // "S&P 500"
+  float  value = 0;       // index level
+  float  pct = 0;         // % change vs previous close
+  bool   hasPct = false;
+  int8_t spark[34];       // 0..13 (0 = bottom), -1 = no data for that column
+  int    sparkLen = 0;    // columns filled so far today
+  int    base = -1;       // previous-close level on the same scale (-1 = n/a)
+};
+
 // --- Global settings the rest of your firmware reads ----------------------
 struct MatrixSettings {
   // Flight / weather / zone
@@ -70,6 +81,7 @@ struct MatrixSettings {
   int   holdDurationMs  = 12000;
   bool  showLKN         = true;
   bool  showFolly       = true;
+  bool  showMarkets     = false;      // optional S&P/Dow/Nasdaq page (app toggle)
   bool  showCountdown   = true;
   String countdownLabel = "";
   String countdownDate  = "";         // "YYYY-MM-DD"
@@ -96,6 +108,9 @@ struct MatrixSettings {
   String teamLabel[8];          // per-team next-game / live / final label
   String teamHL[8];             // per-team highlight: live|recent|today|soon|...
   String showLabel[8];          // per-show schedule label (next ep / season start)
+  MarketInfo markets[3];        // /api/device/markets
+  int    marketCount = 0;
+  String marketStatus = "";     // "Open" | "Pre-mkt" | "After hrs" | "Closed"
   String teamShort[8];          // compact <=16-char status ("Sat 7:05p @ TB")
 
   // Wi-Fi self-fetch (panel pulls its own live data; no phone required)
@@ -422,6 +437,7 @@ inline void BLEController::handleJson(const String &raw) {
     g_settings.holdDurationMs = doc["holdDurationMs"] | g_settings.holdDurationMs;
     g_settings.showLKN        = doc["showLKN"]        | g_settings.showLKN;
     g_settings.showFolly      = doc["showFolly"]      | g_settings.showFolly;
+    g_settings.showMarkets    = doc["showMarkets"]    | g_settings.showMarkets;
     g_settings.showCountdown  = doc["showCountdown"]  | g_settings.showCountdown;
     g_settings.countdownLabel = (const char *)(doc["countdownLabel"] | g_settings.countdownLabel.c_str());
     g_settings.countdownDate  = (const char *)(doc["countdownDate"]  | g_settings.countdownDate.c_str());

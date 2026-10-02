@@ -1137,6 +1137,103 @@ def device_planes(lat: float, lon: float, radius: float = 25):
     return {"p": out}
 
 
+# ---------------------------------------------------------------------------
+# Markets page: S&P 500 / Dow / Nasdaq with % change, open/closed status and a
+# tiny intraday sparkline, from Yahoo's keyless chart API (60s cache).
+# ---------------------------------------------------------------------------
+_MARKETS = [("^GSPC", "S&P 500"), ("^DJI", "Dow"), ("^IXIC", "Nasdaq")]
+_markets_cache: dict = {}
+_SPARK_W = 34   # sparkline columns on the panel
+_SPARK_H = 14   # sparkline height in pixels (values 0..H-1, 0 = bottom)
+
+
+def _market_one(sym: str, name: str) -> dict:
+    r = requests.get(
+        f"https://query1.finance.yahoo.com/v8/finance/chart/{sym}",
+        params={"range": "1d", "interval": "5m"},
+        headers={"User-Agent": "Mozilla/5.0"},
+        timeout=6,
+    )
+    r.raise_for_status()
+    res = r.json()["chart"]["result"][0]
+    meta = res.get("meta") or {}
+    price = meta.get("regularMarketPrice")
+    prev = meta.get("chartPreviousClose") or meta.get("previousClose")
+    pct = round((price - prev) / prev * 100, 2) if price is not None and prev else None
+    reg = (meta.get("currentTradingPeriod") or {}).get("regular") or {}
+    start, end = reg.get("start"), reg.get("end")
+    ts = res.get("timestamp") or []
+    closes = ((res.get("indicators") or {}).get("quote") or [{}])[0].get("close") or []
+    # Bucket the session (start..end) into _SPARK_W columns; columns after
+    # "now" stay empty so the line fills in left-to-right through the day.
+    cols: list = [None] * _SPARK_W
+    if start and end and end > start:
+        for t, c in zip(ts, closes):
+            if c is None or t < start or t > end:
+                continue
+            i = min(_SPARK_W - 1, int((t - start) / (end - start) * _SPARK_W))
+            cols[i] = c
+    vals = [c for c in cols if c is not None]
+    spark, base = [], None
+    if vals:
+        lo = min(vals + ([prev] if prev else []))
+        hi = max(vals + ([prev] if prev else []))
+        span = (hi - lo) or 1.0
+
+        def _y(v):
+            return int(round((v - lo) / span * (_SPARK_H - 1)))
+
+        spark = [(_y(c) if c is not None else -1) for c in cols]
+        while spark and spark[-1] == -1:
+            spark.pop()
+        base = _y(prev) if prev else None
+    return {"n": name, "v": round(price, 2) if price is not None else None,
+            "c": pct, "sp": spark, "b": base, "_reg": (start, end)}
+
+
+@api_router.get("/device/markets")
+def device_markets():
+    """Compact payload for the panel's optional Markets page.
+    {"st": "Open"|"Pre-mkt"|"After hrs"|"Closed",
+     "m": [{"n": "S&P 500", "v": 7720.12, "c": 0.7, "sp": [0..13 | -1], "b": 6}]}"""
+    import time as _time
+    from concurrent.futures import ThreadPoolExecutor
+
+    now = _time.time()
+    cached = _markets_cache.get("d")
+    if cached and now - cached["ts"] < 60:
+        return cached["data"]
+    out, reg = [], (None, None)
+    with ThreadPoolExecutor(max_workers=3) as ex:
+        futs = [ex.submit(_market_one, s, n) for s, n in _MARKETS]
+        for (sym, name), f in zip(_MARKETS, futs):
+            try:
+                m = f.result()
+                reg = m.pop("_reg") or reg
+                out.append(m)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("markets %s failed: %s", sym, exc)
+    from datetime import datetime as _dt
+    from zoneinfo import ZoneInfo
+
+    et = _dt.now(ZoneInfo("America/New_York"))
+    start, end = reg
+    if start and end and start <= now < end:
+        st = "Open"
+    elif et.weekday() < 5 and 4 <= et.hour < 9 or (et.weekday() < 5 and et.hour == 9 and et.minute < 30):
+        st = "Pre-mkt"
+    elif et.weekday() < 5 and 16 <= et.hour < 20:
+        st = "After hrs"
+    else:
+        st = "Closed"
+    data = {"st": st, "m": out}
+    if out:
+        _markets_cache["d"] = {"ts": now, "data": data}
+    elif cached:
+        return cached["data"]
+    return data
+
+
 @api_router.get("/device/tv")
 def device_tv(names: str):
     def _ascii(s):
