@@ -1054,15 +1054,18 @@ def _route_for(callsign: str) -> dict:
     if not cs:
         return {}
     hit = _route_cache.get(cs)
-    if hit and _time.time() - hit["ts"] < _ROUTE_TTL:
+    if hit and _time.time() - hit["ts"] < hit.get("ttl", _ROUTE_TTL):
         return hit["data"]
     out: dict = {}
+    ttl = 600  # transient failure (timeout / 5xx / 429): retry in 10 min
     try:
         r = requests.get(
             f"https://api.adsbdb.com/v0/callsign/{cs}",
             timeout=3,
             headers={"User-Agent": "InfoWall/1.0"},
         )
+        if r.status_code in (200, 404):
+            ttl = _ROUTE_TTL  # a real answer (route or "unknown callsign")
         if r.status_code == 200:
             fr = ((r.json() or {}).get("response") or {}).get("flightroute") or {}
             if isinstance(fr, dict):
@@ -1075,7 +1078,7 @@ def _route_for(callsign: str) -> dict:
                 }
     except Exception as exc:  # noqa: BLE001
         logger.info("adsbdb route lookup failed %s: %s", cs, exc)
-    _route_cache[cs] = {"ts": _time.time(), "data": out}
+    _route_cache[cs] = {"ts": _time.time(), "data": out, "ttl": ttl}
     return out
 
 
