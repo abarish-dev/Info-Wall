@@ -88,6 +88,7 @@ def flights_nearby(lat: float, lon: float, radius: float = 25):
                 "lon": a.get("lon"),
                 "distance": a.get("dst"),
                 "direction": a.get("dir"),
+                "track": a.get("track"),
                 "airline": info["name"] if info else None,
                 "iata": iata,
                 "logo": (
@@ -523,6 +524,16 @@ _LEAGUE_PATH = {
 }
 _team_cache: dict = {}
 _TEAM_TTL = 120
+# ESPN's site.api.espn.com is Akamai-blocked from datacenter IPs (Vercel gets
+# 403 Forbidden on every call), while site.web.api.espn.com serves the same
+# JSON and isn't. Send a browser User-Agent too, same as the Aura backend.
+_ESPN_BASE = "https://site.web.api.espn.com/apis/site/v2/sports"
+_ESPN_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+    )
+}
 _sb_cache: dict = {}
 
 
@@ -544,7 +555,8 @@ def _scoreboard_map(sport: str, lg: str) -> dict:
     m: dict = {}
     try:
         r = requests.get(
-            f"https://site.api.espn.com/apis/site/v2/sports/{sport}/{lg}/scoreboard",
+            f"{_ESPN_BASE}/{sport}/{lg}/scoreboard",
+            headers=_ESPN_HEADERS,
             timeout=8,
         )
         r.raise_for_status()
@@ -585,7 +597,8 @@ def _next_event_from_schedule(sport: str, lg: str, abbr: str):
     dict for a live game, the soonest upcoming game, or a final within ~14h."""
     try:
         r = requests.get(
-            f"https://site.api.espn.com/apis/site/v2/sports/{sport}/{lg}/teams/{abbr.lower()}/schedule",
+            f"{_ESPN_BASE}/{sport}/{lg}/teams/{abbr.lower()}/schedule",
+            headers=_ESPN_HEADERS,
             timeout=8,
         )
         r.raise_for_status()
@@ -649,7 +662,8 @@ def _team_status_one(code: str) -> dict:
             date=g.get("date"),
         )
         bits = " ".join(x for x in [f"{vs} {opp}", score_str, g["detail"]] if x)
-        data.update(highlight="live", label=f"🔴 {bits}".strip())
+        data.update(highlight="live", label=f"🔴 {bits}".strip(), vs=vs,
+                    detail=g["detail"])
         return data  # not cached — refreshes with the 60s scoreboard cache
 
     if g and g["state"] == "post":
@@ -673,6 +687,7 @@ def _team_status_one(code: str) -> dict:
                 date=g.get("date"),
                 highlight="recent",
                 label=f"Final {score_str} {vs} {opp}".strip(),
+                vs=vs,
             )
             return data
 
@@ -682,7 +697,8 @@ def _team_status_one(code: str) -> dict:
 
     try:
         r = requests.get(
-            f"https://site.api.espn.com/apis/site/v2/sports/{sport}/{lg}/teams/{abbr.lower()}",
+            f"{_ESPN_BASE}/{sport}/{lg}/teams/{abbr.lower()}",
+            headers=_ESPN_HEADERS,
             timeout=8,
         )
         r.raise_for_status()
@@ -738,6 +754,8 @@ def _team_status_one(code: str) -> dict:
                     ).get("shortDisplayName")
                     opp_score = sc
             data["opponent"] = opp
+            data["vs"] = vs
+            data["detail"] = short
             data["score"] = my_score
             data["oppScore"] = opp_score
             matchup = f"{vs} {opp}" if opp else ""
@@ -915,6 +933,57 @@ def weather_current(lat: float, lon: float):
 # scores (and detect a score to flash) without the phone. Small field names
 # keep the JSON tiny for on-device parsing.
 # ---------------------------------------------------------------------------
+def _compact_team_label(s: dict, limit: int = 16) -> str:
+    """A short (<= `limit` chars, ASCII) status line for the panel's team rows,
+    which sit beside a 24px logo and only have ~16 characters of width.
+    Examples: "3-2 Top 5th", "W 5-3 vs BOS", "7:05p vs BOS", "Sat 7:05p @ BOS",
+    "Oct 19 vs BOS", "Offseason"."""
+    from datetime import datetime as _dt
+
+    hl = s.get("highlight")
+    opp = s.get("opponent") or ""
+    vs = s.get("vs") or "vs"
+    mt = f"{vs} {opp}" if opp else ""
+    my, op = s.get("score"), s.get("oppScore")
+    date = s.get("date")
+
+    def fit(*cands):
+        for c in cands:
+            c = " ".join((c or "").split())
+            if c and len(c) <= limit:
+                return c
+        c = " ".join((cands[-1] or "").split())
+        return c[:limit].rstrip()
+
+    if hl == "live":
+        sc = f"{my}-{op}" if my is not None and op is not None else ""
+        det = (s.get("detail") or "").replace(" - ", " ")
+        return fit(f"{sc} {det}", f"{sc} {mt}", sc or "LIVE")
+    if hl == "recent":
+        sc = f"{my}-{op}" if my is not None and op is not None else ""
+        wl = ""
+        if my is not None and op is not None:
+            wl = "W" if my > op else ("L" if my < op else "T")
+        return fit(f"{wl} {sc} {mt}", f"{wl} {sc}", "Final")
+    if hl in ("today", "soon", "upcoming") and date:
+        t = _iso_to_eastern_time(date) or ""
+        local = _iso_to_eastern_date(date)
+        try:
+            d = _dt.strptime(local, "%Y-%m-%d")
+        except Exception:  # noqa: BLE001
+            d = None
+        if hl == "today":
+            return fit(f"{t} {mt}", f"Today {mt}", mt)
+        dow = d.strftime("%a") if d else ""
+        md = d.strftime("%b %-d") if d else ""
+        if hl == "soon":
+            return fit(f"{dow} {t} {mt}", f"{dow} {mt}", f"{dow} {t}")
+        return fit(f"{md} {t} {mt}", f"{md} {mt}", md)
+    if hl == "offseason":
+        return "Offseason"
+    return ""
+
+
 @api_router.get("/device/scores")
 def device_scores(teams: str):
     def _ascii(s):
@@ -934,6 +1003,8 @@ def device_scores(teams: str):
                 "h": s.get("highlight"),
                 "l": _ascii(s.get("label")),
                 "r": s.get("record"),
+                # Compact (<=16 char) line for the logo layout (firmware 1.1+).
+                "k": _ascii(_compact_team_label(s)),
             }
         )
     return {"t": out}
@@ -962,8 +1033,61 @@ def device_quotes(symbols: str):
     return {"q": out}
 
 
+# Regional carriers fly under a mainline brand; show that brand's logo on the
+# panel (e.g. PSA / Piedmont / Envoy -> American). Keys are ICAO prefixes.
+_BRAND_LOGO = {
+    "JIA": "AAL", "PDT": "AAL", "ENY": "AAL", "ASH": "AAL",
+    "EDV": "DAL", "CPZ": "DAL", "GJS": "UAL", "UCA": "UAL", "AWI": "UAL",
+    "QXE": "ASA",
+}
+_route_cache: dict = {}
+_ROUTE_TTL = 6 * 3600
+
+
+def _route_for(callsign: str) -> dict:
+    """Origin/destination + IATA flight number for a callsign via the free,
+    keyless adsbdb.com API. Cached (hits and misses) for 6h; short timeout so a
+    slow lookup can never hold up the panel's 12s request budget."""
+    import time as _time
+
+    cs = (callsign or "").strip().upper()
+    if not cs:
+        return {}
+    hit = _route_cache.get(cs)
+    if hit and _time.time() - hit["ts"] < _ROUTE_TTL:
+        return hit["data"]
+    out: dict = {}
+    try:
+        r = requests.get(
+            f"https://api.adsbdb.com/v0/callsign/{cs}",
+            timeout=3,
+            headers={"User-Agent": "InfoWall/1.0"},
+        )
+        if r.status_code == 200:
+            fr = ((r.json() or {}).get("response") or {}).get("flightroute") or {}
+            if isinstance(fr, dict):
+                out = {
+                    "fn": fr.get("callsign_iata"),
+                    "fr": (fr.get("origin") or {}).get("iata_code"),
+                    "to": (fr.get("destination") or {}).get("iata_code"),
+                    "frc": (fr.get("origin") or {}).get("municipality"),
+                    "toc": (fr.get("destination") or {}).get("municipality"),
+                }
+    except Exception as exc:  # noqa: BLE001
+        logger.info("adsbdb route lookup failed %s: %s", cs, exc)
+    _route_cache[cs] = {"ts": _time.time(), "data": out}
+    return out
+
+
 @api_router.get("/device/planes")
 def device_planes(lat: float, lon: float, radius: float = 25):
+    """Compact nearby-aircraft list for the panel.
+
+    Original fields (kept for older firmware): f callsign, al airline name,
+    ia ICAO airline prefix, d distance (mi).
+    Added for the logo flight card: alt (ft), spd (mph), typ (aircraft type),
+    trk (track deg), lg (logo key, brand for regionals) and, for the nearest
+    plane only, fn (IATA flight no.), fr/to (origin/dest IATA)."""
     import re as _re
 
     def _iata(callsign):
@@ -971,16 +1095,30 @@ def device_planes(lat: float, lon: float, radius: float = 25):
         m = _re.match(r"^([A-Z]{3})\d", (callsign or "").strip().upper())
         return m.group(1) if m else None
 
+    def _num(v, scale=1.0):
+        return round(v * scale) if isinstance(v, (int, float)) else None
+
     data = flights_nearby(lat, lon, radius)  # reuse + cache
-    out = [
-        {
+    out = []
+    for i, f in enumerate(data.get("flights", [])[:6]):
+        ia = _iata(f["callsign"])
+        row = {
             "f": f["callsign"],
             "al": f.get("airline"),
-            "ia": _iata(f["callsign"]),
+            "ia": ia,
             "d": round(f["distance"] * 1.15078, 1) if f.get("distance") is not None else None,
+            "alt": _num(f.get("altitude")),
+            "spd": _num(f.get("speed"), 1.15078),
+            "typ": f.get("type"),
+            "trk": _num(f.get("track")),
+            "lg": _BRAND_LOGO.get(ia, ia) if ia else None,
         }
-        for f in data.get("flights", [])[:6]
-    ]
+        if i == 0 and ia:
+            rt = _route_for(f["callsign"])
+            for k in ("fn", "fr", "to"):
+                if rt.get(k):
+                    row[k] = rt[k]
+        out.append(row)
     return {"p": out}
 
 
@@ -1184,6 +1322,49 @@ def device_lake():
         ts = _time.time() if w is not None else _time.time() - 3300
         _lake_cache["d"] = {"ts": ts, "data": out}
     return out
+
+# ---------------------------------------------------------------------------
+# Firmware OTA (same scheme as the Aura backend). Builds are published as
+# static files in backend/public/fw/ (firmware.bin + meta.json) and served by
+# Vercel's CDN at /fw/firmware.bin. No upload endpoint: the serverless
+# filesystem is read-only, so publishing is a git commit + redeploy.
+# See public/fw/README.md.
+# ---------------------------------------------------------------------------
+import json as _json  # noqa: E402
+
+_FW_DIR = ROOT_DIR / "public" / "fw"
+_FW_BIN = _FW_DIR / "firmware.bin"
+_FW_META = _FW_DIR / "meta.json"
+_FW_URL = "/fw/firmware.bin"
+
+
+def _fw_meta() -> dict:
+    if _FW_META.exists():
+        try:
+            return _json.loads(_FW_META.read_text())
+        except Exception:  # noqa: BLE001
+            pass
+    return {"version": "", "size": 0}
+
+
+@api_router.get("/firmware/latest")
+def firmware_latest(current: str = ""):
+    """The panel (BLE "ota" command) and the app ask this for the latest
+    firmware. `update` is true when a build is hosted and its version differs
+    from `current`; the firmware itself only installs a strictly newer one."""
+    m = _fw_meta()
+    has = bool(m.get("version")) and _FW_BIN.exists()
+    size = m.get("size", 0)
+    if has and not size:
+        size = _FW_BIN.stat().st_size
+    return {
+        "version": m.get("version", ""),
+        "size": size,
+        "available": has,
+        "update": has and m.get("version", "") != (current or ""),
+        "url": _FW_URL,
+    }
+
 
 # Include the router in the main app
 app.include_router(api_router)

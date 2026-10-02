@@ -8,7 +8,12 @@
 // ===========================================================================
 #include <Arduino.h>
 #include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include <HTTPClient.h>
+#include <HTTPUpdate.h>
+#include <ArduinoJson.h>
 #include "esp_heap_caps.h"
+#include "Version.h"
 #include "BLEController.h"
 #include "DisplayManager.h"
 #include "Persistence.h"
@@ -63,6 +68,89 @@ void tryJoinWifi(const String &ssid, const String &pass) {
   }
 }
 
+// ---- Over-the-air firmware update ------------------------------------------
+// Same scheme as the Aura panel: ask <apiBase>/api/firmware/latest, and if the
+// hosted build is STRICTLY newer, stream <apiBase><url> (a static file on
+// Vercel's CDN, served directly, no redirect) into the inactive OTA slot and
+// reboot into it. Triggered only by the app's "Install update" (BLE "ota").
+static void parseVersion(const String &v, int out[3]) {
+  out[0] = out[1] = out[2] = 0;
+  int idx = 0, start = 0;
+  for (uint32_t i = 0; i <= v.length() && idx < 3; i++) {
+    if (i == v.length() || v[i] == '.') {
+      if (i > (uint32_t)start) out[idx] = v.substring(start, i).toInt();
+      idx++;
+      start = i + 1;
+    }
+  }
+}
+
+static bool isNewerVersion(const String &server, const String &current) {
+  int s[3], c[3];
+  parseVersion(server, s);
+  parseVersion(current, c);
+  for (int i = 0; i < 3; i++)
+    if (s[i] != c[i]) return s[i] > c[i];
+  return false;
+}
+
+static void otaCheck() {
+  if (WiFi.status() != WL_CONNECTED || g_settings.apiBase.length() == 0) {
+    g_ble.notify("{\"ota\":\"offline\"}");
+    return;
+  }
+  String base = g_settings.apiBase;
+  if (base.endsWith("/")) base.remove(base.length() - 1);
+
+  String ver, path;
+  {
+    WiFiClientSecure client;
+    client.setInsecure();
+    HTTPClient http;
+    http.setTimeout(12000);
+    if (!http.begin(client, base + "/api/firmware/latest?current=" INFOWALL_FW_VERSION)) {
+      g_ble.notify("{\"ota\":\"failed\"}");
+      return;
+    }
+    int code = http.GET();
+    JsonDocument doc;
+    bool ok = code == 200 && !deserializeJson(doc, http.getStream());
+    http.end();
+    if (!ok) {
+      Serial.printf("[OTA] latest check failed (HTTP %d)\n", code);
+      g_ble.notify("{\"ota\":\"failed\"}");
+      return;
+    }
+    ver = (const char *)(doc["version"] | "");
+    path = (const char *)(doc["url"] | "/fw/firmware.bin");
+    if (!(doc["available"] | false) || !isNewerVersion(ver, INFOWALL_FW_VERSION)) {
+      Serial.printf("[OTA] up to date (running %s, server %s)\n",
+                    INFOWALL_FW_VERSION, ver.c_str());
+      g_ble.notify("{\"ota\":\"uptodate\",\"fw\":\"" INFOWALL_FW_VERSION "\"}");
+      return;
+    }
+  }
+
+  String url = path.startsWith("http") ? path : base + path;
+  Serial.printf("[OTA] installing v%s from %s\n", ver.c_str(), url.c_str());
+  g_ble.notify(String("{\"ota\":\"installing\",\"version\":\"") + ver + "\"}");
+  g_display.message("UPDATE", "v" + ver);
+  delay(500);
+
+  WiFiClientSecure client;
+  client.setInsecure();
+  httpUpdate.rebootOnUpdate(true);   // reboot straight into the new slot
+  httpUpdate.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
+  t_httpUpdate_return ret = httpUpdate.update(client, url);
+  if (ret == HTTP_UPDATE_FAILED) {
+    Serial.printf("[OTA] FAILED (%d): %s\n", httpUpdate.getLastError(),
+                  httpUpdate.getLastErrorString().c_str());
+    g_display.message("UPDATE", "failed");
+    g_ble.notify("{\"ota\":\"failed\"}");
+    delay(1500);
+  }
+}
+
 void setup() {
   Serial.begin(115200);
   // Wait up to ~1.5s for the USB-CDC serial monitor to attach (S3 native USB),
@@ -70,7 +158,7 @@ void setup() {
   unsigned long t0 = millis();
   while (!Serial && millis() - t0 < 1500) delay(10);
   delay(200);
-  Serial.println("\n[Info Wall] booting...");
+  Serial.println("\n[Info Wall] booting v" INFOWALL_FW_VERSION "...");
 
   // NOTE: do NOT globally route large allocations to PSRAM
   // (heap_caps_malloc_extmem_enable) — it starves the BLE controller of the
@@ -104,6 +192,12 @@ void loop() {
     g_ble.scoreFlashRequested = false;
     g_display.scoreFlash(
         g_ble.flashAbbr, g_ble.flashR, g_ble.flashG, g_ble.flashB);
+  }
+
+  // "Install update" from the app (BLE "ota").
+  if (g_ble.otaRequested) {
+    g_ble.otaRequested = false;
+    otaCheck();
   }
 
   // Pull our own live data over Wi-Fi (scores/prices/weather/planes/TV) so the

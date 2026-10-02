@@ -19,6 +19,7 @@
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
 #include <time.h>
 #include "BLEController.h"
+#include "Logos.h"
 
 // --- Panel geometry: two chained 64x64 tiles = 128 wide x 64 tall ----------
 #ifndef PANEL_RES_X
@@ -47,6 +48,10 @@ class DisplayManager {
     dma_->begin();
     dma_->setBrightness8(map(g_settings.brightness, 0, 100, 0, 255));
     dma_->clearScreen();
+    // Never wrap text onto the next row: an over-long line used to spill its
+    // tail onto the line below (the stray "mi" under the flight card). Long
+    // strings are now fitted/truncated or scrolled explicitly instead.
+    dma_->setTextWrap(false);
     width_  = PANEL_RES_X * PANEL_CHAIN;
     height_ = PANEL_RES_Y;
     lastSwitch_ = millis();
@@ -80,6 +85,7 @@ class DisplayManager {
       if (t >= 1.0f) {
         if (fadeOut_) {
           current_   = (current_ + 1) % frameCount_;
+          frameStart_ = now;
           fadeOut_   = false;
           fadeStart_ = now;
           drawBright = 0;
@@ -130,18 +136,30 @@ class DisplayManager {
     fading_ = false;
   }
 
+  // Full-screen two-line status (used by the OTA updater: "UPDATE" / "v1.1.1").
+  void message(const String &l1, const String &l2) {
+    if (!dma_) return;
+    dma_->setBrightness8(map(max(30, g_settings.brightness), 0, 100, 0, 255));
+    dma_->clearScreen();
+    centerText(l1, 18, amber(), 2);
+    centerText(l2, 42, softWhite());
+  }
+
  private:
   enum Module { M_MESSAGE, M_FLIGHT, M_PLANES, M_WEATHER, M_SPORTS, M_SCORES,
                 M_TV, M_STOCKS, M_COUNTDOWN, M_REMINDERS, M_LKN, M_FOLLY };
 
   MatrixPanel_I2S_DMA *dma_ = nullptr;
   int width_ = 128, height_ = 64;
-  static const int SHOWS_PER_PAGE = 3;   // Shows module paginates in the carousel
+  static const int SHOWS_PER_PAGE = 2;   // Shows module paginates in the carousel
+  static const int TEAMS_PER_PAGE = 2;   // Teams rows (24px logo + 2 lines each)
   static const int MAX_FRAMES = 20;
   Module frames_[MAX_FRAMES];
   int  frameCount_ = 0;
   int  current_ = 0;
   int  tvFirstFrame_ = 0;   // index of the first Shows page in frames_
+  int  teamFirstFrame_ = 0; // index of the first Teams page in frames_
+  unsigned long frameStart_ = 0;  // when the current frame became visible (marquee)
   unsigned long lastSwitch_ = 0;
   bool fading_ = false, fadeOut_ = false;
   unsigned long fadeStart_ = 0;
@@ -154,6 +172,16 @@ class DisplayManager {
   uint16_t cyan()  { return dma_->color565(34, 211, 238); }
   uint16_t white() { return dma_->color565(240, 240, 240); }
   uint16_t dim()   { return dma_->color565(90, 90, 90); }
+  // Calmer palette for the denser pages (shows / teams / flight card). On a
+  // HUB75 panel full-scale 240+ channels read as harsh glare at close range.
+  uint16_t softWhite() { return dma_->color565(185, 185, 180); }
+  uint16_t muted()     { return dma_->color565(120, 120, 115); }
+  uint16_t faint()     { return dma_->color565(38, 38, 38); }
+  uint16_t titleBlue() { return dma_->color565(95, 150, 200); }
+  uint16_t softAmber() { return dma_->color565(205, 140, 45); }
+  uint16_t softGreen() { return dma_->color565(80, 190, 115); }
+  uint16_t softRed()   { return dma_->color565(215, 70, 60); }
+  uint16_t routeBlue() { return dma_->color565(120, 175, 215); }
 
   // A cheap signature of the enabled-module set; rebuild the carousel only
   // when it changes so `current_` isn't reset every frame.
@@ -163,9 +191,9 @@ class DisplayManager {
     sig += (g_settings.trackFlight && g_settings.flightIdent.length()) ? "F" : "";
     sig += g_settings.planeLine.length() ? "P" : "";
     sig += g_settings.showWeather ? "W" : "";
-    sig += anyTeam() ? "S" : "";
+    sig += anyTeam() ? "S" + String(teamCount()) : "";
     sig += anyScore() ? "G" : "";
-    sig += anyShow() ? "T" : "";
+    sig += anyShow() ? "T" + String(showCount()) : "";
     sig += anyStock() ? "$" : "";
     sig += (g_settings.showCountdown && g_settings.countdownLabel.length()) ? "C" : "";
     sig += anyReminder() ? "R" : "";
@@ -179,7 +207,12 @@ class DisplayManager {
     if (g_settings.trackFlight && g_settings.flightIdent.length()) frames_[frameCount_++] = M_FLIGHT;
     if (g_settings.planeLine.length()) frames_[frameCount_++] = M_PLANES;
     if (g_settings.showWeather) frames_[frameCount_++] = M_WEATHER;
-    if (anyTeam())  frames_[frameCount_++] = M_SPORTS;
+    if (anyTeam()) {
+      teamFirstFrame_ = frameCount_;
+      int pages = (teamCount() + TEAMS_PER_PAGE - 1) / TEAMS_PER_PAGE;
+      for (int k = 0; k < pages && frameCount_ < MAX_FRAMES; k++)
+        frames_[frameCount_++] = M_SPORTS;
+    }
     if (anyScore()) frames_[frameCount_++] = M_SCORES;
     if (anyShow()) {
       // Paginate: one carousel frame per page of shows so ANY number of shows
@@ -204,6 +237,7 @@ class DisplayManager {
   }
   bool anyTeam()  { for (int i=0;i<8;i++) if (g_settings.teams[i].length())  return true; return false; }
   bool anyShow()  { for (int i=0;i<8;i++) if (g_settings.shows[i].length())  return true; return false; }
+  int  teamCount(){ int n=0; for (int i=0;i<8;i++) if (g_settings.teams[i].length()) n++; return n; }
   int  showCount(){ int n=0; for (int i=0;i<8;i++) if (g_settings.shows[i].length()) n++; return n; }
   bool anyStock() { for (int i=0;i<8;i++) if (g_settings.stocks[i].length()) return true; return false; }
   bool anyScore() { for (int i=0;i<8;i++) if (g_settings.teams[i].length() && (g_settings.teamHL[i]=="live"||g_settings.teamHL[i]=="recent")) return true; return false; }
@@ -295,37 +329,143 @@ class DisplayManager {
     centerText(g_settings.flightIdent, 34, white(), 2);
   }
 
+  // ---- text helpers --------------------------------------------------------
+  // Default GFX font: 6px advance, 7px glyphs (+1px spacing).
+  static int textW(const String &t, uint8_t size = 1) { return t.length() * 6 * size; }
+
+  void textAt(const String &t, int x, int y, uint16_t c, uint8_t size = 1) {
+    dma_->setTextSize(size);
+    dma_->setTextColor(c);
+    dma_->setCursor(x, y);
+    dma_->print(t);
+  }
+
+  // Shorten to <= maxChars: drop trailing words first ("American Airlines" ->
+  // "American"), then hard-cut. Never leaves a dangling partial word if a
+  // word boundary is reasonably close.
+  static String fitWords(String t, int maxChars) {
+    t.trim();
+    if ((int)t.length() <= maxChars) return t;
+    String cut = t.substring(0, maxChars + 1);
+    int sp = cut.lastIndexOf(' ');
+    if (sp >= maxChars / 2) return t.substring(0, sp);
+    return t.substring(0, maxChars);
+  }
+
+  // A full-width line that is centered if it fits, otherwise scrolls slowly
+  // (1.5s pause, ~25px/s, 1.5s pause at the end, repeat). Screen edges clip.
+  void marquee(const String &t, int y, uint16_t c) {
+    int w = textW(t);
+    if (w <= width_) { centerText(t, y, c); return; }
+    const int pauseMs = 1500, msPerPx = 40;
+    int travel = w - width_ + 2;
+    unsigned long cycle = pauseMs * 2 + travel * msPerPx;
+    unsigned long el = (millis() - frameStart_) % cycle;
+    int off = 0;
+    if (el > (unsigned long)pauseMs) off = min(travel, (int)((el - pauseMs) / msPerPx));
+    textAt(t, 1 - off, y, c);
+  }
+
+  // Small page indicator: one 2x2 dot per page, current page brighter.
+  void pageDots(int page, int pages, int cx, int y) {
+    if (pages <= 1) return;
+    int x = cx - (pages * 5 - 3) / 2;
+    for (int k = 0; k < pages; k++, x += 5)
+      dma_->fillRect(x, y, 2, 2, k == page ? muted() : faint());
+  }
+
+  void drawLogo(const LogoAsset *lg, int x, int y) {
+    for (int r = 0; r < lg->h; r++)
+      for (int c = 0; c < lg->w; c++) {
+        uint16_t px = lg->data[r * lg->w + c];
+        if (px) dma_->drawPixel(x + c, y + r, px);  // black = transparent
+      }
+  }
+
+  // 24x24 fallback badge when there is no bitmap: dim rounded tile + code.
+  void drawBadge(const String &code, int x, int y, uint16_t edge) {
+    dma_->drawRoundRect(x, y, 24, 24, 4, edge);
+    String c = code.substring(0, 3);
+    textAt(c, x + (24 - textW(c)) / 2 + 1, y + 8, softWhite());
+  }
+
+  // ---- overhead flight card -----------------------------------------------
+  //  [logo]  AA2854          <- flight number, 2x
+  //  [24px]  American        <- airline (fitted)
+  //  ---------------------------------------------
+  //            DSM -> CLT     <- route (adsbdb), or aircraft type
+  //   4,775'    225mph   4.8mi
   void drawPlanes() {
-    centerText("OVERHEAD", 4, cyan());
-    String code = g_settings.planeCode;
-    uint16_t ink = dma_->color565(15, 15, 15);
-    if (code.length()) {
-      // Airline badge: a colored pill with a plane glyph + the airline code.
-      int textW = code.length() * 6;
-      int iconW = 10;
-      int padX = 5;
-      int pillW = iconW + textW + padX * 2;
-      int pillH = 15;
-      int px = (width_ - pillW) / 2;
-      if (px < 0) px = 0;
-      int py = 19;
-      dma_->fillRoundRect(px, py, pillW, pillH, 4, amber());
-      int ix = px + padX;
-      int iy = py + pillH / 2;
-      // Simple stylized jet pointing right.
-      dma_->fillTriangle(ix, iy - 4, ix, iy + 4, ix + 8, iy, ink);
-      dma_->fillTriangle(ix + 2, iy, ix + 5, iy - 5, ix + 5, iy, ink);
-      dma_->setTextSize(1);
-      dma_->setTextColor(ink);
-      dma_->setCursor(ix + iconW, py + 4);
-      dma_->print(code);
-    } else {
-      // No airline code (private tail number) — a plain plane glyph.
-      int cx = width_ / 2;
-      dma_->fillTriangle(cx - 7, 21, cx - 7, 31, cx + 7, 26, cyan());
+    String ident = g_settings.planeIdent;
+    if (!ident.length()) { drawPlanesSimple(); return; }
+
+    const LogoAsset *lg = g_settings.planeLogo.length()
+                              ? airlineLogo(g_settings.planeLogo) : nullptr;
+    if (lg) drawLogo(lg, 3, 4);
+    else if (g_settings.planeCode.length()) drawBadge(g_settings.planeCode, 3, 4, muted());
+    else {
+      // Private / GA aircraft: a small top-down plane glyph (nose right).
+      uint16_t c = muted();
+      dma_->fillRect(5, 15, 18, 3, c);                       // fuselage
+      dma_->fillTriangle(22, 15, 22, 17, 25, 16, c);         // nose
+      dma_->fillTriangle(17, 15, 13, 15, 9, 5, c);           // upper wing
+      dma_->fillTriangle(17, 15, 9, 5, 11, 5, c);
+      dma_->fillTriangle(17, 17, 13, 17, 9, 27, c);          // lower wing
+      dma_->fillTriangle(17, 17, 9, 27, 11, 27, c);
+      dma_->fillTriangle(8, 15, 5, 15, 3, 10, c);            // tail
+      dma_->fillTriangle(8, 17, 5, 17, 3, 22, c);
     }
-    // Airline name + distance below the badge.
-    centerText(g_settings.planeLine, 42, white());
+
+    const int tx = 32, tw = width_ - tx - 2;           // 94px text column
+    uint8_t sz = textW(ident, 2) <= tw ? 2 : 1;
+    textAt(ident, tx, sz == 2 ? 4 : 8, softWhite(), sz);
+    String sub = g_settings.planeAirline.length() ? g_settings.planeAirline
+                                                  : g_settings.planeType;
+    textAt(fitWords(sub, tw / 6), tx, 21, muted());
+
+    dma_->drawFastHLine(3, 32, width_ - 6, faint());
+
+    String mid;
+    if (g_settings.planeFrom.length() && g_settings.planeTo.length())
+      mid = g_settings.planeFrom + " \x1A " + g_settings.planeTo;   // CP437 arrow
+    else if (g_settings.planeType.length() && g_settings.planeAirline.length())
+      mid = g_settings.planeType;
+    if (mid.length()) centerText(mid, 37, routeBlue());
+
+    // Stats row: three 42px columns, each centered.
+    String cols[3];
+    if (g_settings.planeAlt >= 0) {
+      char b[12];
+      int a = g_settings.planeAlt;
+      if (a >= 1000) snprintf(b, sizeof(b), "%d,%03d'", a / 1000, a % 1000);
+      else snprintf(b, sizeof(b), "%d'", a);
+      cols[0] = b;
+    }
+    if (g_settings.planeSpd >= 0) cols[1] = String(g_settings.planeSpd) + "mph";
+    if (g_settings.planeDist >= 0) cols[2] = String(g_settings.planeDist, 1) + "mi";
+    for (int k = 0; k < 3; k++) {
+      if (!cols[k].length()) continue;
+      int cx = k * 43 + 21;
+      textAt(cols[k], cx - textW(cols[k]) / 2, 51, k == 2 ? softAmber() : muted());
+    }
+  }
+
+  // Older backend/app (only line + code): calmer version of the original card.
+  void drawPlanesSimple() {
+    centerText("OVERHEAD", 6, muted());
+    String code = g_settings.planeCode;
+    const LogoAsset *lg = code.length() ? airlineLogo(code) : nullptr;
+    if (lg) drawLogo(lg, (width_ - 24) / 2, 17);
+    else if (code.length()) drawBadge(code, (width_ - 24) / 2, 17, muted());
+    String line = g_settings.planeLine;
+    // "American Airlines 5.8mi" is 23 chars (138px): drop words from the
+    // airline name until it fits, keeping the distance.
+    int sp = line.lastIndexOf(' ');
+    String dist = sp > 0 ? line.substring(sp + 1) : "";
+    String name = sp > 0 ? line.substring(0, sp) : line;
+    if (textW(line) > width_ && dist.endsWith("mi"))
+      line = fitWords(name, (width_ / 6) - dist.length() - 1) + " " + dist;
+    centerText(fitWords(line, width_ / 6), 48, softWhite());
   }
 
   void drawWeather() {
@@ -364,74 +504,103 @@ class DisplayManager {
     }
   }
 
-  void drawTeams() {
-    int n = 0;
-    for (int i = 0; i < 8; i++) if (g_settings.teams[i].length()) n++;
-    if (n == 0) return;
-    int y = (height_ - (n * 20 - 3)) / 2;   // vertically center the block
-    if (y < 1) y = 1;
-    for (int i = 0; i < 8 && y < height_; i++) {
-      String t = g_settings.teams[i];
-      if (!t.length()) continue;
-      // t is "LEAGUE:ABBR" (e.g. "MLB:NYY").
-      int colon = t.indexOf(':');
-      String abbr = colon >= 0 ? t.substring(colon + 1) : t;
-      String head = abbr;
-      if (g_settings.teamRecord[i].length()) head += "  " + g_settings.teamRecord[i];
-      centerText(head, y, cyan());
-      String sub = g_settings.teamLabel[i];
-      centerText(sub.length() ? sub : String("--"), y + 9, white());
-      y += 20;
+  // One team row: 24px logo (or colored badge) + two short lines.
+  //  [logo]  NYY  93-68
+  //  [24px]  Sat 6:30p @ TB      <- colored by status
+  void drawTeamRow(int i, int y) {
+    String t = g_settings.teams[i];
+    int colon = t.indexOf(':');
+    String league = colon >= 0 ? t.substring(0, colon) : "";
+    String abbr = colon >= 0 ? t.substring(colon + 1) : t;
+    const LogoAsset *lg = league.length() ? teamLogo(league, abbr) : nullptr;
+    if (lg) drawLogo(lg, 3, y);
+    else {
+      uint8_t r = 120, g = 120, b = 120;
+      String hex = g_settings.teamColor[i];
+      if (hex.length() >= 7 && hex[0] == '#') {
+        long v = strtol(hex.c_str() + 1, nullptr, 16);
+        r = (v >> 16) & 0xFF; g = (v >> 8) & 0xFF; b = v & 0xFF;
+      }
+      drawBadge(abbr, 3, y, dma_->color565(r, g, b));
     }
+
+    const int tx = 32, maxC = (width_ - tx - 1) / 6;   // 15 chars
+    textAt(abbr, tx, y + 3, softWhite());
+    if (g_settings.teamRecord[i].length())
+      textAt(g_settings.teamRecord[i], tx + textW(abbr) + 6, y + 3, muted());
+
+    String hl = g_settings.teamHL[i];
+    String k = g_settings.teamShort[i];
+    if (!k.length()) k = g_settings.teamLabel[i];   // older backend
+    if (!k.length()) k = "--";
+    uint16_t c = muted();
+    int x = tx;
+    if (hl == "live") {
+      dma_->fillRect(tx, y + 15, 3, 3, softRed());   // small "on air" dot
+      x += 6;
+      c = softWhite();
+    } else if (hl == "today") c = softAmber();
+    else if (hl == "recent") c = k.startsWith("W") ? softGreen() : muted();
+    textAt(fitWords(k, maxC - (x - tx) / 6), x, y + 14, c);
   }
 
+  void drawTeams() {
+    int total = teamCount();
+    if (total == 0) return;
+    int pages = (total + TEAMS_PER_PAGE - 1) / TEAMS_PER_PAGE;
+    int page = current_ - teamFirstFrame_;
+    if (page < 0 || page >= pages) page = 0;
+    int idxs[TEAMS_PER_PAGE], cnt = 0, seen = 0;
+    for (int i = 0; i < 8 && cnt < TEAMS_PER_PAGE; i++) {
+      if (!g_settings.teams[i].length()) continue;
+      if (seen++ < page * TEAMS_PER_PAGE) continue;
+      idxs[cnt++] = i;
+    }
+    if (cnt == 1) { drawTeamRow(idxs[0], 20); }
+    else {
+      drawTeamRow(idxs[0], 4);
+      dma_->drawFastHLine(32, 32, width_ - 36, faint());
+      drawTeamRow(idxs[1], 36);
+    }
+    // Vertical page dots at the right edge.
+    if (pages > 1)
+      for (int k = 0; k < pages; k++)
+        dma_->fillRect(width_ - 3, 32 - pages * 2 + k * 4, 2, 2, k == page ? muted() : faint());
+  }
+
+  // Two shows per page, calm palette, long titles scroll instead of clipping:
+  //        Ted Lasso              <- muted blue
+  //    New episode Oct 7          <- gray (amber when it's new/today)
+  //      ------------
+  //     Emily in Paris
+  //    Returns Dec 24
+  //          . .                  <- page dots
   void drawShows() {
     int total = showCount();
     if (total == 0) return;
     int pages = (total + SHOWS_PER_PAGE - 1) / SHOWS_PER_PAGE;
-    // Which page is this? Derived from the carousel position (M_TV pages are
-    // consecutive), so it never flickers between redraws.
     int page = current_ - tvFirstFrame_;
     if (page < 0 || page >= pages) page = 0;
-
-    // Balance shows evenly across pages (earlier pages take the remainder):
-    // 4->[4], 5->[3,2], 6->[3,3], 7->[4,3], 8->[4,4].
-    int base = total / pages;
-    int rem = total % pages;
-    int start = 0;
-    for (int j = 0; j < page; j++) start += base + (j < rem ? 1 : 0);
-    int want = base + (page < rem ? 1 : 0);
-
-    // Build the list of show indices for this page.
-    int idxs[SHOWS_PER_PAGE];
-    int cnt = 0, seen = 0;
-    for (int i = 0; i < 8 && cnt < want; i++) {
+    int idxs[SHOWS_PER_PAGE], cnt = 0, seen = 0;
+    for (int i = 0; i < 8 && cnt < SHOWS_PER_PAGE; i++) {
       if (!g_settings.shows[i].length()) continue;
-      if (seen++ < start) continue;
+      if (seen++ < page * SHOWS_PER_PAGE) continue;
       idxs[cnt++] = i;
     }
     if (cnt == 0) return;
-
-    int hdr = pages > 1 ? 8 : 0;   // reserve a row for the "1/2" page tag
-    if (pages > 1) {
-      char tag[8];
-      snprintf(tag, sizeof(tag), "%d/%d", page + 1, pages);
-      centerText(tag, 1, dim());
-    }
-    int avail = height_ - hdr - 2;
-    int rowH = avail / cnt;
-    if (rowH > 20) rowH = 20;
-    if (rowH < 14) rowH = 14;
-    int lblOff = rowH >= 18 ? 9 : 8;
-    int y = hdr + (avail - rowH * cnt) / 2;
-    if (y < hdr) y = hdr;
+    const int ys[2] = {6, 36};
     for (int k = 0; k < cnt; k++) {
       int i = idxs[k];
-      centerText(g_settings.shows[i].substring(0, 21), y, cyan());
+      int y = cnt == 1 ? 21 : ys[k];
+      marquee(g_settings.shows[i], y, titleBlue());
       String lbl = g_settings.showLabel[i];
-      centerText(lbl.length() ? lbl : String("--"), y + lblOff, white());
-      y += rowH;
+      if (!lbl.length()) lbl = "--";
+      bool fresh = lbl.startsWith("New") || lbl.startsWith("Today") ||
+                   lbl.indexOf("tonight") >= 0;
+      centerText(fitWords(lbl, width_ / 6), y + 11, fresh ? softAmber() : muted());
     }
+    if (cnt == 2) dma_->drawFastHLine(40, 30, width_ - 80, faint());
+    pageDots(page, pages, width_ / 2, 60);
   }
 
   void drawStocks() {
@@ -464,26 +633,18 @@ class DisplayManager {
     }
   }
 
+  // Live / just-final games, same row style as the Teams page (max 2).
   void drawScores() {
-    int n = 0;
-    for (int i = 0; i < 8; i++)
+    int idxs[2], cnt = 0;
+    for (int i = 0; i < 8 && cnt < 2; i++)
       if (g_settings.teams[i].length() &&
           (g_settings.teamHL[i] == "live" || g_settings.teamHL[i] == "recent"))
-        n++;
-    int top = (height_ - (12 + n * 14)) / 2;   // center header + rows
-    if (top < 1) top = 1;
-    centerText("SCORES", top, amber());
-    int y = top + 16;
-    for (int i = 0; i < 8 && y < height_ - 6; i++) {
-      if (!g_settings.teams[i].length()) continue;
-      if (g_settings.teamHL[i] != "live" && g_settings.teamHL[i] != "recent") continue;
-      String t = g_settings.teams[i];
-      int colon = t.indexOf(':');
-      String abbr = colon >= 0 ? t.substring(colon + 1) : t;
-      // Prefix the team's own abbr so it's clear WHICH team the score is.
-      centerText(abbr + " " + g_settings.teamLabel[i], y, white());
-      y += 14;
-    }
+        idxs[cnt++] = i;
+    if (cnt == 0) return;
+    if (cnt == 1) { drawTeamRow(idxs[0], 20); return; }
+    drawTeamRow(idxs[0], 4);
+    dma_->drawFastHLine(32, 32, width_ - 36, faint());
+    drawTeamRow(idxs[1], 36);
   }
 
   void drawReminders() {

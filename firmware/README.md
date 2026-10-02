@@ -34,3 +34,30 @@ is already wired up.
 
 > Note: the app sends **raw JSON** (not base64) — this starter parses it
 > directly with ArduinoJson, which is correct.
+
+## Firmware version + over-the-air updates (1.1.0+)
+
+- The version lives in `include/Version.h` (`INFOWALL_FW_VERSION`). The panel
+  reports it over BLE: it leaves `{"ready":true,"fw":"x.y.z"}` on the
+  characteristic when the app connects, and answers the `version` command with
+  a `{"fw":"x.y.z"}` notification.
+- The app's **Install update** button sends `{"command":"ota"}`. The panel
+  calls `<server>/api/firmware/latest?current=<ver>` and, only if the hosted
+  build is strictly newer, shows `UPDATE vX`, streams `<server>/fw/firmware.bin`
+  into the inactive OTA slot (HTTPUpdate, no redirects) and reboots into it.
+  It notifies `{"ota":"uptodate"|"installing"|"failed"|"offline"}` back.
+- The board's default partition table (`partitions-8MB-tinyuf2.csv`) already
+  has two 2 MB app slots (`ota_0` / `ota_1`), so no partition change is
+  needed and NVS settings survive both USB flashes and OTA updates.
+- **1.1.0 is the first OTA-capable build, so flash it over USB once.** After
+  that, publish builds as described in `backend/public/fw/README.md`.
+- Firmware older than 1.1.0 treated unknown commands as a full sync (blanking
+  teams/shows/stocks). 1.1.0 ignores unknown commands, and the app only sends
+  `version`/`ota` after it has seen a `fw` value.
+
+## Logos
+
+`include/logos/generated_logos.h` is shared with LED_Matrix_Aura (24x24
+RGB565, 123 team logos + 12 airlines, including the hand-tuned Titans, Tampa
+Bay and Capitals marks and the crisp Southwest heart). `include/Logos.h` holds
+the lookup helpers. Regenerate with Aura's `firmware/tools/generate_logos.py`.

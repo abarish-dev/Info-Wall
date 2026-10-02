@@ -186,6 +186,7 @@ class NetworkData {
       g_settings.teamLabel[slot]  = (const char *)(e["l"] | "");
       g_settings.teamRecord[slot] = (const char *)(e["r"] | "");
       g_settings.teamHL[slot]     = (const char *)(e["h"] | "");
+      g_settings.teamShort[slot]  = (const char *)(e["k"] | "");
       // On-device SCORE flash: a live team's score went up since last check.
       if (strcmp(g_settings.teamHL[slot].c_str(), "live") == 0 && !e["s"].isNull()) {
         float sc = e["s"].as<float>();
@@ -258,9 +259,20 @@ class NetworkData {
       g_settings.planeLine = (al.length() ? al : cs);
       if (!f["d"].isNull())
         g_settings.planeLine += " " + String(f["d"].as<float>(), 1) + "mi";
+      // Rich card fields (older backends simply omit them).
+      g_settings.planeIdent   = (const char *)(f["fn"] | (f["f"] | ""));
+      g_settings.planeAirline = al;
+      g_settings.planeLogo    = (const char *)(f["lg"] | (f["ia"] | ""));
+      g_settings.planeFrom    = (const char *)(f["fr"] | "");
+      g_settings.planeTo      = (const char *)(f["to"] | "");
+      g_settings.planeType    = (const char *)(f["typ"] | "");
+      g_settings.planeAlt     = f["alt"].isNull() ? -1 : f["alt"].as<int>();
+      g_settings.planeSpd     = f["spd"].isNull() ? -1 : f["spd"].as<int>();
+      g_settings.planeDist    = f["d"].isNull() ? -1.0f : f["d"].as<float>();
     } else {
       g_settings.planeLine = "";
       g_settings.planeCode = "";
+      g_settings.planeIdent = "";
     }
   }
 
