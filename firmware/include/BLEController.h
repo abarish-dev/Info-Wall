@@ -32,6 +32,20 @@ static const char *CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 // Used by both the BLE-triggered Wi-Fi join and the auto-reconnect sync path.
 #define INFOWALL_TZ "EST5EDT,M3.2.0,M11.1.0"
 
+// One aircraft in range, as the flight card needs it.
+struct PlaneInfo {
+  String cs;        // callsign (identity), e.g. "AAL2854" / "N381MG"
+  String ident;     // flight number to show, e.g. "AA2854" (falls back to cs)
+  String airline;   // "American Airlines" ("" for private)
+  String logo;      // logo key (ICAO; brand for regionals)
+  String code;      // ICAO airline prefix for the text badge
+  String from, to;  // route IATA codes (may be empty)
+  String type;      // aircraft type, e.g. "A319"
+  String line;      // legacy one-liner (older app push), e.g. "American 5.8mi"
+  int    alt = -1, spd = -1;  // ft, mph (-1 = n/a)
+  float  dist = -1;           // mi (-1 = n/a)
+};
+
 // --- Global settings the rest of your firmware reads ----------------------
 struct MatrixSettings {
   // Flight / weather / zone
@@ -92,16 +106,12 @@ struct MatrixSettings {
   String wxText         = "";
   String planeLine      = "";   // nearest overhead flight
   String planeCode      = "";   // airline IATA/ICAO code for the badge (e.g. DAL)
-  // Rich flight-card fields (backend /api/device/planes, firmware 1.1+).
-  String planeIdent     = "";   // flight number, e.g. "AA2854" (or callsign)
-  String planeAirline   = "";   // "American Airlines" (or "" for private)
-  String planeLogo      = "";   // logo key (ICAO; brand for regionals)
-  String planeFrom      = "";   // origin IATA, e.g. "DSM"
-  String planeTo        = "";   // destination IATA, e.g. "CLT"
-  String planeType      = "";   // aircraft type, e.g. "A319"
-  int    planeAlt       = -1;   // ft (-1 = n/a)
-  int    planeSpd       = -1;   // mph (-1 = n/a)
-  float  planeDist      = -1;   // mi (-1 = n/a)
+  // Every aircraft currently in range (backend /api/device/planes, nearest
+  // first). Each one is its own page in the rotation; a newly seen callsign
+  // interrupts the rotation once (see DisplayManager::notePlanes).
+  PlaneInfo planes[6];
+  int    planeCount     = 0;
+  unsigned long planesFetchMs = 0;  // last successful panel-side fetch (millis)
   String tvNewLine      = "";   // a show with a new episode
 
   // Folly Beach tides (NOAA 8665424) + Lake Norman (Duke Energy + USGS).
@@ -130,6 +140,8 @@ class BLEController {
   volatile bool flashRequested = false;
   volatile bool scoreFlashRequested = false;
   volatile bool otaRequested = false;   // BLE "ota": check + install update
+  volatile bool planesPushed = false;   // phone pushed a nearest plane (fallback)
+  PlaneInfo pushedPlane;
   String flashAbbr;
   uint8_t flashR = 255, flashG = 106, flashB = 0;
   String pendingSsid;
@@ -349,17 +361,25 @@ inline void BLEController::handleJson(const String &raw) {
     // Phone-pushed nearest overhead flight (fallback to the panel's own fetch).
     g_settings.planeLine  = (const char *)(doc["line"] | "");
     g_settings.planeCode  = (const char *)(doc["code"] | "");
-    // Newer apps also forward the rich fields from /api/device/planes; older
-    // ones only send line/code, so the card falls back to the simple layout.
-    g_settings.planeIdent   = (const char *)(doc["fn"] | (doc["f"] | ""));
-    g_settings.planeAirline = (const char *)(doc["al"] | "");
-    g_settings.planeLogo    = (const char *)(doc["lg"] | (doc["code"] | ""));
-    g_settings.planeFrom    = (const char *)(doc["fr"] | "");
-    g_settings.planeTo      = (const char *)(doc["to"] | "");
-    g_settings.planeType    = (const char *)(doc["typ"] | "");
-    g_settings.planeAlt     = doc["alt"].isNull() ? -1 : doc["alt"].as<int>();
-    g_settings.planeSpd     = doc["spd"].isNull() ? -1 : doc["spd"].as<int>();
-    g_settings.planeDist    = doc["d"].isNull() ? -1.0f : doc["d"].as<float>();
+    // Only used when the panel can't fetch planes itself (no Wi-Fi / backend
+    // for 2+ minutes) — otherwise the panel's own full list wins.
+    if (g_settings.planesFetchMs == 0 || millis() - g_settings.planesFetchMs > 120000UL) {
+      PlaneInfo p;
+      p.cs      = (const char *)(doc["f"] | (doc["code"] | ""));
+      p.ident   = (const char *)(doc["fn"] | (doc["f"] | ""));
+      p.airline = (const char *)(doc["al"] | "");
+      p.logo    = (const char *)(doc["lg"] | (doc["code"] | ""));
+      p.code    = (const char *)(doc["code"] | "");
+      p.from    = (const char *)(doc["fr"] | "");
+      p.to      = (const char *)(doc["to"] | "");
+      p.type    = (const char *)(doc["typ"] | "");
+      p.line    = g_settings.planeLine;
+      p.alt     = doc["alt"].isNull() ? -1 : doc["alt"].as<int>();
+      p.spd     = doc["spd"].isNull() ? -1 : doc["spd"].as<int>();
+      p.dist    = doc["d"].isNull() ? -1.0f : doc["d"].as<float>();
+      planesPushed = true;
+      pushedPlane = p;
+    }
     return;  // live data — no need to persist to flash
 
   } else if (strcmp(cmd, "settime") == 0) {

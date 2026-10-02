@@ -249,31 +249,31 @@ class NetworkData {
              g_settings.lat, g_settings.lon, g_settings.radius);
     JsonDocument doc;
     if (!getJson(path, doc)) return;
-    JsonArray p = doc["p"].as<JsonArray>();
-    if (p.size() > 0) {
-      JsonVariant f = p[0];
-      String al = (const char *)(f["al"] | "");
-      String cs = (const char *)(f["f"] | "");
-      String ia = (const char *)(f["ia"] | "");
-      g_settings.planeCode = ia;
-      g_settings.planeLine = (al.length() ? al : cs);
-      if (!f["d"].isNull())
-        g_settings.planeLine += " " + String(f["d"].as<float>(), 1) + "mi";
-      // Rich card fields (older backends simply omit them).
-      g_settings.planeIdent   = (const char *)(f["fn"] | (f["f"] | ""));
-      g_settings.planeAirline = al;
-      g_settings.planeLogo    = (const char *)(f["lg"] | (f["ia"] | ""));
-      g_settings.planeFrom    = (const char *)(f["fr"] | "");
-      g_settings.planeTo      = (const char *)(f["to"] | "");
-      g_settings.planeType    = (const char *)(f["typ"] | "");
-      g_settings.planeAlt     = f["alt"].isNull() ? -1 : f["alt"].as<int>();
-      g_settings.planeSpd     = f["spd"].isNull() ? -1 : f["spd"].as<int>();
-      g_settings.planeDist    = f["d"].isNull() ? -1.0f : f["d"].as<float>();
-    } else {
-      g_settings.planeLine = "";
-      g_settings.planeCode = "";
-      g_settings.planeIdent = "";
+    PlaneInfo list[6];
+    int n = 0;
+    for (JsonVariant f : doc["p"].as<JsonArray>()) {
+      if (n >= 6) break;
+      PlaneInfo &p = list[n];
+      p.cs = (const char *)(f["f"] | "");
+      if (!p.cs.length()) continue;
+      p.ident   = (const char *)(f["fn"] | (f["f"] | ""));
+      p.airline = (const char *)(f["al"] | "");
+      p.code    = (const char *)(f["ia"] | "");
+      p.logo    = (const char *)(f["lg"] | (f["ia"] | ""));
+      p.from    = (const char *)(f["fr"] | "");
+      p.to      = (const char *)(f["to"] | "");
+      p.type    = (const char *)(f["typ"] | "");
+      p.alt     = f["alt"].isNull() ? -1 : f["alt"].as<int>();
+      p.spd     = f["spd"].isNull() ? -1 : f["spd"].as<int>();
+      p.dist    = f["d"].isNull() ? -1.0f : f["d"].as<float>();
+      p.line    = (p.airline.length() ? p.airline : p.cs);
+      if (p.dist >= 0) p.line += " " + String(p.dist, 1) + "mi";
+      n++;
     }
+    g_settings.planesFetchMs = millis() | 1;
+    // Replaces the in-range list; new callsigns interrupt the rotation once,
+    // gone ones drop out of the cycle immediately.
+    g_display.notePlanes(list, n);
   }
 
   void fetchFolly() {

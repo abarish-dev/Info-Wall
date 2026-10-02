@@ -194,6 +194,15 @@ void loop() {
         g_ble.flashAbbr, g_ble.flashR, g_ble.flashG, g_ble.flashB);
   }
 
+  // Phone-pushed nearest plane (only accepted when the panel's own fetch is
+  // stale). Applied here, not in the BLE callback, so it can't race a draw.
+  if (g_ble.planesPushed) {
+    g_ble.planesPushed = false;
+    PlaneInfo p = g_ble.pushedPlane;
+    if (p.cs.length()) g_display.notePlanes(&p, 1);
+    else g_display.notePlanes(nullptr, 0);
+  }
+
   // "Install update" from the app (BLE "ota").
   if (g_ble.otaRequested) {
     g_ble.otaRequested = false;

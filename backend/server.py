@@ -1086,8 +1086,8 @@ def device_planes(lat: float, lon: float, radius: float = 25):
     Original fields (kept for older firmware): f callsign, al airline name,
     ia ICAO airline prefix, d distance (mi).
     Added for the logo flight card: alt (ft), spd (mph), typ (aircraft type),
-    trk (track deg), lg (logo key, brand for regionals) and, for the nearest
-    plane only, fn (IATA flight no.), fr/to (origin/dest IATA)."""
+    trk (track deg), lg (logo key, brand for regionals) and, for airline
+    flights, fn (IATA flight no.), fr/to (origin/dest IATA)."""
     import re as _re
 
     def _iata(callsign):
@@ -1099,8 +1099,20 @@ def device_planes(lat: float, lon: float, radius: float = 25):
         return round(v * scale) if isinstance(v, (int, float)) else None
 
     data = flights_nearby(lat, lon, radius)  # reuse + cache
+    flights = data.get("flights", [])[:6]
+    # Route lookups for every airline flight, in parallel (each is cached 6h
+    # and capped at 3s), so the panel can show a route on any plane's card,
+    # not just the nearest one.
+    from concurrent.futures import ThreadPoolExecutor
+
+    want = [f["callsign"] for f in flights if _iata(f["callsign"])]
+    routes: dict = {}
+    if want:
+        with ThreadPoolExecutor(max_workers=min(6, len(want))) as ex:
+            for cs, rt in zip(want, ex.map(_route_for, want)):
+                routes[cs] = rt
     out = []
-    for i, f in enumerate(data.get("flights", [])[:6]):
+    for f in flights:
         ia = _iata(f["callsign"])
         row = {
             "f": f["callsign"],
@@ -1113,8 +1125,8 @@ def device_planes(lat: float, lon: float, radius: float = 25):
             "trk": _num(f.get("track")),
             "lg": _BRAND_LOGO.get(ia, ia) if ia else None,
         }
-        if i == 0 and ia:
-            rt = _route_for(f["callsign"])
+        if ia:
+            rt = routes.get(f["callsign"]) or {}
             for k in ("fn", "fr", "to"):
                 if rt.get(k):
                     row[k] = rt[k]

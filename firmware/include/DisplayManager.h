@@ -65,26 +65,36 @@ class DisplayManager {
     int eff = effectiveBrightness();
     if (eff <= 0) { dma_->clearScreen(); return; }
 
-    rebuildFramesIfNeeded();
-    if (frameCount_ == 0) { dma_->clearScreen(); return; }
-
-    // 2) Advance frames on hold timeout (unless the screen is pinned).
     unsigned long now = millis();
+    // First page, or the current page stopped existing (module turned off,
+    // plane left range): move on right away, no fade.
+    if (!hasPage_ || !pageValid(cur_)) {
+      if (!advance()) { hasPage_ = false; dma_->clearScreen(); return; }
+      hasPage_ = true;
+      fading_ = false;
+      lastSwitch_ = frameStart_ = now;
+    }
+
+    // 2) Advance on hold timeout (unless pinned). A newly seen plane cuts in
+    //    immediately (an interrupt card itself is shown for a full hold).
     int hold = max(2000, g_settings.holdDurationMs);
-    if (!g_settings.isPinned && !fading_ && now - lastSwitch_ >= (unsigned long)hold) {
+    bool cutIn = queueLen_ > 0 && !g_settings.isPinned &&
+                 (!cur_.interrupt || now - lastSwitch_ >= (unsigned long)hold);
+    if (!fading_ && (cutIn || (!g_settings.isPinned &&
+                               now - lastSwitch_ >= (unsigned long)hold))) {
       fading_    = true;
       fadeOut_   = true;
       fadeStart_ = now;
     }
 
-    // 3) Cross-fade brightness ramp between frames.
+    // 3) Cross-fade brightness ramp between pages.
     int drawBright = eff;
     if (fading_) {
       int fadeMs = (11 - constrain(g_settings.fadeSpeed, 1, 10)) * 90; // 90..900ms
       float t = fadeMs > 0 ? (float)(now - fadeStart_) / fadeMs : 1.0f;
       if (t >= 1.0f) {
         if (fadeOut_) {
-          current_   = (current_ + 1) % frameCount_;
+          if (!advance()) { hasPage_ = false; dma_->clearScreen(); return; }
           frameStart_ = now;
           fadeOut_   = false;
           fadeStart_ = now;
@@ -99,9 +109,28 @@ class DisplayManager {
     }
     dma_->setBrightness8(map(drawBright, 0, 100, 0, 255));
 
-    // 4) Draw the current module.
+    // 4) Draw the current page.
     dma_->clearScreen();
-    drawModule(frames_[current_]);
+    drawModule(cur_.m);
+  }
+
+  // Replace the in-range aircraft list (nearest first). A callsign not seen in
+  // the last 10 minutes is queued to interrupt the rotation once; the very
+  // first fetch after boot only seeds the list. Planes no longer reported drop
+  // out of the cycle immediately (pageValid() fails for them).
+  void notePlanes(const PlaneInfo *list, int n) {
+    unsigned long now = millis();
+    bool seeding = !planesSeeded_ || now < 45000UL;
+    for (int i = 0; i < n; i++) {
+      const String &cs = list[i].cs;
+      if (!cs.length()) continue;
+      if (!seeding && !recentlySeen(cs, now)) enqueue(cs);
+      markSeen(cs, now);
+    }
+    n = min(n, 6);
+    for (int i = 0; i < n; i++) g_settings.planes[i] = list[i];
+    g_settings.planeCount = n;
+    planesSeeded_ = true;
   }
 
   // A quick RGB sweep so the user can confirm the BLE link is live.
@@ -153,17 +182,129 @@ class DisplayManager {
   int width_ = 128, height_ = 64;
   static const int SHOWS_PER_PAGE = 2;   // Shows module paginates in the carousel
   static const int TEAMS_PER_PAGE = 2;   // Teams rows (24px logo + 2 lines each)
-  static const int MAX_FRAMES = 20;
-  Module frames_[MAX_FRAMES];
-  int  frameCount_ = 0;
-  int  current_ = 0;
-  int  tvFirstFrame_ = 0;   // index of the first Shows page in frames_
-  int  teamFirstFrame_ = 0; // index of the first Teams page in frames_
-  unsigned long frameStart_ = 0;  // when the current frame became visible (marquee)
+  // Current page. idx = page number for paged modules; plane = callsign.
+  struct Page { Module m = M_WEATHER; int idx = 0; String plane; bool interrupt = false; };
+  Page cur_;
+  bool hasPage_ = false;
+  unsigned long frameStart_ = 0;  // when the current page became visible (marquee)
   unsigned long lastSwitch_ = 0;
   bool fading_ = false, fadeOut_ = false;
   unsigned long fadeStart_ = 0;
-  String lastSig_;
+
+  // Rotation: categories take turns (round-robin), one page per turn, each
+  // with its own wrap-around cursor, so a long category (6 shows = 3 pages)
+  // never runs as a block. Info pages get two turns per round because there
+  // are more of them. Empty categories are skipped.
+  enum Cat { C_INFO = 0, C_TEAMS, C_SHOWS, C_PLANES, C_COUNT };
+  static constexpr int PATTERN_LEN = 5;
+  const Cat PATTERN[PATTERN_LEN] = {C_INFO, C_TEAMS, C_INFO, C_SHOWS, C_PLANES};
+  int patPos_ = 0;
+  int cursor_[C_COUNT] = {0, 0, 0, 0};
+
+  // New-plane interrupt queue (callsigns, nearest first) + "seen" memory.
+  static const int QMAX = 3;
+  String queue_[QMAX];
+  int queueLen_ = 0;
+  static const int SEEN_MAX = 24;
+  String seenCs_[SEEN_MAX];
+  unsigned long seenAt_[SEEN_MAX] = {0};
+  bool planesSeeded_ = false;
+
+  int infoModules(Module *out) {
+    int n = 0;
+    if (g_settings.showCustomMessage && msgHasText()) out[n++] = M_MESSAGE;
+    if (g_settings.trackFlight && g_settings.flightIdent.length()) out[n++] = M_FLIGHT;
+    if (g_settings.showWeather) out[n++] = M_WEATHER;
+    if (anyStock()) out[n++] = M_STOCKS;
+    if (g_settings.showCountdown && g_settings.countdownLabel.length()) out[n++] = M_COUNTDOWN;
+    if (anyReminder()) out[n++] = M_REMINDERS;
+    if (g_settings.showLKN)   out[n++] = M_LKN;
+    if (g_settings.showFolly) out[n++] = M_FOLLY;
+    return n;
+  }
+  int teamPages() { return (teamCount() + TEAMS_PER_PAGE - 1) / TEAMS_PER_PAGE; }
+  int showPages() { return (showCount() + SHOWS_PER_PAGE - 1) / SHOWS_PER_PAGE; }
+  int catCount(Cat c) {
+    Module tmp[12];
+    switch (c) {
+      case C_INFO:   return infoModules(tmp);
+      case C_TEAMS:  return (anyScore() ? 1 : 0) + teamPages();   // live/final first
+      case C_SHOWS:  return showPages();
+      case C_PLANES: return g_settings.planeCount;
+      default:       return 0;
+    }
+  }
+  Page pageFor(Cat c, int k) {
+    Page p;
+    if (c == C_INFO) { Module tmp[12]; infoModules(tmp); p.m = tmp[k]; }
+    else if (c == C_TEAMS) {
+      if (anyScore()) { if (k == 0) { p.m = M_SCORES; return p; } k--; }
+      p.m = M_SPORTS; p.idx = k;
+    }
+    else if (c == C_SHOWS) { p.m = M_TV; p.idx = k; }
+    else { p.m = M_PLANES; p.plane = g_settings.planes[k].cs; }
+    return p;
+  }
+  int planeSlot(const String &cs) {
+    for (int i = 0; i < g_settings.planeCount; i++)
+      if (g_settings.planes[i].cs == cs) return i;
+    return -1;
+  }
+  bool pageValid(const Page &p) {
+    Module tmp[12];
+    int n;
+    switch (p.m) {
+      case M_PLANES: return planeSlot(p.plane) >= 0;
+      case M_SPORTS: return p.idx < teamPages();
+      case M_SCORES: return anyScore();
+      case M_TV:     return p.idx < showPages();
+      default:
+        n = infoModules(tmp);
+        for (int i = 0; i < n; i++) if (tmp[i] == p.m) return true;
+        return false;
+    }
+  }
+  // Pick the next page: a queued new plane first, else the next category turn.
+  bool advance() {
+    while (queueLen_ > 0 && !g_settings.isPinned) {
+      String cs = queue_[0];
+      for (int i = 1; i < queueLen_; i++) queue_[i - 1] = queue_[i];
+      queueLen_--;
+      if (planeSlot(cs) < 0) continue;   // already gone
+      cur_ = Page();
+      cur_.m = M_PLANES; cur_.plane = cs; cur_.interrupt = true;
+      return true;
+    }
+    for (int t = 0; t < PATTERN_LEN; t++) {
+      Cat c = PATTERN[patPos_];
+      patPos_ = (patPos_ + 1) % PATTERN_LEN;
+      int n = catCount(c);
+      if (n == 0) continue;
+      int k = cursor_[c] % n;
+      cursor_[c] = k + 1;
+      cur_ = pageFor(c, k);
+      return true;
+    }
+    return false;
+  }
+  bool recentlySeen(const String &cs, unsigned long now) {
+    for (int i = 0; i < SEEN_MAX; i++)
+      if (seenCs_[i] == cs && now - seenAt_[i] < 600000UL) return true;
+    return false;
+  }
+  void markSeen(const String &cs, unsigned long now) {
+    int oldest = 0;
+    for (int i = 0; i < SEEN_MAX; i++) {
+      if (seenCs_[i] == cs) { seenAt_[i] = now; return; }
+      if (seenAt_[i] < seenAt_[oldest]) oldest = i;
+    }
+    seenCs_[oldest] = cs;
+    seenAt_[oldest] = now;
+  }
+  void enqueue(const String &cs) {
+    for (int i = 0; i < queueLen_; i++) if (queue_[i] == cs) return;
+    if (queueLen_ < QMAX) queue_[queueLen_++] = cs;   // beyond 3: just joins rotation
+  }
 
   uint16_t red()   { return dma_->color565(255, 40, 40); }
   uint16_t green() { return dma_->color565(60, 255, 100); }
@@ -182,54 +323,6 @@ class DisplayManager {
   uint16_t softGreen() { return dma_->color565(80, 190, 115); }
   uint16_t softRed()   { return dma_->color565(215, 70, 60); }
   uint16_t routeBlue() { return dma_->color565(120, 175, 215); }
-
-  // A cheap signature of the enabled-module set; rebuild the carousel only
-  // when it changes so `current_` isn't reset every frame.
-  void rebuildFramesIfNeeded() {
-    String sig;
-    sig += g_settings.showCustomMessage && msgHasText() ? "M" : "";
-    sig += (g_settings.trackFlight && g_settings.flightIdent.length()) ? "F" : "";
-    sig += g_settings.planeLine.length() ? "P" : "";
-    sig += g_settings.showWeather ? "W" : "";
-    sig += anyTeam() ? "S" + String(teamCount()) : "";
-    sig += anyScore() ? "G" : "";
-    sig += anyShow() ? "T" + String(showCount()) : "";
-    sig += anyStock() ? "$" : "";
-    sig += (g_settings.showCountdown && g_settings.countdownLabel.length()) ? "C" : "";
-    sig += anyReminder() ? "R" : "";
-    sig += g_settings.showLKN ? "L" : "";
-    sig += g_settings.showFolly ? "O" : "";
-    if (sig == lastSig_) return;
-    lastSig_ = sig;
-
-    frameCount_ = 0;
-    if (g_settings.showCustomMessage && msgHasText()) frames_[frameCount_++] = M_MESSAGE;
-    if (g_settings.trackFlight && g_settings.flightIdent.length()) frames_[frameCount_++] = M_FLIGHT;
-    if (g_settings.planeLine.length()) frames_[frameCount_++] = M_PLANES;
-    if (g_settings.showWeather) frames_[frameCount_++] = M_WEATHER;
-    if (anyTeam()) {
-      teamFirstFrame_ = frameCount_;
-      int pages = (teamCount() + TEAMS_PER_PAGE - 1) / TEAMS_PER_PAGE;
-      for (int k = 0; k < pages && frameCount_ < MAX_FRAMES; k++)
-        frames_[frameCount_++] = M_SPORTS;
-    }
-    if (anyScore()) frames_[frameCount_++] = M_SCORES;
-    if (anyShow()) {
-      // Paginate: one carousel frame per page of shows so ANY number of shows
-      // displays cleanly (4 fit per 64px screen). Pages are consecutive, so all
-      // shows scroll by, 4 at a time, within one carousel rotation.
-      tvFirstFrame_ = frameCount_;
-      int pages = (showCount() + SHOWS_PER_PAGE - 1) / SHOWS_PER_PAGE;
-      for (int k = 0; k < pages && frameCount_ < MAX_FRAMES; k++)
-        frames_[frameCount_++] = M_TV;
-    }
-    if (anyStock()) frames_[frameCount_++] = M_STOCKS;
-    if (g_settings.showCountdown && g_settings.countdownLabel.length()) frames_[frameCount_++] = M_COUNTDOWN;
-    if (anyReminder()) frames_[frameCount_++] = M_REMINDERS;
-    if (g_settings.showLKN)   frames_[frameCount_++] = M_LKN;
-    if (g_settings.showFolly) frames_[frameCount_++] = M_FOLLY;
-    if (current_ >= frameCount_) current_ = 0;
-  }
 
   bool msgHasText() {
     return g_settings.msgLine1.length() || g_settings.msgLine2.length() ||
@@ -396,13 +489,16 @@ class DisplayManager {
   //            DSM -> CLT     <- route (adsbdb), or aircraft type
   //   4,775'    225mph   4.8mi
   void drawPlanes() {
-    String ident = g_settings.planeIdent;
-    if (!ident.length()) { drawPlanesSimple(); return; }
+    int slot = planeSlot(cur_.plane);
+    if (slot < 0) return;
+    const PlaneInfo &P = g_settings.planes[slot];
+    String ident = P.ident.length() ? P.ident : P.cs;
+    if (!P.airline.length() && !P.type.length() && P.alt < 0) { drawPlanesSimple(P); return; }
 
-    const LogoAsset *lg = g_settings.planeLogo.length()
-                              ? airlineLogo(g_settings.planeLogo) : nullptr;
+    const LogoAsset *lg = P.logo.length()
+                              ? airlineLogo(P.logo) : nullptr;
     if (lg) drawLogo(lg, 3, 4);
-    else if (g_settings.planeCode.length()) drawBadge(g_settings.planeCode, 3, 4, muted());
+    else if (P.code.length()) drawBadge(P.code, 3, 4, muted());
     else {
       // Private / GA aircraft: a small top-down plane glyph (nose right).
       uint16_t c = muted();
@@ -419,30 +515,30 @@ class DisplayManager {
     const int tx = 32, tw = width_ - tx - 2;           // 94px text column
     uint8_t sz = textW(ident, 2) <= tw ? 2 : 1;
     textAt(ident, tx, sz == 2 ? 4 : 8, softWhite(), sz);
-    String sub = g_settings.planeAirline.length() ? g_settings.planeAirline
-                                                  : g_settings.planeType;
+    String sub = P.airline.length() ? P.airline
+                                                  : P.type;
     textAt(fitWords(sub, tw / 6), tx, 21, muted());
 
     dma_->drawFastHLine(3, 32, width_ - 6, faint());
 
     String mid;
-    if (g_settings.planeFrom.length() && g_settings.planeTo.length())
-      mid = g_settings.planeFrom + " \x1A " + g_settings.planeTo;   // CP437 arrow
-    else if (g_settings.planeType.length() && g_settings.planeAirline.length())
-      mid = g_settings.planeType;
+    if (P.from.length() && P.to.length())
+      mid = P.from + " \x1A " + P.to;   // CP437 arrow
+    else if (P.type.length() && P.airline.length())
+      mid = P.type;
     if (mid.length()) centerText(mid, 37, routeBlue());
 
     // Stats row: three 42px columns, each centered.
     String cols[3];
-    if (g_settings.planeAlt >= 0) {
+    if (P.alt >= 0) {
       char b[12];
-      int a = g_settings.planeAlt;
+      int a = P.alt;
       if (a >= 1000) snprintf(b, sizeof(b), "%d,%03d'", a / 1000, a % 1000);
       else snprintf(b, sizeof(b), "%d'", a);
       cols[0] = b;
     }
-    if (g_settings.planeSpd >= 0) cols[1] = String(g_settings.planeSpd) + "mph";
-    if (g_settings.planeDist >= 0) cols[2] = String(g_settings.planeDist, 1) + "mi";
+    if (P.spd >= 0) cols[1] = String(P.spd) + "mph";
+    if (P.dist >= 0) cols[2] = String(P.dist, 1) + "mi";
     for (int k = 0; k < 3; k++) {
       if (!cols[k].length()) continue;
       int cx = k * 43 + 21;
@@ -451,13 +547,13 @@ class DisplayManager {
   }
 
   // Older backend/app (only line + code): calmer version of the original card.
-  void drawPlanesSimple() {
+  void drawPlanesSimple(const PlaneInfo &P) {
     centerText("OVERHEAD", 6, muted());
-    String code = g_settings.planeCode;
+    String code = P.code;
     const LogoAsset *lg = code.length() ? airlineLogo(code) : nullptr;
     if (lg) drawLogo(lg, (width_ - 24) / 2, 17);
     else if (code.length()) drawBadge(code, (width_ - 24) / 2, 17, muted());
-    String line = g_settings.planeLine;
+    String line = P.line;
     // "American Airlines 5.8mi" is 23 chars (138px): drop words from the
     // airline name until it fits, keeping the distance.
     int sp = line.lastIndexOf(' ');
@@ -548,7 +644,7 @@ class DisplayManager {
     int total = teamCount();
     if (total == 0) return;
     int pages = (total + TEAMS_PER_PAGE - 1) / TEAMS_PER_PAGE;
-    int page = current_ - teamFirstFrame_;
+    int page = cur_.idx;
     if (page < 0 || page >= pages) page = 0;
     int idxs[TEAMS_PER_PAGE], cnt = 0, seen = 0;
     for (int i = 0; i < 8 && cnt < TEAMS_PER_PAGE; i++) {
@@ -579,7 +675,7 @@ class DisplayManager {
     int total = showCount();
     if (total == 0) return;
     int pages = (total + SHOWS_PER_PAGE - 1) / SHOWS_PER_PAGE;
-    int page = current_ - tvFirstFrame_;
+    int page = cur_.idx;
     if (page < 0 || page >= pages) page = 0;
     int idxs[SHOWS_PER_PAGE], cnt = 0, seen = 0;
     for (int i = 0; i < 8 && cnt < SHOWS_PER_PAGE; i++) {
