@@ -21,6 +21,8 @@ AIRLINES = {
     "SKW": {"name": "SkyWest", "iata": "OO"},
     "ENY": {"name": "Envoy Air", "iata": "MQ"},
     "RPA": {"name": "Republic Airways", "iata": "YX"},
+    "PDT": {"name": "Piedmont Airlines", "iata": "PT"},
+    "MXY": {"name": "Breeze Airways", "iata": "MX"},
     "EDV": {"name": "Endeavor Air", "iata": "9E"},
     "JIA": {"name": "PSA Airlines", "iata": "OH"},
     "ASH": {"name": "Mesa Airlines", "iata": "YV"},
@@ -31,6 +33,7 @@ AIRLINES = {
     "ACA": {"name": "Air Canada", "iata": "AC"},
     "WJA": {"name": "WestJet", "iata": "WS"},
     "JZA": {"name": "Air Canada Jazz", "iata": "QK"},
+    "ROU": {"name": "Air Canada Rouge", "iata": "RV"},
     "AMX": {"name": "Aeromexico", "iata": "AM"},
     "VOI": {"name": "Volaris", "iata": "Y4"},
     # --- Europe ---
