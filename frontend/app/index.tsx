@@ -70,7 +70,7 @@ import {
 } from "@/src/services/ble";
 import { geocodeZip, type GeoResult } from "@/src/services/geocode";
 import { buildBlePayload } from "@/src/services/payload";
-import { SettingsSheet } from "@/src/components/SettingsSheet";
+import { SettingsSheet, type WallDiag } from "@/src/components/SettingsSheet";
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
 
@@ -155,6 +155,11 @@ export default function ControlPanel() {
   // which has no OTA and must be USB-flashed once), latest hosted build, and
   // the state of an in-progress "Install update".
   const [fwVersion, setFwVersion] = useState<string | null>(null);
+  // true once the post-connect version read finished (found or gave up)
+  const [fwChecked, setFwChecked] = useState(false);
+  const [fwRecheck, setFwRecheck] = useState(0);
+  // Last BLE "diag" reply (firmware 1.1.2+), shown in Display Settings.
+  const [diag, setDiag] = useState<WallDiag | null>(null);
   const [fwLatest, setFwLatest] = useState<{
     version: string;
     available: boolean;
@@ -783,7 +788,7 @@ export default function ControlPanel() {
   // if the panel's own fetch returns a stale/blank temp. Mirrors the panel's
   // own formatting (level to 1dp; "full" as the signed delta from full pond).
   useEffect(() => {
-    if (status !== "connected" || !settings.showLKN || !lakeData) return;
+    if (status !== "connected" || !fwChecked || !settings.showLKN || !lakeData) return;
     const d: any = lakeData;
     if (d.lvl == null) return;
     const lvl = Number(d.lvl).toFixed(1);
@@ -794,7 +799,7 @@ export default function ControlPanel() {
     }
     const w = d.w != null ? Math.round(Number(d.w)) : 0;
     writeLive({ command: "lake", lvl, full, w }).catch(() => {});
-  }, [status, settings.showLKN, lakeData]);
+  }, [status, fwChecked, settings.showLKN, lakeData]);
 
 
   // Auto full-sync whenever the phone (re)connects, so the wall always matches
@@ -823,6 +828,7 @@ export default function ControlPanel() {
     if (status !== "connected") return;
     monitorMatrix((obj) => {
       if (typeof obj?.fw === "string") setFwVersion(obj.fw);
+      if (obj?.diag) setDiag({ ...obj, at: Date.now() });
       if (typeof obj?.ota === "string") {
         if (obj.ota === "installing") {
           setOtaState("installing");
@@ -860,23 +866,35 @@ export default function ControlPanel() {
   useEffect(() => {
     if (status !== "connected") {
       setFwVersion(null);
+      setFwChecked(false);
       setOtaState("idle");
       return;
     }
+    // The firmware's {"ready","fw"} hello lives on the same characteristic the
+    // app writes to, and ESP32 BLE overwrites it with every write (e.g. the
+    // lake push that fires the moment we connect). So: read early, retry a few
+    // times, and treat "no fw seen" as UNKNOWN, not pre-1.1.
     let cancelled = false;
-    const t = setTimeout(async () => {
+    let tries = 0;
+    let t: ReturnType<typeof setTimeout>;
+    const attempt = async () => {
       const v: any = await readSettings();
       if (cancelled) return;
       if (typeof v?.fw === "string") {
         setFwVersion(v.fw);
+        setFwChecked(true);
         writeLive({ command: "version" }).catch(() => {});
+        return;
       }
-    }, 400);
+      if (++tries < 4) t = setTimeout(attempt, 600);
+      else setFwChecked(true); // give up: show "couldn't read" + Re-check
+    };
+    t = setTimeout(attempt, 150);
     return () => {
       cancelled = true;
       clearTimeout(t);
     };
-  }, [status]);
+  }, [status, fwRecheck]);
 
   // Ask the backend for the latest hosted firmware once we know the version.
   useEffect(() => {
@@ -967,6 +985,28 @@ export default function ControlPanel() {
       if (p) setLastPass(p);
     })();
   }, []);
+
+  // Display Settings → "Run diagnostics": ask the wall for its status. The
+  // reply arrives as a notify (handled by the monitor above); if that's lost,
+  // read the stored value back after ~700ms.
+  const runDiag = async () => {
+    if (!isConnected) return;
+    const sentAt = Date.now();
+    try {
+      await writeLive({ command: "diag" });
+    } catch {
+      return;
+    }
+    await new Promise((r) => setTimeout(r, 700));
+    const v: any = await readSettings();
+    if (v?.diag) setDiag({ ...v, at: Date.now() });
+    else
+      setDiag((d) => {
+        if (d?.at && d.at >= sentAt) return d; // notify already delivered it
+        toast.show("No diagnostics reply (wall firmware 1.1.2+ needed)", "info");
+        return d;
+      });
+  };
 
   const handleSaveWifi = async (ssid: string, password: string) => {
     if (!ssid.trim()) {
@@ -1730,11 +1770,20 @@ export default function ControlPanel() {
             <View testID="firmware-row" style={styles.fwRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.fwLabel}>
-                  {fwVersion ? `Firmware v${fwVersion}` : "Firmware: pre-1.1"}
+                  {fwVersion
+                    ? `Firmware v${fwVersion}`
+                    : fwChecked
+                      ? "Firmware: unknown"
+                      : "Firmware: checking…"}
                 </Text>
-                <Text style={styles.fwSub}>
+                <Text
+                  style={styles.fwSub}
+                  onPress={() => !fwVersion && fwChecked && (setFwChecked(false), setFwRecheck((n) => n + 1))}
+                >
                   {!fwVersion
-                    ? "No wireless updates yet. Flash v1.1 over USB once."
+                    ? fwChecked
+                      ? "Couldn't read the version. Tap to re-check (pre-1.1 walls need one USB flash)."
+                      : "Reading the wall's firmware…"
                     : fwNewer
                       ? `v${fwLatest?.version} is available`
                       : fwLatest?.available
@@ -2587,6 +2636,8 @@ export default function ControlPanel() {
         wifiStatus={wifiStatus}
         themeId={themeId}
         onSetTheme={setTheme}
+        diag={diag}
+        onRunDiag={runDiag}
       />
 
       {/* Device picker (multiple FlightWall- boards nearby) */}
