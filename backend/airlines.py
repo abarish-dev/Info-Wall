@@ -83,6 +83,7 @@ AIRLINES = {
     "GLO": {"name": "GOL", "iata": "G3"},
     "AVA": {"name": "Avianca", "iata": "AV"},
     "CMP": {"name": "Copa Airlines", "iata": "CM"},
+    "VXP": {"name": "Avelo", "iata": "XP"},
     # --- Private / charter jets (common around Charlotte) ---
     "EJA": {"name": "NetJets", "iata": "1I"},
     "NJE": {"name": "NetJets", "iata": None},
