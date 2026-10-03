@@ -620,6 +620,33 @@ def _next_event_from_schedule(sport: str, lg: str, abbr: str):
         return None
 
 
+_record_cache: dict = {}
+
+
+def _team_record(code: str, sport: str, lg: str, abbr: str):
+    """W-L record for the live path (which skips the team endpoint), so the
+    panel's "NYY 93-68" header doesn't go blank during a game. Cached 1h."""
+    import time as _time
+
+    prev = (_team_cache.get(code) or {}).get("data") or {}
+    if prev.get("record"):
+        return prev["record"]
+    hit = _record_cache.get(code)
+    if hit and _time.time() - hit["ts"] < 3600:
+        return hit["rec"]
+    rec = None
+    try:
+        r = requests.get(f"{_ESPN_BASE}/{sport}/{lg}/teams/{abbr.lower()}",
+                         headers=_ESPN_HEADERS, timeout=5)
+        r.raise_for_status()
+        items = ((r.json().get("team") or {}).get("record") or {}).get("items") or []
+        rec = items[0].get("summary") if items else None
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("espn record failed %s: %s", code, exc)
+    _record_cache[code] = {"ts": _time.time(), "rec": rec}
+    return rec
+
+
 def _team_status_one(code: str) -> dict:
     import time as _time
 
@@ -662,8 +689,12 @@ def _team_status_one(code: str) -> dict:
             date=g.get("date"),
         )
         bits = " ".join(x for x in [f"{vs} {opp}", score_str, g["detail"]] if x)
-        data.update(highlight="live", label=f"🔴 {bits}".strip(), vs=vs,
-                    detail=g["detail"])
+        # ASCII only: the app forwards this label to the panel over BLE, and
+        # the panel's 5x7 font draws a UTF-8 emoji as 4 garbage glyphs. The
+        # app pill and the panel already show their own red "live" marker.
+        # Keep the team's record from the last non-live lookup if we have one.
+        data.update(highlight="live", label=bits.strip(), vs=vs,
+                    detail=g["detail"], record=_team_record(code, sport, lg, abbr))
         return data  # not cached — refreshes with the 60s scoreboard cache
 
     if g and g["state"] == "post":
@@ -777,7 +808,7 @@ def _team_status_one(code: str) -> dict:
 
             if state == "in":
                 bits = " ".join(x for x in [score_str, short] if x)
-                data.update(highlight="live", label=f"🔴 {opp} {bits}".strip())
+                data.update(highlight="live", label=f"{matchup} {bits}".strip())
             elif recent_final:
                 data.update(
                     highlight="recent", label=f"Final {score_str} {matchup}".strip()
