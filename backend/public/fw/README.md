@@ -22,7 +22,7 @@ After that, the app's **Install update** button updates the panel over Wi-Fi.
 4. Update `meta.json` so `version` matches Version.h exactly and `size` is the
    byte size of the .bin (`stat -c %s firmware.bin`):
    ```json
-   { "version": "1.1.1", "size": 1700000 }
+   { "version": "1.1.1", "size": 1700000, "sha256": "<sha256sum firmware.bin>" }
    ```
 5. Commit both files and redeploy. Check
    `<server>/api/firmware/latest?current=1.1.0`: it should return

@@ -6,4 +6,4 @@
 // you publish to backend/public/fw/ (see that folder's README).
 // ===========================================================================
 #pragma once
-#define INFOWALL_FW_VERSION "1.1.0"
+#define INFOWALL_FW_VERSION "1.1.1"

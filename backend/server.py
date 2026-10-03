@@ -1492,6 +1492,7 @@ def firmware_latest(current: str = ""):
         "available": has,
         "update": has and m.get("version", "") != (current or ""),
         "url": _FW_URL,
+        "sha256": m.get("sha256", ""),
     }
 
 
