@@ -64,6 +64,7 @@ inline void serializeSettings(JsonDocument &d) {
     d["trec"][i] = g_settings.teamRecord[i];
     d["tlbl"][i] = g_settings.teamLabel[i];
     d["thl"][i] = g_settings.teamHL[i];
+    d["tts"][i] = g_settings.teamTs[i];
     d["slbl"][i] = g_settings.showLabel[i];
   }
   for (int i = 0; i < 4; i++) {
@@ -119,6 +120,7 @@ inline void applySettings(JsonDocument &d) {
     g_settings.teamRecord[i] = (const char *)(d["trec"][i] | "");
     g_settings.teamLabel[i] = (const char *)(d["tlbl"][i] | "");
     g_settings.teamHL[i] = (const char *)(d["thl"][i] | "");
+    g_settings.teamTs[i] = d["tts"][i] | (uint32_t)0;
     g_settings.showLabel[i] = (const char *)(d["slbl"][i] | "");
   }
   for (int i = 0; i < 4; i++) {
@@ -137,7 +139,7 @@ inline void loadSettings() {
     Serial.println("[NVS] no saved config — using defaults");
     return;
   }
-  JsonDocument d;
+  PSRAM_JSON(d);
   if (deserializeJson(d, blob) == DeserializationError::Ok) {
     applySettings(d);
     Serial.println("[NVS] restored saved config");
@@ -156,7 +158,7 @@ inline void maybeSaveSettings() {
   }
   if (pending && millis() - lastChange > 1500) {
     pending = false;
-    JsonDocument d;
+    PSRAM_JSON(d);
     serializeSettings(d);
     String blob;
     serializeJson(d, blob);

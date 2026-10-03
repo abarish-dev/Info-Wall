@@ -22,6 +22,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include "Version.h"
+#include "PsramJson.h"
 
 // --- Must match the app exactly -------------------------------------------
 static const char *SERVICE_UUID        = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
@@ -112,6 +113,7 @@ struct MatrixSettings {
   int    marketCount = 0;
   String marketStatus = "";     // "Open" | "Pre-mkt" | "After hrs" | "Closed"
   String teamShort[8];          // compact <=16-char status ("Sat 7:05p @ TB")
+  uint32_t teamTs[8] = {0};     // epoch when teamLabel/teamShort were last set (0 = unknown)
 
   // Wi-Fi self-fetch (panel pulls its own live data; no phone required)
   String apiBase        = "";   // e.g. "https://<host>"  (set via BLE "server")
@@ -155,6 +157,7 @@ class BLEController {
   volatile bool flashRequested = false;
   volatile bool scoreFlashRequested = false;
   volatile bool otaRequested = false;   // BLE "ota": check + install update
+  volatile bool diagRequested = false;  // BLE "diag": loop() notifies a status JSON
   volatile bool planesPushed = false;   // phone pushed a nearest plane (fallback)
   PlaneInfo pushedPlane;
   String flashAbbr;
@@ -166,6 +169,26 @@ class BLEController {
   BLEServer         *server_ = nullptr;
   BLECharacteristic *ch_     = nullptr;
   bool               connected_ = false;
+  // What a READ of the characteristic should return. The BLE stack stores
+  // every incoming WRITE as the characteristic value (before onWrite runs),
+  // which used to wipe the {"fw":...} hello — the app then read back its own
+  // command and showed the firmware as "pre-1.1". onWrite restores this.
+  String             lastValue_;
+
+  // Make sure a stored JSON object always carries "fw" so a READ at any
+  // moment tells the app which firmware this is.
+  static String withFw(const String &json) {
+    if (!json.startsWith("{") || json.indexOf("\"fw\"") >= 0) return json;
+    String body = json.substring(1);
+    body.trim();
+    String o = "{\"fw\":\"" INFOWALL_FW_VERSION "\"";
+    if (!body.startsWith("}")) o += ",";
+    return o + body;
+  }
+  void store(const String &json) {
+    lastValue_ = withFw(json);
+    if (ch_) ch_->setValue((uint8_t *)lastValue_.c_str(), lastValue_.length());
+  }
 
   void handleJson(const String &raw);
   friend class CharCallbacks;
@@ -182,10 +205,7 @@ class ServerCallbacks : public BLEServerCallbacks {
     // Let the app READ which firmware this is right after connecting (before
     // it sends anything). Firmware older than 1.1.0 never exposes "fw", which
     // is how the app knows not to send "version"/"ota" to it.
-    if (g_ble.ch_) {
-      static const char *hello = "{\"ready\":true,\"fw\":\"" INFOWALL_FW_VERSION "\"}";
-      g_ble.ch_->setValue((uint8_t *)hello, strlen(hello));
-    }
+    g_ble.store("{\"ready\":true,\"fw\":\"" INFOWALL_FW_VERSION "\"}");
   }
   void onDisconnect(BLEServer *s) override {
     g_ble.connected_ = false;
@@ -203,6 +223,9 @@ class CharCallbacks : public BLECharacteristicCallbacks {
     Serial.print("[BLE] rx: ");
     Serial.println(raw);
     g_ble.handleJson(raw);
+    // Undo the stack's "value = what was just written": put back the last
+    // status/hello (always with "fw"), or the read-back echo set by a sync.
+    g_ble.store(g_ble.lastValue_);
   }
 };
 
@@ -225,10 +248,7 @@ inline void BLEController::begin() {
           BLECharacteristic::PROPERTY_NOTIFY);
   ch_->addDescriptor(new BLE2902());   // enables notifications
   ch_->setCallbacks(new CharCallbacks());
-  {
-    static const char *hello = "{\"ready\":true,\"fw\":\"" INFOWALL_FW_VERSION "\"}";
-    ch_->setValue((uint8_t *)hello, strlen(hello));
-  }
+  store("{\"ready\":true,\"fw\":\"" INFOWALL_FW_VERSION "\"}");
 
   service->start();
 
@@ -246,7 +266,7 @@ inline void BLEController::notify(const String &json) {
   // ALWAYS store the value so the app can READ it back as a fallback, even if
   // the BLE link briefly dropped when Wi-Fi started (radio coexistence) and
   // the live notification below was lost.
-  ch_->setValue((uint8_t *)json.c_str(), json.length());
+  store(json);
   if (connected_) {
     ch_->notify();
     Serial.print("[BLE] tx: ");
@@ -260,7 +280,7 @@ inline void BLEController::notify(const String &json) {
 // ---------------------------------------------------------------------------
 // Parse one incoming JSON object and update g_settings. No reboot required.
 inline void BLEController::handleJson(const String &raw) {
-  JsonDocument doc;
+  PSRAM_JSON(doc);
   DeserializationError err = deserializeJson(doc, raw);
   if (err) {
     Serial.print("[JSON] parse error: ");
@@ -349,6 +369,10 @@ inline void BLEController::handleJson(const String &raw) {
       g_settings.teamRecord[i] = (const char *)(doc[rk] | "");
       g_settings.teamLabel[i] = (const char *)(doc[lk] | "");
       g_settings.teamHL[i] = (const char *)(doc[hk] | "");
+      // The phone's label is newer than any compact Wi-Fi label; drop that so
+      // the display doesn't prefer a stale teamShort over it.
+      g_settings.teamShort[i] = "";
+      g_settings.teamTs[i] = g_settings.teamLabel[i].length() ? (uint32_t)time(nullptr) : 0;
     }
 
   } else if (strcmp(cmd, "showdetails") == 0) {
@@ -469,6 +493,11 @@ inline void BLEController::handleJson(const String &raw) {
     notify("{\"fw\":\"" INFOWALL_FW_VERSION "\"}");
     return;
 
+  } else if (strcmp(cmd, "diag") == 0) {
+    // App's diagnostics view. Built + notified from loop() (needs NetworkData).
+    diagRequested = true;
+    return;
+
   } else if (strcmp(cmd, "ota") == 0) {
     // App's "Install update" button. Runs in loop() (HTTPS + flash write must
     // not happen inside the BLE callback).
@@ -511,7 +540,7 @@ inline void BLEController::handleJson(const String &raw) {
       g_settings.stocks[i] = (const char *)(doc[sk] | "");
     }
     // Optional read-back so the app shows "confirmed": echo the same JSON.
-    if (ch_) ch_->setValue((uint8_t *)raw.c_str(), raw.length());
+    store(raw);
   }
 
   // Persist the latest config to flash (debounced in loop) and redraw so

@@ -175,6 +175,7 @@ class DisplayManager {
   }
 
  private:
+  static const uint32_t kTeamLabelStaleSec = 3 * 3600;  // saved team label max age
   enum Module { M_MARKETS, M_MESSAGE, M_FLIGHT, M_PLANES, M_WEATHER, M_SPORTS, M_SCORES,
                 M_TV, M_STOCKS, M_COUNTDOWN, M_REMINDERS, M_LKN, M_FOLLY };
 
@@ -630,6 +631,28 @@ class DisplayManager {
     String hl = g_settings.teamHL[i];
     String k = g_settings.teamShort[i];
     if (!k.length()) k = g_settings.teamLabel[i];   // older backend
+    // The font is ASCII-only: drop any multi-byte (emoji/UTF-8) bytes rather
+    // than drawing them as garbage glyphs.
+    {
+      String a;
+      for (unsigned j = 0; j < k.length(); j++)
+        if ((uint8_t)k[j] >= 0x20 && (uint8_t)k[j] < 0x7F) a += k[j];
+      a.trim();
+      k = a;
+    }
+    // A saved label is only trustworthy for a few hours ("Top 4th" from last
+    // night must not look live). With a valid clock, an untimestamped or
+    // >3h-old label is replaced by a faint "--" until fresh data arrives.
+    bool stale = false;
+    time_t nowT = time(nullptr);
+    if (nowT > 1600000000 && k.length()) {
+      uint32_t ts = g_settings.teamTs[i];
+      if (ts == 0 || (uint32_t)nowT - ts > kTeamLabelStaleSec) stale = true;
+    }
+    if (stale) {
+      textAt("--", tx, y + 14, faint());
+      return;
+    }
     if (!k.length()) k = "--";
     uint16_t c = muted();
     int x = tx;
