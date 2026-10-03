@@ -544,6 +544,86 @@ def _to_int(v):
         return None
 
 
+def _live_detail(sport: str, status: dict) -> str:
+    """Compact, ASCII game-state for a LIVE game, sized for the panel's ~16-char
+    team row. Built from ESPN's status object (period/clock/type) with the
+    shortDetail text as fallback.
+      MLB:      T6 / B6 / M5 (middle) / E5 (end), DLY
+      NHL:      P2 4:12, INT1 (intermission), OT 3:10, 2OT, SO
+      NFL/NBA:  Q3 4:12, HALF, END Q1, OT 2:00
+    """
+    import re
+
+    st = status or {}
+    t = st.get("type") or {}
+    short = (t.get("shortDetail") or "").strip()
+    name = (t.get("name") or "").upper()
+    low = short.lower()
+    try:
+        per = int(st.get("period") or 0)
+    except (TypeError, ValueError):
+        per = 0
+    clock = (st.get("displayClock") or "").strip()
+    if clock in ("0:00", "0.0", "00:00"):
+        clock = ""
+
+    if "DELAY" in name or "delay" in low:
+        return "DLY"
+    if "SUSPEND" in name or "suspend" in low:
+        return "SUSP"
+
+    if sport == "baseball":
+        m = re.match(r"^(top|bot|bottom|mid|middle|end)\w*\s+(?:of\s+)?(?:the\s+)?(\d+)", low)
+        if m:
+            return {"t": "T", "b": "B", "m": "M", "e": "E"}[m.group(1)[0]] + m.group(2)
+        return short.replace(" - ", " ")[:8]
+
+    if sport == "hockey":
+        if "SHOOTOUT" in name or "shootout" in low or re.search(r"\bso\b", low):
+            return "SO"
+        reg = 3
+        if per > reg:
+            n = per - reg
+            pl = "OT" if n == 1 else f"{n}OT"
+        else:
+            pl = f"P{per}" if per else ""
+        if "END" in name or low.startswith("end") or "intermission" in low:
+            return f"INT{per}" if 0 < per < reg else f"END {pl}".strip()
+        return f"{pl} {clock}".strip() or short.replace(" - ", " ")
+
+    if sport in ("football", "basketball"):
+        if "HALFTIME" in name or "halftime" in low:
+            return "HALF"
+        reg = 4
+        if per > reg:
+            n = per - reg
+            pl = "OT" if n == 1 else f"{n}OT"
+        else:
+            pl = f"Q{per}" if per else ""
+        if "END" in name or low.startswith("end"):
+            return f"END {pl}".strip()
+        return f"{pl} {clock}".strip() or short.replace(" - ", " ")
+
+    return short.replace(" - ", " ")
+
+
+def _live_label(vs: str, opp, score_str: str, det: str, limit: int = 16) -> str:
+    """Live team label that always fits `limit` chars: drops the "@"/"vs",
+    then the opponent, before ever truncating."""
+    opp = opp or ""
+    cands = [
+        f"{vs} {opp} {score_str} {det}",
+        f"{opp} {score_str} {det}",
+        f"{score_str} {det}",
+        f"{score_str}",
+    ]
+    for c in cands:
+        c = " ".join(c.split())
+        if c and len(c) <= limit:
+            return c
+    return " ".join(cands[-1].split())[:limit] or "LIVE"
+
+
 def _scoreboard_map(sport: str, lg: str) -> dict:
     """abbr -> live/final game info from the league scoreboard (60s cache)."""
     import time as _time
@@ -576,6 +656,7 @@ def _scoreboard_map(sport: str, lg: str) -> dict:
                 m[ab.upper()] = {
                     "state": state,
                     "detail": detail,
+                    "cdet": _live_detail(sport, comp.get("status") or {}) if state == "in" else "",
                     "score": _to_int(c.get("score")),
                     "opp": (oc.get("team") or {}).get("abbreviation"),
                     "oppScore": _to_int(oc.get("score")),
@@ -692,9 +773,14 @@ def _team_status_one(code: str) -> dict:
         # ASCII only: the app forwards this label to the panel over BLE, and
         # the panel's 5x7 font draws a UTF-8 emoji as 4 garbage glyphs. The
         # app pill and the panel already show their own red "live" marker.
+        # `label` is what the app pushes to the panel, so it must fit the
+        # ~16-char team row ("@ TB 0-1 E5"); `labelLong` is the readable form
+        # for the app's own UI ("@ TB 0-1 End 5th").
         # Keep the team's record from the last non-live lookup if we have one.
-        data.update(highlight="live", label=bits.strip(), vs=vs,
-                    detail=g["detail"], record=_team_record(code, sport, lg, abbr))
+        cdet = g.get("cdet") or ""
+        data.update(highlight="live", label=_live_label(vs, opp, score_str, cdet),
+                    labelLong=bits.strip(), vs=vs, detail=g["detail"], cdet=cdet,
+                    record=_team_record(code, sport, lg, abbr))
         return data  # not cached — refreshes with the 60s scoreboard cache
 
     if g and g["state"] == "post":
@@ -808,7 +894,10 @@ def _team_status_one(code: str) -> dict:
 
             if state == "in":
                 bits = " ".join(x for x in [score_str, short] if x)
-                data.update(highlight="live", label=f"{matchup} {bits}".strip())
+                cdet = _live_detail(sport, comp.get("status") or {})
+                data.update(highlight="live", cdet=cdet,
+                            label=_live_label(vs, opp, score_str, cdet),
+                            labelLong=f"{matchup} {bits}".strip())
             elif recent_final:
                 data.update(
                     highlight="recent", label=f"Final {score_str} {matchup}".strip()
@@ -988,6 +1077,8 @@ def _compact_team_label(s: dict, limit: int = 16) -> str:
 
     if hl == "live":
         sc = f"{my}-{op}" if my is not None and op is not None else ""
+        if s.get("cdet") is not None:
+            return _live_label(vs, opp, sc, s.get("cdet") or "", limit)
         det = (s.get("detail") or "").replace(" - ", " ")
         return fit(f"{sc} {det}", f"{sc} {mt}", sc or "LIVE")
     if hl == "recent":
