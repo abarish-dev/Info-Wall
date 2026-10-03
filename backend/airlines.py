@@ -31,6 +31,7 @@ AIRLINES = {
     "ACA": {"name": "Air Canada", "iata": "AC"},
     "WJA": {"name": "WestJet", "iata": "WS"},
     "JZA": {"name": "Air Canada Jazz", "iata": "QK"},
+    "ROU": {"name": "Air Canada Rouge", "iata": "RV"},
     "AMX": {"name": "Aeromexico", "iata": "AM"},
     "VOI": {"name": "Volaris", "iata": "Y4"},
     # --- Europe ---

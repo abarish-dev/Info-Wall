@@ -1039,6 +1039,7 @@ _BRAND_LOGO = {
     "JIA": "AAL", "PDT": "AAL", "ENY": "AAL", "ASH": "AAL",
     "EDV": "DAL", "CPZ": "DAL", "GJS": "UAL", "UCA": "UAL", "AWI": "UAL",
     "QXE": "ASA",
+    "JZA": "ACA", "ROU": "ACA",  # Air Canada Jazz / Rouge
 }
 _route_cache: dict = {}
 _ROUTE_TTL = 6 * 3600
