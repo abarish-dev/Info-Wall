@@ -1036,7 +1036,9 @@ def device_quotes(symbols: str):
 # Regional carriers fly under a mainline brand; show that brand's logo on the
 # panel (e.g. PSA / Piedmont / Envoy -> American). Keys are ICAO prefixes.
 _BRAND_LOGO = {
-    "JIA": "AAL", "PDT": "AAL", "ENY": "AAL", "ASH": "AAL",
+    # PSA (JIA), Piedmont (PDT) and Envoy (ENY) now have their own logos
+    # on the panel, so only regionals without one fall back to the mainline.
+    "ASH": "AAL",
     "EDV": "DAL", "CPZ": "DAL", "GJS": "UAL", "UCA": "UAL", "AWI": "UAL",
     "QXE": "ASA",
     "JZA": "ACA", "ROU": "ACA",  # Air Canada Jazz / Rouge
