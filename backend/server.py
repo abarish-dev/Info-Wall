@@ -1371,26 +1371,39 @@ LKN_TEMP_SITE = "0214264790"  # Catawba R above NC-73 at Cowans Ford (LKN dam)
 
 
 def _lake_water_temp() -> int | None:
-    try:
-        r = requests.get(
-            USGS_IV,
-            params={
-                "format": "json",
-                "sites": LKN_TEMP_SITE,
-                "parameterCd": "00010",  # water temperature, °C
-                "siteStatus": "active",
-            },
-            timeout=8,
-        )
-        r.raise_for_status()
-        ts = r.json()["value"]["timeSeries"]
-        for series in ts:
-            vals = series["values"][0]["value"]
-            if vals:
-                c = float(vals[-1]["value"])
-                return int(round(c * 9 / 5 + 32))
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("lake water temp failed: %s", exc)
+    """Latest Lake Norman water temp (F) from USGS. USGS intermittently 503s
+    or returns an empty latest value, so try twice, then fall back to the
+    last reading within the past 2 days (period=P2D)."""
+    import time as _time
+
+    attempts = (
+        {"siteStatus": "active"},
+        {"siteStatus": "active"},
+        {"period": "P2D"},
+    )
+    for i, extra in enumerate(attempts):
+        try:
+            r = requests.get(
+                USGS_IV,
+                params={
+                    "format": "json",
+                    "sites": LKN_TEMP_SITE,
+                    "parameterCd": "00010",  # water temperature, degrees C
+                    **extra,
+                },
+                timeout=5,
+            )
+            r.raise_for_status()
+            for series in r.json()["value"]["timeSeries"]:
+                vals = [v for v in series["values"][0]["value"]
+                        if v.get("value") not in (None, "", "-999999")]
+                if vals:
+                    c = float(vals[-1]["value"])
+                    return int(round(c * 9 / 5 + 32))
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("lake water temp attempt %d failed: %s", i + 1, exc)
+        if i == 0:
+            _time.sleep(0.7)
     return None
 
 
@@ -1429,10 +1442,11 @@ def device_lake():
     out = {"lvl": lvl, "tgt": tgt, "full": full, "w": w}
     # Don't cache a failed cold-cache fetch (would blank the module for the TTL).
     if lvl is not None:
-        # If we still have no water temp, expire sooner (~5 min) so it retries
-        # instead of serving a blank temp for the full hour.
-        ts = _time.time() if w is not None else _time.time() - 3300
-        _lake_cache["d"] = {"ts": ts, "data": out}
+        # A response without a water temp is NOT cached: the panel fetches the
+        # lake only hourly and `w: null` blanks its WATER line, so every request
+        # should retry USGS until it gets a real reading.
+        if w is not None:
+            _lake_cache["d"] = {"ts": _time.time(), "data": out}
     return out
 
 # ---------------------------------------------------------------------------
