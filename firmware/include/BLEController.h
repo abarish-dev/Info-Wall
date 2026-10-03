@@ -185,9 +185,20 @@ class BLEController {
     if (!body.startsWith("}")) o += ",";
     return o + body;
   }
+  // Called from both the BLE task (onWrite/onConnect) and loop() (notify),
+  // so the shared String is guarded by a mutex.
+  SemaphoreHandle_t valueLock_ = nullptr;
   void store(const String &json) {
-    lastValue_ = withFw(json);
+    String v = withFw(json);
+    if (valueLock_) xSemaphoreTake(valueLock_, portMAX_DELAY);
+    lastValue_ = v;
     if (ch_) ch_->setValue((uint8_t *)lastValue_.c_str(), lastValue_.length());
+    if (valueLock_) xSemaphoreGive(valueLock_);
+  }
+  void restoreValue() {
+    if (valueLock_) xSemaphoreTake(valueLock_, portMAX_DELAY);
+    if (ch_) ch_->setValue((uint8_t *)lastValue_.c_str(), lastValue_.length());
+    if (valueLock_) xSemaphoreGive(valueLock_);
   }
 
   void handleJson(const String &raw);
@@ -225,7 +236,7 @@ class CharCallbacks : public BLECharacteristicCallbacks {
     g_ble.handleJson(raw);
     // Undo the stack's "value = what was just written": put back the last
     // status/hello (always with "fw"), or the read-back echo set by a sync.
-    g_ble.store(g_ble.lastValue_);
+    g_ble.restoreValue();
   }
 };
 
@@ -236,6 +247,7 @@ inline void BLEController::begin() {
   char name[24];
   snprintf(name, sizeof(name), "InfoWall-%04X", (uint16_t)(chip & 0xFFFF));
 
+  if (!valueLock_) valueLock_ = xSemaphoreCreateMutex();
   BLEDevice::init(name);
   server_ = BLEDevice::createServer();
   server_->setCallbacks(new ServerCallbacks());
