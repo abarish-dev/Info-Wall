@@ -1042,6 +1042,7 @@ _BRAND_LOGO = {
     "EDV": "DAL", "CPZ": "DAL", "GJS": "UAL", "UCA": "UAL", "AWI": "UAL",
     "QXE": "ASA",
     "JZA": "ACA", "ROU": "ACA",  # Air Canada Jazz / Rouge
+    "NJE": "EJA", "XOJ": "VJT",  # NetJets Europe, XOJET (VistaJet US)
 }
 _route_cache: dict = {}
 _ROUTE_TTL = 6 * 3600
