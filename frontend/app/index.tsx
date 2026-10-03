@@ -172,6 +172,14 @@ export default function ControlPanel() {
   const [recentZips, setRecentZips] = useState<string[]>([]);
   const [reconnecting, setReconnecting] = useState(false);
   const [reconnectFailed, setReconnectFailed] = useState(false);
+  // Latest status for async callbacks (a failed auto-reconnect must not
+  // clobber a connection the user made meanwhile).
+  const statusRef = useRef(status);
+  statusRef.current = status;
+  // Any successful connection clears a stale "Reconnect failed" pill.
+  useEffect(() => {
+    if (status === "connected") setReconnectFailed(false);
+  }, [status]);
   const [mapOpen, setMapOpen] = useState(false);
   const [mapZoom, setMapZoom] = useState(11);
   const [mapType, setMapType] = useState<"streets" | "satellite">("streets");
@@ -391,8 +399,12 @@ export default function ControlPanel() {
       setDevice({ name: info.name, rssi: info.rssi });
       toast.show(`Reconnected to ${info.name}`, "success");
     } catch {
-      setStatus("disconnected");
-      setReconnectFailed(true);
+      // If another connect (manual tap, or the BLE stack) already got us
+      // connected, this failure is moot: keep the connection, no pill.
+      if (statusRef.current !== "connected") {
+        setStatus("disconnected");
+        setReconnectFailed(true);
+      }
     } finally {
       setReconnecting(false);
     }
@@ -827,6 +839,7 @@ export default function ControlPanel() {
   useEffect(() => {
     if (status !== "connected") return;
     monitorMatrix((obj) => {
+      setReconnectFailed(false); // the wall is talking to us
       if (typeof obj?.fw === "string") setFwVersion(obj.fw);
       if (obj?.diag) setDiag({ ...obj, at: Date.now() });
       if (typeof obj?.ota === "string") {
@@ -880,6 +893,7 @@ export default function ControlPanel() {
     const attempt = async () => {
       const v: any = await readSettings();
       if (cancelled) return;
+      if (v) setReconnectFailed(false);
       if (typeof v?.fw === "string") {
         setFwVersion(v.fw);
         setFwChecked(true);
@@ -1501,6 +1515,7 @@ export default function ControlPanel() {
         `${payload.radius} mi · ${teamCount} teams · ${showCount} shows · ` +
         `${payload.showWeather ? `wx ${payload.lat.toFixed(2)},${payload.lon.toFixed(2)}` : "wx off"} · ` +
         `${payload.trackFlight && payload.flightIdent ? `flight ${payload.flightIdent}` : "no flight"}`;
+      if (confirmed) setReconnectFailed(false);
       const record = { at: nowIso, summary };
       setLastSync(record);
       storage.setItem(LAST_SYNC_KEY, record);
@@ -1674,7 +1689,7 @@ export default function ControlPanel() {
                 </Text>
               </View>
             )}
-            {!reconnecting && reconnectFailed && (
+            {!reconnecting && reconnectFailed && status !== "connected" && (
               <Pressable
                 testID="reconnect-retry"
                 onPress={attemptReconnect}
