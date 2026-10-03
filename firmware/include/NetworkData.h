@@ -66,6 +66,7 @@ class NetworkData {
     if (due(now, tScores_, 30000))       { fetchScores();  tLastFetch_ = now; return; }
     if (due(now, tPlanes_, 30000))       { fetchPlanes();  tLastFetch_ = now; return; }
     if (due(now, tQuotes_, 120000))      { fetchQuotes();  tLastFetch_ = now; return; }
+    if (g_settings.showMarkets && due(now, tMarkets_, 60000)) { fetchMarkets(); tLastFetch_ = now; return; }
     if (due(now, tWeather_, 900000))     { fetchWeather(); tLastFetch_ = now; return; }
     if (due(now, tFolly_, 1800000))      { fetchFolly();   tLastFetch_ = now; return; }
     if (due(now, tLake_, 3600000))       { fetchLake();    tLastFetch_ = now; return; }
@@ -74,7 +75,7 @@ class NetworkData {
 
  private:
   unsigned long tScores_ = 0, tQuotes_ = 0, tWeather_ = 0, tPlanes_ = 0, tTv_ = 0;
-  unsigned long tFolly_ = 0, tLake_ = 0;
+  unsigned long tFolly_ = 0, tLake_ = 0, tMarkets_ = 0;
   unsigned long tLastFetch_ = 0;
   bool clockSynced_ = false;   // NTP started once Wi-Fi is up (any path)
   bool clockValid_ = false;    // RTC actually holds a real time (NTP or HTTP)
@@ -186,6 +187,7 @@ class NetworkData {
       g_settings.teamLabel[slot]  = (const char *)(e["l"] | "");
       g_settings.teamRecord[slot] = (const char *)(e["r"] | "");
       g_settings.teamHL[slot]     = (const char *)(e["h"] | "");
+      g_settings.teamShort[slot]  = (const char *)(e["k"] | "");
       // On-device SCORE flash: a live team's score went up since last check.
       if (strcmp(g_settings.teamHL[slot].c_str(), "live") == 0 && !e["s"].isNull()) {
         float sc = e["s"].as<float>();
@@ -248,20 +250,55 @@ class NetworkData {
              g_settings.lat, g_settings.lon, g_settings.radius);
     JsonDocument doc;
     if (!getJson(path, doc)) return;
-    JsonArray p = doc["p"].as<JsonArray>();
-    if (p.size() > 0) {
-      JsonVariant f = p[0];
-      String al = (const char *)(f["al"] | "");
-      String cs = (const char *)(f["f"] | "");
-      String ia = (const char *)(f["ia"] | "");
-      g_settings.planeCode = ia;
-      g_settings.planeLine = (al.length() ? al : cs);
-      if (!f["d"].isNull())
-        g_settings.planeLine += " " + String(f["d"].as<float>(), 1) + "mi";
-    } else {
-      g_settings.planeLine = "";
-      g_settings.planeCode = "";
+    PlaneInfo list[6];
+    int n = 0;
+    for (JsonVariant f : doc["p"].as<JsonArray>()) {
+      if (n >= 6) break;
+      PlaneInfo &p = list[n];
+      p.cs = (const char *)(f["f"] | "");
+      if (!p.cs.length()) continue;
+      p.ident   = (const char *)(f["fn"] | (f["f"] | ""));
+      p.airline = (const char *)(f["al"] | "");
+      p.code    = (const char *)(f["ia"] | "");
+      p.logo    = (const char *)(f["lg"] | (f["ia"] | ""));
+      p.from    = (const char *)(f["fr"] | "");
+      p.to      = (const char *)(f["to"] | "");
+      p.type    = (const char *)(f["typ"] | "");
+      p.alt     = f["alt"].isNull() ? -1 : f["alt"].as<int>();
+      p.spd     = f["spd"].isNull() ? -1 : f["spd"].as<int>();
+      p.dist    = f["d"].isNull() ? -1.0f : f["d"].as<float>();
+      p.line    = (p.airline.length() ? p.airline : p.cs);
+      if (p.dist >= 0) p.line += " " + String(p.dist, 1) + "mi";
+      n++;
     }
+    g_settings.planesFetchMs = millis() | 1;
+    // Replaces the in-range list; new callsigns interrupt the rotation once,
+    // gone ones drop out of the cycle immediately.
+    g_display.notePlanes(list, n);
+  }
+
+  void fetchMarkets() {
+    JsonDocument doc;
+    if (!getJson("/api/device/markets", doc)) return;
+    int n = 0;
+    for (JsonVariant m : doc["m"].as<JsonArray>()) {
+      if (n >= 3) break;
+      MarketInfo &mi = g_settings.markets[n];
+      mi.name = (const char *)(m["n"] | "");
+      if (m["v"].isNull()) continue;
+      mi.value = m["v"].as<float>();
+      mi.hasPct = !m["c"].isNull();
+      mi.pct = mi.hasPct ? m["c"].as<float>() : 0.0f;
+      mi.base = m["b"].isNull() ? -1 : m["b"].as<int>();
+      mi.sparkLen = 0;
+      for (JsonVariant v : m["sp"].as<JsonArray>()) {
+        if (mi.sparkLen >= 34) break;
+        mi.spark[mi.sparkLen++] = (int8_t)(v.as<int>());
+      }
+      n++;
+    }
+    g_settings.marketCount = n;
+    g_settings.marketStatus = (const char *)(doc["st"] | "");
   }
 
   void fetchFolly() {

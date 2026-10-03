@@ -151,6 +151,17 @@ export default function ControlPanel() {
     rssi: number | null;
   } | null>(null);
   const [flashing, setFlashing] = useState(false);
+  // Firmware version the panel reports over BLE (null = pre-1.1 firmware,
+  // which has no OTA and must be USB-flashed once), latest hosted build, and
+  // the state of an in-progress "Install update".
+  const [fwVersion, setFwVersion] = useState<string | null>(null);
+  const [fwLatest, setFwLatest] = useState<{
+    version: string;
+    available: boolean;
+  } | null>(null);
+  const [otaState, setOtaState] = useState<
+    "idle" | "checking" | "installing" | "uptodate" | "failed"
+  >("idle");
   const [geo, setGeo] = useState<GeoResult | null>(null);
   const [geoLoading, setGeoLoading] = useState(false);
   const [recentZips, setRecentZips] = useState<string[]>([]);
@@ -728,7 +739,15 @@ export default function ControlPanel() {
           if (f.d != null) line += ` ${f.d}mi`;
           code = f.ia || "";
         }
-        if (!cancelled) await writeLive({ command: "planes", line, code });
+        // Rich fields for the 1.1+ flight card (older firmware ignores them).
+        const rich = f
+          ? {
+              f: f.f, fn: f.fn, al: f.al, lg: f.lg, fr: f.fr, to: f.to,
+              typ: f.typ, alt: f.alt, spd: f.spd, d: f.d,
+            }
+          : {};
+        if (!cancelled)
+          await writeLive({ command: "planes", line, code, ...rich });
       } catch {
         /* panel can try its own fetch */
       }
@@ -803,6 +822,24 @@ export default function ControlPanel() {
   useEffect(() => {
     if (status !== "connected") return;
     monitorMatrix((obj) => {
+      if (typeof obj?.fw === "string") setFwVersion(obj.fw);
+      if (typeof obj?.ota === "string") {
+        if (obj.ota === "installing") {
+          setOtaState("installing");
+          toast.show(`Installing v${obj.version ?? ""}, the wall will reboot`, "success");
+        } else if (obj.ota === "uptodate") {
+          setOtaState("uptodate");
+          toast.show("Wall firmware is up to date", "success");
+        } else if (obj.ota === "failed" || obj.ota === "offline") {
+          setOtaState("failed");
+          toast.show(
+            obj.ota === "offline"
+              ? "Wall isn't on Wi-Fi, so it can't update"
+              : "Update failed. Try again in a minute.",
+            "error",
+          );
+        }
+      }
       const ws = obj?.wifiStatus ?? obj?.wifi_status;
       if (ws === "connected" || ws === true) {
         wifiPollRef.current++; // cancel any in-flight poll
@@ -815,6 +852,43 @@ export default function ControlPanel() {
     });
     return () => stopMonitor();
   }, [status]);
+
+  // Detect the panel's firmware right after connecting. 1.1+ firmware leaves
+  // {"ready":true,"fw":"x.y.z"} on the characteristic. Older firmware doesn't,
+  // and treats unknown commands as a full sync that blanks its lists, so we
+  // only send "version"/"ota" once we've seen a fw value.
+  useEffect(() => {
+    if (status !== "connected") {
+      setFwVersion(null);
+      setOtaState("idle");
+      return;
+    }
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      const v: any = await readSettings();
+      if (cancelled) return;
+      if (typeof v?.fw === "string") {
+        setFwVersion(v.fw);
+        writeLive({ command: "version" }).catch(() => {});
+      }
+    }, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [status]);
+
+  // Ask the backend for the latest hosted firmware once we know the version.
+  useEffect(() => {
+    if (!fwVersion) return;
+    const base = process.env.EXPO_PUBLIC_BACKEND_URL ?? "";
+    fetch(`${base}/api/firmware/latest?current=${encodeURIComponent(fwVersion)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) =>
+        d && setFwLatest({ version: d.version ?? "", available: !!d.available }),
+      )
+      .catch(() => {});
+  }, [fwVersion, otaState]);
 
 
   // Detect when a tracked team SCORES during a live game and flash the wall
@@ -860,6 +934,7 @@ export default function ControlPanel() {
         holdDurationMs: Math.round(settings.holdSeconds * 1000),
         showLKN: settings.showLKN,
         showFolly: settings.showFolly,
+        showMarkets: !!settings.showMarkets,
         showCountdown: settings.showCountdown,
         countdownLabel: settings.countdownLabel.trim(),
         countdownDate: settings.countdownDate,
@@ -871,6 +946,7 @@ export default function ControlPanel() {
     settings.holdSeconds,
     settings.showLKN,
     settings.showFolly,
+    settings.showMarkets,
     settings.showCountdown,
     settings.countdownLabel,
     settings.countdownDate,
@@ -1218,6 +1294,28 @@ export default function ControlPanel() {
     }
   };
 
+  const fwNewer = (() => {
+    if (!fwVersion || !fwLatest?.available || !fwLatest.version) return false;
+    const a = fwLatest.version.split(".").map((n) => parseInt(n, 10) || 0);
+    const b = fwVersion.split(".").map((n) => parseInt(n, 10) || 0);
+    for (let i = 0; i < 3; i++) {
+      if ((a[i] ?? 0) !== (b[i] ?? 0)) return (a[i] ?? 0) > (b[i] ?? 0);
+    }
+    return false;
+  })();
+
+  const handleInstallUpdate = async () => {
+    if (!isConnected || !fwVersion || otaState === "checking") return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    setOtaState("checking");
+    try {
+      await writeLive({ command: "ota", ts: Date.now() });
+    } catch (e) {
+      setOtaState("failed");
+      toast.show(e instanceof BleError ? e.message : "Couldn't reach the wall.", "error");
+    }
+  };
+
   const handleSync = async () => {
     if (busy) return;
     // Always persist locally.
@@ -1323,6 +1421,7 @@ export default function ControlPanel() {
           holdDurationMs: Math.round(settings.holdSeconds * 1000),
           showLKN: settings.showLKN,
           showFolly: settings.showFolly,
+          showMarkets: !!settings.showMarkets,
           showCountdown: settings.showCountdown,
           countdownLabel: settings.countdownLabel.trim(),
           countdownDate: settings.countdownDate,
@@ -1625,6 +1724,39 @@ export default function ControlPanel() {
               )}
               <Text style={styles.flashBtnText}>FLASH TEST PATTERN</Text>
             </Pressable>
+          )}
+
+          {isConnected && (
+            <View testID="firmware-row" style={styles.fwRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.fwLabel}>
+                  {fwVersion ? `Firmware v${fwVersion}` : "Firmware: pre-1.1"}
+                </Text>
+                <Text style={styles.fwSub}>
+                  {!fwVersion
+                    ? "No wireless updates yet. Flash v1.1 over USB once."
+                    : fwNewer
+                      ? `v${fwLatest?.version} is available`
+                      : fwLatest?.available
+                        ? "Up to date"
+                        : "No update published"}
+                </Text>
+              </View>
+              {fwVersion && fwNewer && (
+                <Pressable
+                  testID="install-update-button"
+                  onPress={handleInstallUpdate}
+                  disabled={otaState === "checking" || otaState === "installing"}
+                  style={({ pressed }) => [styles.fwBtn, pressed && styles.pressed]}
+                >
+                  {otaState === "checking" || otaState === "installing" ? (
+                    <ActivityIndicator color={colors.brand} />
+                  ) : (
+                    <Text style={styles.fwBtnText}>Install update</Text>
+                  )}
+                </Pressable>
+              )}
+            </View>
           )}
         </View>
       </View>
@@ -2017,6 +2149,22 @@ export default function ControlPanel() {
           open={sectionOpen.stocks}
           onToggle={() => toggleSection("stocks")}
         >
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleTextWrap}>
+              <Text style={styles.fieldLabel}>Markets page</Text>
+              <Text style={styles.toggleHint}>
+                S&amp;P 500, Dow and Nasdaq with today&apos;s trend (firmware 1.1+)
+              </Text>
+            </View>
+            <Switch
+              testID="toggle-markets"
+              value={!!settings.showMarkets}
+              onValueChange={(v) => setSettings((s) => ({ ...s, showMarkets: v }))}
+              trackColor={{ false: colors.surfaceTertiary, true: colors.brand }}
+              thumbColor={colors.onSurface}
+              ios_backgroundColor={colors.surfaceTertiary}
+            />
+          </View>
           <StockRows
             stocks={settings.stocks}
             onChange={(next) => setSettings((s) => ({ ...s, stocks: next }))}

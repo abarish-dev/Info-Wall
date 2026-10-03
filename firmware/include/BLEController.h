@@ -21,6 +21,7 @@
 #include <WiFi.h>
 #include <time.h>
 #include <sys/time.h>
+#include "Version.h"
 
 // --- Must match the app exactly -------------------------------------------
 static const char *SERVICE_UUID        = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
@@ -30,6 +31,31 @@ static const char *CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 // automatic daylight-saving (DST starts 2nd Sun of Mar, ends 1st Sun of Nov).
 // Used by both the BLE-triggered Wi-Fi join and the auto-reconnect sync path.
 #define INFOWALL_TZ "EST5EDT,M3.2.0,M11.1.0"
+
+// One aircraft in range, as the flight card needs it.
+struct PlaneInfo {
+  String cs;        // callsign (identity), e.g. "AAL2854" / "N381MG"
+  String ident;     // flight number to show, e.g. "AA2854" (falls back to cs)
+  String airline;   // "American Airlines" ("" for private)
+  String logo;      // logo key (ICAO; brand for regionals)
+  String code;      // ICAO airline prefix for the text badge
+  String from, to;  // route IATA codes (may be empty)
+  String type;      // aircraft type, e.g. "A319"
+  String line;      // legacy one-liner (older app push), e.g. "American 5.8mi"
+  int    alt = -1, spd = -1;  // ft, mph (-1 = n/a)
+  float  dist = -1;           // mi (-1 = n/a)
+};
+
+// One index row on the optional Markets page.
+struct MarketInfo {
+  String name;            // "S&P 500"
+  float  value = 0;       // index level
+  float  pct = 0;         // % change vs previous close
+  bool   hasPct = false;
+  int8_t spark[34];       // 0..13 (0 = bottom), -1 = no data for that column
+  int    sparkLen = 0;    // columns filled so far today
+  int    base = -1;       // previous-close level on the same scale (-1 = n/a)
+};
 
 // --- Global settings the rest of your firmware reads ----------------------
 struct MatrixSettings {
@@ -55,6 +81,7 @@ struct MatrixSettings {
   int   holdDurationMs  = 12000;
   bool  showLKN         = true;
   bool  showFolly       = true;
+  bool  showMarkets     = false;      // optional S&P/Dow/Nasdaq page (app toggle)
   bool  showCountdown   = true;
   String countdownLabel = "";
   String countdownDate  = "";         // "YYYY-MM-DD"
@@ -81,6 +108,10 @@ struct MatrixSettings {
   String teamLabel[8];          // per-team next-game / live / final label
   String teamHL[8];             // per-team highlight: live|recent|today|soon|...
   String showLabel[8];          // per-show schedule label (next ep / season start)
+  MarketInfo markets[3];        // /api/device/markets
+  int    marketCount = 0;
+  String marketStatus = "";     // "Open" | "Pre-mkt" | "After hrs" | "Closed"
+  String teamShort[8];          // compact <=16-char status ("Sat 7:05p @ TB")
 
   // Wi-Fi self-fetch (panel pulls its own live data; no phone required)
   String apiBase        = "";   // e.g. "https://<host>"  (set via BLE "server")
@@ -90,6 +121,12 @@ struct MatrixSettings {
   String wxText         = "";
   String planeLine      = "";   // nearest overhead flight
   String planeCode      = "";   // airline IATA/ICAO code for the badge (e.g. DAL)
+  // Every aircraft currently in range (backend /api/device/planes, nearest
+  // first). Each one is its own page in the rotation; a newly seen callsign
+  // interrupts the rotation once (see DisplayManager::notePlanes).
+  PlaneInfo planes[6];
+  int    planeCount     = 0;
+  unsigned long planesFetchMs = 0;  // last successful panel-side fetch (millis)
   String tvNewLine      = "";   // a show with a new episode
 
   // Folly Beach tides (NOAA 8665424) + Lake Norman (Duke Energy + USGS).
@@ -117,6 +154,9 @@ class BLEController {
   volatile bool wifiRequested = false;
   volatile bool flashRequested = false;
   volatile bool scoreFlashRequested = false;
+  volatile bool otaRequested = false;   // BLE "ota": check + install update
+  volatile bool planesPushed = false;   // phone pushed a nearest plane (fallback)
+  PlaneInfo pushedPlane;
   String flashAbbr;
   uint8_t flashR = 255, flashG = 106, flashB = 0;
   String pendingSsid;
@@ -139,6 +179,13 @@ class ServerCallbacks : public BLEServerCallbacks {
   void onConnect(BLEServer *s) override {
     g_ble.connected_ = true;
     Serial.println("[BLE] app connected");
+    // Let the app READ which firmware this is right after connecting (before
+    // it sends anything). Firmware older than 1.1.0 never exposes "fw", which
+    // is how the app knows not to send "version"/"ota" to it.
+    if (g_ble.ch_) {
+      static const char *hello = "{\"ready\":true,\"fw\":\"" INFOWALL_FW_VERSION "\"}";
+      g_ble.ch_->setValue((uint8_t *)hello, strlen(hello));
+    }
   }
   void onDisconnect(BLEServer *s) override {
     g_ble.connected_ = false;
@@ -178,6 +225,10 @@ inline void BLEController::begin() {
           BLECharacteristic::PROPERTY_NOTIFY);
   ch_->addDescriptor(new BLE2902());   // enables notifications
   ch_->setCallbacks(new CharCallbacks());
+  {
+    static const char *hello = "{\"ready\":true,\"fw\":\"" INFOWALL_FW_VERSION "\"}";
+    ch_->setValue((uint8_t *)hello, strlen(hello));
+  }
 
   service->start();
 
@@ -325,6 +376,26 @@ inline void BLEController::handleJson(const String &raw) {
     // Phone-pushed nearest overhead flight (fallback to the panel's own fetch).
     g_settings.planeLine  = (const char *)(doc["line"] | "");
     g_settings.planeCode  = (const char *)(doc["code"] | "");
+    // Only used when the panel can't fetch planes itself (no Wi-Fi / backend
+    // for 2+ minutes) — otherwise the panel's own full list wins.
+    if (g_settings.planesFetchMs == 0 || millis() - g_settings.planesFetchMs > 120000UL) {
+      PlaneInfo p;
+      p.cs      = (const char *)(doc["f"] | (doc["code"] | ""));
+      p.ident   = (const char *)(doc["fn"] | (doc["f"] | ""));
+      p.airline = (const char *)(doc["al"] | "");
+      p.logo    = (const char *)(doc["lg"] | (doc["code"] | ""));
+      p.code    = (const char *)(doc["code"] | "");
+      p.from    = (const char *)(doc["fr"] | "");
+      p.to      = (const char *)(doc["to"] | "");
+      p.type    = (const char *)(doc["typ"] | "");
+      p.line    = g_settings.planeLine;
+      p.alt     = doc["alt"].isNull() ? -1 : doc["alt"].as<int>();
+      p.spd     = doc["spd"].isNull() ? -1 : doc["spd"].as<int>();
+      p.dist    = doc["d"].isNull() ? -1.0f : doc["d"].as<float>();
+      planesPushed = true;
+      pushedPlane = p;
+    }
+    return;  // live data — no need to persist to flash
 
   } else if (strcmp(cmd, "settime") == 0) {
     // Phone-pushed wall clock. The phone always knows the correct time, so this
@@ -366,6 +437,7 @@ inline void BLEController::handleJson(const String &raw) {
     g_settings.holdDurationMs = doc["holdDurationMs"] | g_settings.holdDurationMs;
     g_settings.showLKN        = doc["showLKN"]        | g_settings.showLKN;
     g_settings.showFolly      = doc["showFolly"]      | g_settings.showFolly;
+    g_settings.showMarkets    = doc["showMarkets"]    | g_settings.showMarkets;
     g_settings.showCountdown  = doc["showCountdown"]  | g_settings.showCountdown;
     g_settings.countdownLabel = (const char *)(doc["countdownLabel"] | g_settings.countdownLabel.c_str());
     g_settings.countdownDate  = (const char *)(doc["countdownDate"]  | g_settings.countdownDate.c_str());
@@ -392,11 +464,28 @@ inline void BLEController::handleJson(const String &raw) {
     // Ask loop() to flash a quick RGB test pattern (confirms the link).
     flashRequested = true;
 
+  } else if (strcmp(cmd, "version") == 0) {
+    // App asks which firmware is flashed -> notify {"fw":"x.y.z"} back.
+    notify("{\"fw\":\"" INFOWALL_FW_VERSION "\"}");
+    return;
+
+  } else if (strcmp(cmd, "ota") == 0) {
+    // App's "Install update" button. Runs in loop() (HTTPS + flash write must
+    // not happen inside the BLE callback).
+    otaRequested = true;
+    return;
+
   } else if (strcmp(cmd, "wifi") == 0) {
     // Defer the actual join to loop() (don't block the BLE callback).
     pendingSsid   = (const char *)(doc["ssid"] | "");
     pendingPass   = (const char *)(doc["password"] | "");
     wifiRequested = true;
+
+  } else if (strlen(cmd) > 0) {
+    // Unknown command from a newer app: ignore it. (Older firmware fell
+    // through to the full-sync branch here and blanked teams/shows/stocks.)
+    Serial.printf("[BLE] unknown command \"%s\" ignored\n", cmd);
+    return;
 
   } else {
     // ---- No "command" => this is a FULL SYNC (flat settings object) -------

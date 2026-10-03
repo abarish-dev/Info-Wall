@@ -83,6 +83,7 @@ export const DEFAULTS = {
   holdSeconds: 12,
   showLKN: true,
   showFolly: true,
+  showMarkets: false,
   showCountdown: true,
   countdownLabel: "",
   countdownDate: "",
@@ -114,6 +115,7 @@ export type Settings = {
   holdSeconds: number;
   showLKN: boolean;
   showFolly: boolean;
+  showMarkets?: boolean;
   showCountdown: boolean;
   countdownLabel: string;
   countdownDate: string;

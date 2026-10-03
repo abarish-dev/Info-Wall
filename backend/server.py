@@ -1,26 +1,15 @@
 from fastapi import FastAPI, APIRouter, HTTPException
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
-import os
 import logging
 import requests
 from pathlib import Path
-from pydantic import BaseModel, Field
-from typing import List
-import uuid
-from datetime import datetime
 
 from airlines import resolve_airline
 
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
-
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
 
 # Create the main app without a prefix
 app = FastAPI()
@@ -29,31 +18,10 @@ app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
 
-# Define Models
-class StatusCheck(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
-
-class StatusCheckCreate(BaseModel):
-    client_name: str
-
 # Add your routes to the router instead of directly to app
 @api_router.get("/")
 async def root():
     return {"message": "Hello World"}
-
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.dict()
-    status_obj = StatusCheck(**status_dict)
-    _ = await db.status_checks.insert_one(status_obj.dict())
-    return status_obj
-
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    status_checks = await db.status_checks.find().to_list(1000)
-    return [StatusCheck(**status_check) for status_check in status_checks]
 
 
 ADSB_BASE = "https://api.adsb.lol/v2"
@@ -66,7 +34,7 @@ _FLIGHT_CACHE_TTL = 120  # seconds a cached result is considered fresh
 
 
 @api_router.get("/flights/nearby")
-async def flights_nearby(lat: float, lon: float, radius: float = 25):
+def flights_nearby(lat: float, lon: float, radius: float = 25):
     """Live aircraft within `radius` miles of (lat, lon) via the public
     adsb.lol feed. Resolves each callsign to an airline name + logo URL.
     Proxied server-side to avoid mobile/web CORS restrictions."""
@@ -120,6 +88,7 @@ async def flights_nearby(lat: float, lon: float, radius: float = 25):
                 "lon": a.get("lon"),
                 "distance": a.get("dst"),
                 "direction": a.get("dir"),
+                "track": a.get("track"),
                 "airline": info["name"] if info else None,
                 "iata": iata,
                 "logo": (
@@ -194,7 +163,7 @@ def _verify_ticker(sym: str) -> dict:
 
 
 @api_router.get("/tickers/verify")
-async def tickers_verify(symbols: str):
+def tickers_verify(symbols: str):
     """Verify a comma-separated list of symbols. Returns per-symbol validity
     plus the company/fund name for valid ones."""
     seen = set()
@@ -310,7 +279,7 @@ def _simplify_show(show: dict) -> dict:
 
 
 @api_router.get("/tv/search")
-async def tv_search(q: str):
+def tv_search(q: str):
     """Autocomplete-style show search. Returns up to 10 simplified matches."""
     try:
         r = requests.get(
@@ -406,7 +375,7 @@ def _tv_status_one(name: str) -> dict:
 
 
 @api_router.get("/tv/status")
-async def tv_status(names: str):
+def tv_status(names: str):
     """Release status for a pipe-separated list of show names."""
     results = []
     for raw in names.split("|"):
@@ -467,7 +436,7 @@ def _quote_one(sym: str) -> dict:
 
 
 @api_router.get("/tickers/quotes")
-async def tickers_quotes(symbols: str):
+def tickers_quotes(symbols: str):
     """Live price + daily change for a comma-separated list of symbols."""
     seen = set()
     results = []
@@ -484,7 +453,7 @@ async def tickers_quotes(symbols: str):
 # TV episodes (TVmaze) — upcoming + recent episodes and season info for one show.
 # ---------------------------------------------------------------------------
 @api_router.get("/tv/episodes")
-async def tv_episodes(id: int):  # noqa: A002
+def tv_episodes(id: int):  # noqa: A002
     from datetime import date as _date, datetime as _dt
 
     try:
@@ -555,6 +524,16 @@ _LEAGUE_PATH = {
 }
 _team_cache: dict = {}
 _TEAM_TTL = 120
+# ESPN's site.api.espn.com is Akamai-blocked from datacenter IPs (Vercel gets
+# 403 Forbidden on every call), while site.web.api.espn.com serves the same
+# JSON and isn't. Send a browser User-Agent too, same as the Aura backend.
+_ESPN_BASE = "https://site.web.api.espn.com/apis/site/v2/sports"
+_ESPN_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+    )
+}
 _sb_cache: dict = {}
 
 
@@ -576,7 +555,8 @@ def _scoreboard_map(sport: str, lg: str) -> dict:
     m: dict = {}
     try:
         r = requests.get(
-            f"https://site.api.espn.com/apis/site/v2/sports/{sport}/{lg}/scoreboard",
+            f"{_ESPN_BASE}/{sport}/{lg}/scoreboard",
+            headers=_ESPN_HEADERS,
             timeout=8,
         )
         r.raise_for_status()
@@ -617,7 +597,8 @@ def _next_event_from_schedule(sport: str, lg: str, abbr: str):
     dict for a live game, the soonest upcoming game, or a final within ~14h."""
     try:
         r = requests.get(
-            f"https://site.api.espn.com/apis/site/v2/sports/{sport}/{lg}/teams/{abbr.lower()}/schedule",
+            f"{_ESPN_BASE}/{sport}/{lg}/teams/{abbr.lower()}/schedule",
+            headers=_ESPN_HEADERS,
             timeout=8,
         )
         r.raise_for_status()
@@ -681,7 +662,8 @@ def _team_status_one(code: str) -> dict:
             date=g.get("date"),
         )
         bits = " ".join(x for x in [f"{vs} {opp}", score_str, g["detail"]] if x)
-        data.update(highlight="live", label=f"🔴 {bits}".strip())
+        data.update(highlight="live", label=f"🔴 {bits}".strip(), vs=vs,
+                    detail=g["detail"])
         return data  # not cached — refreshes with the 60s scoreboard cache
 
     if g and g["state"] == "post":
@@ -705,6 +687,7 @@ def _team_status_one(code: str) -> dict:
                 date=g.get("date"),
                 highlight="recent",
                 label=f"Final {score_str} {vs} {opp}".strip(),
+                vs=vs,
             )
             return data
 
@@ -714,7 +697,8 @@ def _team_status_one(code: str) -> dict:
 
     try:
         r = requests.get(
-            f"https://site.api.espn.com/apis/site/v2/sports/{sport}/{lg}/teams/{abbr.lower()}",
+            f"{_ESPN_BASE}/{sport}/{lg}/teams/{abbr.lower()}",
+            headers=_ESPN_HEADERS,
             timeout=8,
         )
         r.raise_for_status()
@@ -770,6 +754,8 @@ def _team_status_one(code: str) -> dict:
                     ).get("shortDisplayName")
                     opp_score = sc
             data["opponent"] = opp
+            data["vs"] = vs
+            data["detail"] = short
             data["score"] = my_score
             data["oppScore"] = opp_score
             matchup = f"{vs} {opp}" if opp else ""
@@ -828,7 +814,7 @@ def _team_status_one(code: str) -> dict:
 
 
 @api_router.get("/teams/status")
-async def teams_status(teams: str):
+def teams_status(teams: str):
     """Next/live game highlight for a pipe-separated list of LEAGUE:ABBR codes."""
     results = []
     for raw in teams.split("|"):
@@ -910,7 +896,7 @@ def _wx_wttr(lat: float, lon: float) -> dict:
 
 
 @api_router.get("/weather/current")
-async def weather_current(lat: float, lon: float):
+def weather_current(lat: float, lon: float):
     """Current temp + condition + daily hi/lo (Fahrenheit).
 
     Prefers Open-Meteo (tracks phone weather apps closely). Falls back to
@@ -947,8 +933,59 @@ async def weather_current(lat: float, lon: float):
 # scores (and detect a score to flash) without the phone. Small field names
 # keep the JSON tiny for on-device parsing.
 # ---------------------------------------------------------------------------
+def _compact_team_label(s: dict, limit: int = 16) -> str:
+    """A short (<= `limit` chars, ASCII) status line for the panel's team rows,
+    which sit beside a 24px logo and only have ~16 characters of width.
+    Examples: "3-2 Top 5th", "W 5-3 vs BOS", "7:05p vs BOS", "Sat 7:05p @ BOS",
+    "Oct 19 vs BOS", "Offseason"."""
+    from datetime import datetime as _dt
+
+    hl = s.get("highlight")
+    opp = s.get("opponent") or ""
+    vs = s.get("vs") or "vs"
+    mt = f"{vs} {opp}" if opp else ""
+    my, op = s.get("score"), s.get("oppScore")
+    date = s.get("date")
+
+    def fit(*cands):
+        for c in cands:
+            c = " ".join((c or "").split())
+            if c and len(c) <= limit:
+                return c
+        c = " ".join((cands[-1] or "").split())
+        return c[:limit].rstrip()
+
+    if hl == "live":
+        sc = f"{my}-{op}" if my is not None and op is not None else ""
+        det = (s.get("detail") or "").replace(" - ", " ")
+        return fit(f"{sc} {det}", f"{sc} {mt}", sc or "LIVE")
+    if hl == "recent":
+        sc = f"{my}-{op}" if my is not None and op is not None else ""
+        wl = ""
+        if my is not None and op is not None:
+            wl = "W" if my > op else ("L" if my < op else "T")
+        return fit(f"{wl} {sc} {mt}", f"{wl} {sc}", "Final")
+    if hl in ("today", "soon", "upcoming") and date:
+        t = _iso_to_eastern_time(date) or ""
+        local = _iso_to_eastern_date(date)
+        try:
+            d = _dt.strptime(local, "%Y-%m-%d")
+        except Exception:  # noqa: BLE001
+            d = None
+        if hl == "today":
+            return fit(f"{t} {mt}", f"Today {mt}", mt)
+        dow = d.strftime("%a") if d else ""
+        md = d.strftime("%b %-d") if d else ""
+        if hl == "soon":
+            return fit(f"{dow} {t} {mt}", f"{dow} {mt}", f"{dow} {t}")
+        return fit(f"{md} {t} {mt}", f"{md} {mt}", md)
+    if hl == "offseason":
+        return "Offseason"
+    return ""
+
+
 @api_router.get("/device/scores")
-async def device_scores(teams: str):
+def device_scores(teams: str):
     def _ascii(s):
         return (s or "").replace("🔴", "LIVE ").encode("ascii", "ignore").decode().strip()
 
@@ -966,6 +1003,8 @@ async def device_scores(teams: str):
                 "h": s.get("highlight"),
                 "l": _ascii(s.get("label")),
                 "r": s.get("record"),
+                # Compact (<=16 char) line for the logo layout (firmware 1.1+).
+                "k": _ascii(_compact_team_label(s)),
             }
         )
     return {"t": out}
@@ -982,7 +1021,7 @@ async def device_time():
 
 
 @api_router.get("/device/quotes")
-async def device_quotes(symbols: str):
+def device_quotes(symbols: str):
     seen, out = set(), []
     for raw in symbols.split(","):
         sym = raw.strip().upper()
@@ -994,8 +1033,64 @@ async def device_quotes(symbols: str):
     return {"q": out}
 
 
+# Regional carriers fly under a mainline brand; show that brand's logo on the
+# panel (e.g. PSA / Piedmont / Envoy -> American). Keys are ICAO prefixes.
+_BRAND_LOGO = {
+    "JIA": "AAL", "PDT": "AAL", "ENY": "AAL", "ASH": "AAL",
+    "EDV": "DAL", "CPZ": "DAL", "GJS": "UAL", "UCA": "UAL", "AWI": "UAL",
+    "QXE": "ASA",
+}
+_route_cache: dict = {}
+_ROUTE_TTL = 6 * 3600
+
+
+def _route_for(callsign: str) -> dict:
+    """Origin/destination + IATA flight number for a callsign via the free,
+    keyless adsbdb.com API. Cached (hits and misses) for 6h; short timeout so a
+    slow lookup can never hold up the panel's 12s request budget."""
+    import time as _time
+
+    cs = (callsign or "").strip().upper()
+    if not cs:
+        return {}
+    hit = _route_cache.get(cs)
+    if hit and _time.time() - hit["ts"] < hit.get("ttl", _ROUTE_TTL):
+        return hit["data"]
+    out: dict = {}
+    ttl = 600  # transient failure (timeout / 5xx / 429): retry in 10 min
+    try:
+        r = requests.get(
+            f"https://api.adsbdb.com/v0/callsign/{cs}",
+            timeout=3,
+            headers={"User-Agent": "InfoWall/1.0"},
+        )
+        if r.status_code in (200, 404):
+            ttl = _ROUTE_TTL  # a real answer (route or "unknown callsign")
+        if r.status_code == 200:
+            fr = ((r.json() or {}).get("response") or {}).get("flightroute") or {}
+            if isinstance(fr, dict):
+                out = {
+                    "fn": fr.get("callsign_iata"),
+                    "fr": (fr.get("origin") or {}).get("iata_code"),
+                    "to": (fr.get("destination") or {}).get("iata_code"),
+                    "frc": (fr.get("origin") or {}).get("municipality"),
+                    "toc": (fr.get("destination") or {}).get("municipality"),
+                }
+    except Exception as exc:  # noqa: BLE001
+        logger.info("adsbdb route lookup failed %s: %s", cs, exc)
+    _route_cache[cs] = {"ts": _time.time(), "data": out, "ttl": ttl}
+    return out
+
+
 @api_router.get("/device/planes")
-async def device_planes(lat: float, lon: float, radius: float = 25):
+def device_planes(lat: float, lon: float, radius: float = 25):
+    """Compact nearby-aircraft list for the panel.
+
+    Original fields (kept for older firmware): f callsign, al airline name,
+    ia ICAO airline prefix, d distance (mi).
+    Added for the logo flight card: alt (ft), spd (mph), typ (aircraft type),
+    trk (track deg), lg (logo key, brand for regionals) and, for airline
+    flights, fn (IATA flight no.), fr/to (origin/dest IATA)."""
     import re as _re
 
     def _iata(callsign):
@@ -1003,21 +1098,144 @@ async def device_planes(lat: float, lon: float, radius: float = 25):
         m = _re.match(r"^([A-Z]{3})\d", (callsign or "").strip().upper())
         return m.group(1) if m else None
 
-    data = await flights_nearby(lat, lon, radius)  # reuse + cache
-    out = [
-        {
+    def _num(v, scale=1.0):
+        return round(v * scale) if isinstance(v, (int, float)) else None
+
+    data = flights_nearby(lat, lon, radius)  # reuse + cache
+    flights = data.get("flights", [])[:6]
+    # Route lookups for every airline flight, in parallel (each is cached 6h
+    # and capped at 3s), so the panel can show a route on any plane's card,
+    # not just the nearest one.
+    from concurrent.futures import ThreadPoolExecutor
+
+    want = [f["callsign"] for f in flights if _iata(f["callsign"])]
+    routes: dict = {}
+    if want:
+        with ThreadPoolExecutor(max_workers=min(6, len(want))) as ex:
+            for cs, rt in zip(want, ex.map(_route_for, want)):
+                routes[cs] = rt
+    out = []
+    for f in flights:
+        ia = _iata(f["callsign"])
+        row = {
             "f": f["callsign"],
             "al": f.get("airline"),
-            "ia": _iata(f["callsign"]),
+            "ia": ia,
             "d": round(f["distance"] * 1.15078, 1) if f.get("distance") is not None else None,
+            "alt": _num(f.get("altitude")),
+            "spd": _num(f.get("speed"), 1.15078),
+            "typ": f.get("type"),
+            "trk": _num(f.get("track")),
+            "lg": _BRAND_LOGO.get(ia, ia) if ia else None,
         }
-        for f in data.get("flights", [])[:6]
-    ]
+        if ia:
+            rt = routes.get(f["callsign"]) or {}
+            for k in ("fn", "fr", "to"):
+                if rt.get(k):
+                    row[k] = rt[k]
+        out.append(row)
     return {"p": out}
 
 
+# ---------------------------------------------------------------------------
+# Markets page: S&P 500 / Dow / Nasdaq with % change, open/closed status and a
+# tiny intraday sparkline, from Yahoo's keyless chart API (60s cache).
+# ---------------------------------------------------------------------------
+_MARKETS = [("^GSPC", "S&P 500"), ("^DJI", "Dow"), ("^IXIC", "Nasdaq")]
+_markets_cache: dict = {}
+_SPARK_W = 34   # sparkline columns on the panel
+_SPARK_H = 14   # sparkline height in pixels (values 0..H-1, 0 = bottom)
+
+
+def _market_one(sym: str, name: str) -> dict:
+    r = requests.get(
+        f"https://query1.finance.yahoo.com/v8/finance/chart/{sym}",
+        params={"range": "1d", "interval": "5m"},
+        headers={"User-Agent": "Mozilla/5.0"},
+        timeout=6,
+    )
+    r.raise_for_status()
+    res = r.json()["chart"]["result"][0]
+    meta = res.get("meta") or {}
+    price = meta.get("regularMarketPrice")
+    prev = meta.get("chartPreviousClose") or meta.get("previousClose")
+    pct = round((price - prev) / prev * 100, 2) if price is not None and prev else None
+    reg = (meta.get("currentTradingPeriod") or {}).get("regular") or {}
+    start, end = reg.get("start"), reg.get("end")
+    ts = res.get("timestamp") or []
+    closes = ((res.get("indicators") or {}).get("quote") or [{}])[0].get("close") or []
+    # Bucket the session (start..end) into _SPARK_W columns; columns after
+    # "now" stay empty so the line fills in left-to-right through the day.
+    cols: list = [None] * _SPARK_W
+    if start and end and end > start:
+        for t, c in zip(ts, closes):
+            if c is None or t < start or t > end:
+                continue
+            i = min(_SPARK_W - 1, int((t - start) / (end - start) * _SPARK_W))
+            cols[i] = c
+    vals = [c for c in cols if c is not None]
+    spark, base = [], None
+    if vals:
+        lo = min(vals + ([prev] if prev else []))
+        hi = max(vals + ([prev] if prev else []))
+        span = (hi - lo) or 1.0
+
+        def _y(v):
+            return int(round((v - lo) / span * (_SPARK_H - 1)))
+
+        spark = [(_y(c) if c is not None else -1) for c in cols]
+        while spark and spark[-1] == -1:
+            spark.pop()
+        base = _y(prev) if prev else None
+    return {"n": name, "v": round(price, 2) if price is not None else None,
+            "c": pct, "sp": spark, "b": base, "_reg": (start, end)}
+
+
+@api_router.get("/device/markets")
+def device_markets():
+    """Compact payload for the panel's optional Markets page.
+    {"st": "Open"|"Pre-mkt"|"After hrs"|"Closed",
+     "m": [{"n": "S&P 500", "v": 7720.12, "c": 0.7, "sp": [0..13 | -1], "b": 6}]}"""
+    import time as _time
+    from concurrent.futures import ThreadPoolExecutor
+
+    now = _time.time()
+    cached = _markets_cache.get("d")
+    if cached and now - cached["ts"] < 60:
+        return cached["data"]
+    out, reg = [], (None, None)
+    with ThreadPoolExecutor(max_workers=3) as ex:
+        futs = [ex.submit(_market_one, s, n) for s, n in _MARKETS]
+        for (sym, name), f in zip(_MARKETS, futs):
+            try:
+                m = f.result()
+                reg = m.pop("_reg") or reg
+                out.append(m)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("markets %s failed: %s", sym, exc)
+    from datetime import datetime as _dt
+    from zoneinfo import ZoneInfo
+
+    et = _dt.now(ZoneInfo("America/New_York"))
+    start, end = reg
+    if start and end and start <= now < end:
+        st = "Open"
+    elif et.weekday() < 5 and 4 <= et.hour < 9 or (et.weekday() < 5 and et.hour == 9 and et.minute < 30):
+        st = "Pre-mkt"
+    elif et.weekday() < 5 and 16 <= et.hour < 20:
+        st = "After hrs"
+    else:
+        st = "Closed"
+    data = {"st": st, "m": out}
+    if out:
+        _markets_cache["d"] = {"ts": now, "data": data}
+    elif cached:
+        return cached["data"]
+    return data
+
+
 @api_router.get("/device/tv")
-async def device_tv(names: str):
+def device_tv(names: str):
     def _ascii(s):
         return (s or "").encode("ascii", "ignore").decode().strip()
 
@@ -1077,7 +1295,7 @@ def _folly_water_temp() -> int | None:
 
 
 @api_router.get("/device/folly")
-async def device_folly():
+def device_folly():
     """Next high/low tides at Folly Creek (Hwy 171 bridge) + water temp."""
     import time as _time
     import datetime as _dt
@@ -1177,7 +1395,7 @@ def _lake_water_temp() -> int | None:
 
 
 @api_router.get("/device/lake")
-async def device_lake():
+def device_lake():
     """Lake Norman level (Duke Energy) vs full pond + water temp (USGS)."""
     import time as _time
 
@@ -1217,8 +1435,57 @@ async def device_lake():
         _lake_cache["d"] = {"ts": ts, "data": out}
     return out
 
+# ---------------------------------------------------------------------------
+# Firmware OTA (same scheme as the Aura backend). Builds are published as
+# static files in backend/public/fw/ (firmware.bin + meta.json) and served by
+# Vercel's CDN at /fw/firmware.bin. No upload endpoint: the serverless
+# filesystem is read-only, so publishing is a git commit + redeploy.
+# See public/fw/README.md.
+# ---------------------------------------------------------------------------
+import json as _json  # noqa: E402
+
+_FW_DIR = ROOT_DIR / "public" / "fw"
+_FW_BIN = _FW_DIR / "firmware.bin"
+_FW_META = _FW_DIR / "meta.json"
+_FW_URL = "/fw/firmware.bin"
+
+
+def _fw_meta() -> dict:
+    if _FW_META.exists():
+        try:
+            return _json.loads(_FW_META.read_text())
+        except Exception:  # noqa: BLE001
+            pass
+    return {"version": "", "size": 0}
+
+
+@api_router.get("/firmware/latest")
+def firmware_latest(current: str = ""):
+    """The panel (BLE "ota" command) and the app ask this for the latest
+    firmware. `update` is true when a build is hosted and its version differs
+    from `current`; the firmware itself only installs a strictly newer one."""
+    m = _fw_meta()
+    has = bool(m.get("version")) and _FW_BIN.exists()
+    size = m.get("size", 0)
+    if has and not size:
+        size = _FW_BIN.stat().st_size
+    return {
+        "version": m.get("version", ""),
+        "size": size,
+        "available": has,
+        "update": has and m.get("version", "") != (current or ""),
+        "url": _FW_URL,
+    }
+
+
 # Include the router in the main app
 app.include_router(api_router)
+
+
+# Health check for deployment/uptime probes (no /api prefix), matching Aura.
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
 
 app.add_middleware(
     CORSMiddleware,
@@ -1234,7 +1501,3 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
-
-@app.on_event("shutdown")
-async def shutdown_db_client():
-    client.close()
