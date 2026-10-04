@@ -337,17 +337,25 @@ inline void BLEController::handleJson(const String &raw) {
     g_settings.isPinned = doc["isPinned"] | g_settings.isPinned;
 
   } else if (strcmp(cmd, "teams") == 0) {
-    for (int i = 0; i < 8; i++) {
-      g_settings.teams[i] = ""; g_settings.teamColor[i] = "";
-      // Slots get re-assigned: drop the old team's game details.
-      g_settings.teamOpp[i] = ""; g_settings.teamOppRec[i] = ""; g_settings.teamStatus[i] = "";
-      g_settings.teamNextDay[i] = ""; g_settings.teamNextTime[i] = "";
-      g_settings.teamHome[i] = -1; g_settings.teamScore[i] = -1; g_settings.teamOppScore[i] = -1;
-      g_settings.teamTs[i] = 0;
-    }
+    // The app re-sends the same list on every connect / Sync. Only a slot whose
+    // team actually changed loses its game details; an identical resend must
+    // not wipe the card (that forced the old row layout with "--" until the
+    // next successful Wi-Fi fetch).
+    String nt[8];
     JsonArray arr = doc["teams"].as<JsonArray>();
     int i = 0;
-    for (JsonVariant v : arr) { if (i < 8) g_settings.teams[i++] = v.as<const char *>(); }
+    for (JsonVariant v : arr) { if (i < 8) nt[i++] = (const char *)(v | ""); }
+    for (int k = 0; k < 8; k++) {
+      g_settings.teamColor[k] = "";
+      if (nt[k] == g_settings.teams[k]) continue;
+      g_settings.teams[k] = nt[k];
+      g_settings.teamLabel[k] = ""; g_settings.teamShort[k] = ""; g_settings.teamRecord[k] = "";
+      g_settings.teamHL[k] = "";
+      g_settings.teamOpp[k] = ""; g_settings.teamOppRec[k] = ""; g_settings.teamStatus[k] = "";
+      g_settings.teamNextDay[k] = ""; g_settings.teamNextTime[k] = "";
+      g_settings.teamHome[k] = -1; g_settings.teamScore[k] = -1; g_settings.teamOppScore[k] = -1;
+      g_settings.teamTs[k] = 0;
+    }
     JsonArray col = doc["colors"].as<JsonArray>();
     int j = 0;
     for (JsonVariant v : col) { if (j < 8) g_settings.teamColor[j++] = v.as<const char *>(); }
@@ -403,13 +411,18 @@ inline void BLEController::handleJson(const String &raw) {
       snprintf(rk, sizeof(rk), "rec%d", i + 1);
       snprintf(lk, sizeof(lk), "lbl%d", i + 1);
       snprintf(hk, sizeof(hk), "hl%d", i + 1);
-      g_settings.teamRecord[i] = (const char *)(doc[rk] | "");
-      g_settings.teamLabel[i] = (const char *)(doc[lk] | "");
+      // The app sends "" before its own team lookup has finished; keep what
+      // the panel already has rather than blanking the row.
+      const char *lbl = doc[lk] | "";
+      if (!lbl[0]) continue;
+      const char *rec = doc[rk] | "";
+      if (rec[0]) g_settings.teamRecord[i] = rec;
+      g_settings.teamLabel[i] = lbl;
       g_settings.teamHL[i] = (const char *)(doc[hk] | "");
       // The phone's label is newer than any compact Wi-Fi label; drop that so
       // the display doesn't prefer a stale teamShort over it.
       g_settings.teamShort[i] = "";
-      g_settings.teamTs[i] = g_settings.teamLabel[i].length() ? (uint32_t)time(nullptr) : 0;
+      g_settings.teamTs[i] = (uint32_t)time(nullptr);
     }
 
   } else if (strcmp(cmd, "teamcard") == 0) {

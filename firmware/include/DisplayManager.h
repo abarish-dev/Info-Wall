@@ -847,11 +847,18 @@ class DisplayManager {
       uint32_t ts = g_settings.teamTs[i];
       if (ts == 0 || (uint32_t)nowT - ts > kTeamLabelStaleSec) stale = true;
     }
+    // Never leave the second line empty. A stale upcoming-game label is still
+    // the right game, so show it dimmed; a stale live/final score is replaced
+    // by "Updating..." (it must not look current).
+    if (!k.length()) {
+      String nd = g_settings.teamNextDay[i];
+      k = nd.length() ? nd : String("No game sched");
+    }
     if (stale) {
-      textAt("--", tx, y + 14, faint());
+      bool score = (hl == "live" || hl == "recent");
+      textAt(fitWords(score ? String("Updating...") : k, maxC), tx, y + 14, faint());
       return;
     }
-    if (!k.length()) k = "--";
     uint16_t c = muted();
     int x = tx;
     if (hl == "live") {
