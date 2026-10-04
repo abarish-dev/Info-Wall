@@ -19,6 +19,7 @@ import Ionicons from "@react-native-vector-icons/ionicons";
 import Constants from "expo-constants";
 import * as Clipboard from "expo-clipboard";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import * as Haptics from "expo-haptics";
 import { colors, spacing, radius, fonts, fontSize } from "@/src/theme";
 import { ACCENTS, type AccentId } from "@/src/theme";
@@ -280,12 +281,16 @@ export function SettingsSheet({
           </Pressable>
         </View>
 
-        <ScrollView
+        {/* Keyboard-aware so the Wi-Fi / wall-name fields scroll into view
+            above the keyboard instead of being covered by it. */}
+        <KeyboardAwareScrollView
           contentContainerStyle={{
             padding: spacing.lg,
             paddingBottom: insets.bottom + spacing.xl,
             gap: spacing.xl,
           }}
+          bottomOffset={24}
+          keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
           {/* Wall profiles */}
@@ -794,7 +799,7 @@ export function SettingsSheet({
                 : `Info Wall v${appVersion} · build ${buildNumber} · ${platformName} · tap to copy`}
             </Text>
           </Pressable>
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </View>
     </Modal>
   );

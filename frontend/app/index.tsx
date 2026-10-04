@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   KeyboardAwareScrollView,
   KeyboardStickyView,
+  useKeyboardState,
 } from "react-native-keyboard-controller";
 
 import {
@@ -172,6 +173,9 @@ export default function ControlPanel() {
   const [recentZips, setRecentZips] = useState<string[]>([]);
   const [reconnecting, setReconnecting] = useState(false);
   const [reconnectFailed, setReconnectFailed] = useState(false);
+  // Keyboard open => collapse the sticky header and hide the sync bar, which
+  // otherwise filled the space above the keyboard on Android.
+  const kbOpen = useKeyboardState((k) => k.isVisible);
   // Latest status for async callbacks (a failed auto-reconnect must not
   // clobber a connection the user made meanwhile).
   const statusRef = useRef(status);
@@ -1584,7 +1588,13 @@ export default function ControlPanel() {
           locations={[0, 0.55, 1]}
           style={StyleSheet.absoluteFill}
         />
-        <View style={[styles.heroContent, { paddingTop: insets.top + spacing.md }]}>
+        <View
+          style={[
+            styles.heroContent,
+            { paddingTop: insets.top + spacing.md },
+            kbOpen && { paddingBottom: spacing.sm },
+          ]}
+        >
           <View style={styles.brandRow}>
             <View style={[styles.logoBox, { borderColor: activeColor }]}>
               <Ionicons name="grid" size={18} color={activeColor} />
@@ -1633,6 +1643,9 @@ export default function ControlPanel() {
             </Pressable>
           </View>
 
+          {/* While typing, collapse the header to just the title row so the
+              focused field stays visible above the keyboard (Android). */}
+          {!kbOpen && (<>
           <View style={styles.statusRow}>
             <Pressable
               testID="connect-button"
@@ -1822,6 +1835,7 @@ export default function ControlPanel() {
               )}
             </View>
           )}
+          </>)}
         </View>
       </View>
 
@@ -1832,7 +1846,7 @@ export default function ControlPanel() {
           styles.scrollContent,
           { paddingBottom: 120 + insets.bottom },
         ]}
-        bottomOffset={90}
+        bottomOffset={kbOpen ? 24 : 90}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -2346,7 +2360,8 @@ export default function ControlPanel() {
         </Section>
       </KeyboardAwareScrollView>
 
-      {/* ---------- STICKY SYNC ---------- */}
+      {/* ---------- STICKY SYNC ---------- (hidden while typing) */}
+      {!kbOpen && (
       <KeyboardStickyView>
         <View
           style={[
@@ -2373,6 +2388,7 @@ export default function ControlPanel() {
           </Pressable>
         </View>
       </KeyboardStickyView>
+      )}
 
       {/* Map Peek */}
       <Modal
