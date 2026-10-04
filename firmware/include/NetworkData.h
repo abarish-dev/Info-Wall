@@ -27,6 +27,7 @@
 #include "PsramJson.h"
 #include "Version.h"
 #include "DisplayManager.h"
+#include "WifiKeeper.h"
 
 extern DisplayManager g_display;
 
@@ -46,14 +47,22 @@ struct EpStat {
 class NetworkData {
  public:
   void tick() {
-    if (WiFi.status() != WL_CONNECTED) return;
+    if (WiFi.status() != WL_CONNECTED) {
+      // Next time the link is up, start SNTP again (it may have been lost).
+      if (!clockValid_) clockSynced_ = false;
+      return;
+    }
     // Sync the clock the first time Wi-Fi comes up — regardless of HOW it
     // connected. The ESP32 silently auto-reconnects to stored creds on boot
     // (no BLE join), so without this the weather clock + evening schedule
     // would never get an NTP time. Cheap + idempotent to call once.
-    if (!clockSynced_) {
-      configTzTime(INFOWALL_TZ, "pool.ntp.org", "time.nist.gov");
+    // (Re)start SNTP whenever the link comes (back) up, and again every 5 min
+    // while the clock is still unset, so a missed first sync isn't permanent.
+    unsigned long nowMs = millis();
+    if (!clockSynced_ || (!clockValid_ && nowMs - tNtp_ > 300000UL)) {
+      configTzTime(INFOWALL_TZ, "pool.ntp.org", "time.nist.gov", "time.google.com");
       clockSynced_ = true;
+      tNtp_ = nowMs | 1;
     }
     if (g_settings.apiBase.length() == 0)
       return;
@@ -114,6 +123,7 @@ class NetworkData {
     j += ",\"psram\":" + String((unsigned)ESP.getFreePsram());
     j += ",\"clock\":" + String(clockValid_ ? 1 : 0);
     j += ",\"up\":" + String(now / 1000);
+    j += g_wifi.diagFields();
     j += ",\"ep\":{";
     for (int i = 0; i < EP_COUNT; i++) {
       if (i) j += ",";
@@ -138,6 +148,7 @@ class NetworkData {
   unsigned long tFolly_ = 0, tLake_ = 0, tMarkets_ = 0;
   unsigned long tLastFetch_ = 0;
   bool clockSynced_ = false;   // NTP started once Wi-Fi is up (any path)
+  unsigned long tNtp_ = 0;     // last SNTP (re)start
   bool clockValid_ = false;    // RTC actually holds a real time (NTP or HTTP)
   unsigned long tTimeHttp_ = 0;  // last HTTP time-sync attempt
   static const unsigned long kFetchGapMs = 2500;  // min spacing between fetches

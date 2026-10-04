@@ -18,12 +18,14 @@
 #include "DisplayManager.h"
 #include "Persistence.h"
 #include "NetworkData.h"
+#include "WifiKeeper.h"
 
 // Global instances used across the firmware.
 MatrixSettings g_settings;
 BLEController  g_ble;
 DisplayManager g_display;
 NetworkData    g_net;
+WifiKeeper     g_wifi;
 volatile bool  g_settingsDirty = false;
 
 static bool s_clockSynced = false;
@@ -36,7 +38,9 @@ void tryJoinWifi(const String &ssid, const String &pass) {
   g_ble.notify("{\"wifiStatus\":\"connecting\"}");
 
   WiFi.mode(WIFI_STA);
+  WiFi.setAutoReconnect(true);
   WiFi.begin(ssid.c_str(), pass.c_str());
+  g_wifi.noteManualJoin();
 
   unsigned long start = millis();
   while (WiFi.status() != WL_CONNECTED && millis() - start < 15000) {
@@ -49,6 +53,7 @@ void tryJoinWifi(const String &ssid, const String &pass) {
   if (WiFi.status() == WL_CONNECTED) {
     String ip = WiFi.localIP().toString();
     Serial.printf("[WiFi] connected: %s\n", ip.c_str());
+    g_wifi.remember(ssid, pass);   // rejoin on its own after a reboot
     // Sync the clock (US Eastern, auto-DST) so the weather clock, schedule and
     // countdown are correct.
     configTzTime(INFOWALL_TZ, "pool.ntp.org", "time.nist.gov");
@@ -172,6 +177,7 @@ void setup() {
   loadSettings();       // restore last config from flash BEFORE drawing
   g_display.begin();    // shows the restored content immediately on power-up
   g_ble.begin();
+  g_wifi.begin();       // rejoin the saved network (no phone needed)
 }
 
 void loop() {
@@ -222,6 +228,7 @@ void loop() {
 
   // Pull our own live data over Wi-Fi (scores/prices/weather/planes/TV) so the
   // panel stays current without the phone. Safe no-op until Wi-Fi + apiBase set.
+  g_wifi.tick();
   g_net.tick();
 
   // Render the current module (reads live from g_settings). DisplayManager
