@@ -660,6 +660,7 @@ def _scoreboard_map(sport: str, lg: str) -> dict:
                     "score": _to_int(c.get("score")),
                     "opp": (oc.get("team") or {}).get("abbreviation"),
                     "oppScore": _to_int(oc.get("score")),
+                    "oppRec": ((oc.get("records") or [{}])[0] or {}).get("summary"),
                     "home": c.get("homeAway") == "home",
                     "name": team.get("displayName"),
                     "logo": team.get("logo"),
@@ -778,7 +779,8 @@ def _team_status_one(code: str) -> dict:
         # for the app's own UI ("@ TB 0-1 End 5th").
         # Keep the team's record from the last non-live lookup if we have one.
         cdet = g.get("cdet") or ""
-        data.update(highlight="live", label=_live_label(vs, opp, score_str, cdet),
+        data.update(highlight="live", oppRecord=g.get("oppRec"),
+                    label=_live_label(vs, opp, score_str, cdet),
                     labelLong=bits.strip(), vs=vs, detail=g["detail"], cdet=cdet,
                     record=_team_record(code, sport, lg, abbr))
         return data  # not cached — refreshes with the 60s scoreboard cache
@@ -805,6 +807,8 @@ def _team_status_one(code: str) -> dict:
                 highlight="recent",
                 label=f"Final {score_str} {vs} {opp}".strip(),
                 vs=vs,
+                detail=detail,
+                oppRecord=g.get("oppRec"),
             )
             return data
 
@@ -940,7 +944,9 @@ def teams_status(teams: str):
     for raw in teams.split("|"):
         code = raw.strip().upper()
         if code:
-            results.append(_team_status_one(code))
+            st = dict(_team_status_one(code))
+            st.update(_game_fields(code, st))
+            results.append(st)
     return {"results": results}
 
 
@@ -1106,6 +1112,49 @@ def _compact_team_label(s: dict, limit: int = 16) -> str:
     return ""
 
 
+def _game_fields(code: str, s: dict) -> dict:
+    """Extra fields for the one-team-per-page game card (firmware 1.1.2+):
+    home/away, opponent record, a readable status line, and the next game's
+    day + time (ET). Opponent record comes from the scoreboard when the game is
+    live/final, otherwise from the opponent's team endpoint (cached 1h)."""
+    from datetime import datetime as _dt
+    from zoneinfo import ZoneInfo
+
+    hl = s.get("highlight")
+    opp = s.get("opponent")
+    league = code.split(":", 1)[0] if ":" in code else ""
+    out = {"home": None, "oppRecord": s.get("oppRecord"), "statusText": "",
+           "nextDay": "", "nextTime": ""}
+    if s.get("vs"):
+        out["home"] = s["vs"] == "vs"
+    if opp and not out["oppRecord"] and league in _LEAGUE_PATH:
+        sp, lg = _LEAGUE_PATH[league]
+        out["oppRecord"] = _team_record(f"{league}:{opp.upper()}", sp, lg, opp)
+    det = " ".join((s.get("detail") or "").replace(" - ", " ").split())
+    if hl == "live":
+        import re as _re
+        m = _re.match(r"^(\d+:\d+(?:\.\d)?) (.+)$", det)   # "18:38 2nd" -> "2nd 18:38"
+        if m:
+            det = f"{m.group(2)} {m.group(1)}"
+        out["statusText"] = det[:21] or "LIVE"
+    elif hl == "recent":
+        low = det.lower()
+        out["statusText"] = ("FINAL/" + det.split("/", 1)[1].upper()) if "/" in det and "final" in low else "FINAL"
+    date = s.get("date")
+    if hl in ("today", "soon", "upcoming") and date:
+        try:
+            et = _dt.fromisoformat(date.replace("Z", "+00:00")).astimezone(ZoneInfo("America/New_York"))
+            days = _days_from_today(et.strftime("%Y-%m-%d"))
+            out["nextDay"] = "TODAY" if days == 0 else ("TOMORROW" if days == 1 else et.strftime("%a %b %-d").upper())
+            if not (et.hour == 0 and et.minute == 0):   # ESPN's "time TBD" placeholder
+                out["nextTime"] = f"{et.hour % 12 or 12}:{et.minute:02d} {'AM' if et.hour < 12 else 'PM'}"
+            else:
+                out["nextTime"] = "TBD"
+        except Exception:  # noqa: BLE001
+            pass
+    return out
+
+
 @api_router.get("/device/scores")
 def device_scores(teams: str):
     def _ascii(s):
@@ -1129,6 +1178,17 @@ def device_scores(teams: str):
                 "k": _ascii(_compact_team_label(s)),
             }
         )
+        # One-team-per-page card fields (firmware 1.1.2+; older firmware's
+        # filter / parser ignores them).
+        gf = _game_fields(code, s)
+        out[-1].update({
+            "op": s.get("opponent") or "",
+            "ha": "" if gf["home"] is None else ("h" if gf["home"] else "a"),
+            "or": gf["oppRecord"] or "",
+            "st": _ascii(gf["statusText"]),
+            "nd": gf["nextDay"],
+            "nt": gf["nextTime"],
+        })
     return {"t": out}
 
 
