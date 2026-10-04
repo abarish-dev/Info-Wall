@@ -19,10 +19,57 @@ import Ionicons from "@react-native-vector-icons/ionicons";
 import Constants from "expo-constants";
 import * as Clipboard from "expo-clipboard";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import * as Haptics from "expo-haptics";
 import { colors, spacing, radius, fonts, fontSize } from "@/src/theme";
 import { ACCENTS, type AccentId } from "@/src/theme";
+import { DOG_FREQ, type DogFreq } from "@/src/constants/controlPanel";
 import { useThemedStyles } from "@/src/hooks/useThemedStyles";
+
+// Reply to the firmware's BLE "diag" command (v1.1.2+).
+export type WallDiag = {
+  fw?: string;
+  url?: string;
+  wifi?: number;
+  ip?: string;
+  rssi?: number;
+  heap?: number;
+  minHeap?: number;
+  blk?: number;
+  psram?: number;
+  clock?: number;
+  up?: number;
+  ep?: Record<string, [number, number, number]>;
+  at?: number; // when the app received it (ms)
+};
+
+const EP_NAMES: Record<string, string> = {
+  time: "Clock",
+  sc: "Scores",
+  pl: "Planes",
+  qt: "Quotes",
+  mk: "Markets",
+  wx: "Weather",
+  fo: "Folly tides",
+  lk: "Lake",
+  tv: "TV",
+};
+
+function ago(sec: number): string {
+  if (sec < 0) return "never";
+  if (sec < 90) return `${sec}s ago`;
+  if (sec < 5400) return `${Math.round(sec / 60)}m ago`;
+  return `${(sec / 3600).toFixed(1)}h ago`;
+}
+
+function codeText(code: number): string {
+  if (code === 200) return "OK";
+  if (code === 0) return "not tried";
+  if (code === -1) return "connect/TLS error";
+  if (code === -2) return "skipped, low memory";
+  if (code === -3) return "bad response";
+  return `HTTP ${code}`;
+}
 
 export type DisplayPatch = {
   wallName?: string;
@@ -115,6 +162,13 @@ export function SettingsSheet({
   wifiStatus,
   themeId,
   onSetTheme,
+  diag,
+  onRunDiag,
+  dogSupported,
+  dogEnabled,
+  dogFreq,
+  onDogChange,
+  onDogNow,
 }: {
   visible: boolean;
   onClose: () => void;
@@ -152,6 +206,13 @@ export function SettingsSheet({
   };
   themeId?: AccentId;
   onSetTheme?: (id: AccentId) => void;
+  diag?: WallDiag | null;
+  onRunDiag?: () => Promise<void>;
+  dogSupported?: boolean;
+  dogEnabled?: boolean;
+  dogFreq?: DogFreq;
+  onDogChange?: (p: { dogEnabled?: boolean; dogFreq?: DogFreq }) => void;
+  onDogNow?: () => void;
 }) {
   const styles = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
@@ -168,11 +229,15 @@ export function SettingsSheet({
   const [showPw, setShowPw] = useState(false);
   const [copied, setCopied] = useState(false);
   const appVersion = Constants.expoConfig?.version ?? "1.0.0";
+  const [diagBusy, setDiagBusy] = useState(false);
+  // Show the build number of THIS platform: on Android that's the versionCode
+  // (the iOS buildNumber "1" was being shown on Android before).
   const buildNumber =
-    Constants.expoConfig?.ios?.buildNumber ??
-    (Constants.expoConfig?.android?.versionCode != null
-      ? String(Constants.expoConfig.android.versionCode)
-      : "1");
+    Platform.OS === "android"
+      ? Constants.expoConfig?.android?.versionCode != null
+        ? String(Constants.expoConfig.android.versionCode)
+        : "?"
+      : Constants.expoConfig?.ios?.buildNumber ?? "1";
   const platformName =
     Platform.OS === "ios"
       ? "iOS"
@@ -227,12 +292,16 @@ export function SettingsSheet({
           </Pressable>
         </View>
 
-        <ScrollView
+        {/* Keyboard-aware so the Wi-Fi / wall-name fields scroll into view
+            above the keyboard instead of being covered by it. */}
+        <KeyboardAwareScrollView
           contentContainerStyle={{
             padding: spacing.lg,
             paddingBottom: insets.bottom + spacing.xl,
             gap: spacing.xl,
           }}
+          bottomOffset={24}
+          keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
           {/* Wall profiles */}
@@ -375,6 +444,68 @@ export function SettingsSheet({
                   : "Connect to push brightness live (saved & synced otherwise)"}
               </Text>
             </View>
+          </View>
+
+          {/* Dog walk-by (firmware 1.1.2+) */}
+          <View style={styles.card} testID="dog-card">
+            <View style={styles.rowBetween}>
+              <View style={{ flex: 1, paddingRight: spacing.md }}>
+                <Text style={styles.sectionTitle}>DOG WALK-BY</Text>
+                <Text style={styles.hint}>
+                  {dogSupported
+                    ? "Every so often the dog walks across the bottom of the wall"
+                    : "Needs wall firmware 1.1.2 or newer"}
+                </Text>
+              </View>
+              <Pressable
+                testID="dog-toggle"
+                onPress={() => {
+                  Haptics.selectionAsync().catch(() => {});
+                  onDogChange?.({ dogEnabled: !dogEnabled });
+                }}
+                style={[styles.switchTrack, dogEnabled && styles.switchTrackOn]}
+              >
+                <View style={[styles.switchThumb, dogEnabled && styles.switchThumbOn]} />
+              </Pressable>
+            </View>
+            {dogEnabled && (
+              <View style={[styles.profileRow, { marginTop: spacing.sm, flexDirection: "row", flexWrap: "wrap" }]}>
+                {(Object.keys(DOG_FREQ) as DogFreq[]).map((k) => {
+                  const active = (dogFreq ?? "some") === k;
+                  return (
+                    <Pressable
+                      key={k}
+                      testID={`dog-freq-${k}`}
+                      onPress={() => {
+                        Haptics.selectionAsync().catch(() => {});
+                        onDogChange?.({ dogFreq: k });
+                      }}
+                      style={[styles.profileChip, active && styles.profileChipActive]}
+                    >
+                      <Text style={[styles.profileChipText, active && styles.profileChipTextActive]}>
+                        {`${DOG_FREQ[k].label} · ${DOG_FREQ[k].min}-${DOG_FREQ[k].max}m`}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
+            <Pressable
+              testID="dog-walk-now"
+              disabled={!liveEnabled || !dogSupported}
+              onPress={() => {
+                Haptics.selectionAsync().catch(() => {});
+                onDogNow?.();
+              }}
+              style={({ pressed }) => [
+                styles.wifiBtn,
+                (!liveEnabled || !dogSupported) && { opacity: 0.5 },
+                pressed && styles.pressed,
+              ]}
+            >
+              <Ionicons name="paw" size={18} color={colors.onBrand} />
+              <Text style={styles.wifiBtnText}>WALK NOW</Text>
+            </Pressable>
           </View>
 
           {/* Display schedule */}
@@ -655,6 +786,75 @@ export function SettingsSheet({
             )}
           </View>
 
+          {/* Wall diagnostics (firmware 1.1.2+) */}
+          <View style={styles.card} testID="wall-diag">
+            <Text style={styles.sectionTitle}>WALL DIAGNOSTICS</Text>
+            <Text style={styles.hint}>
+              What the wall itself reports: firmware, server, Wi-Fi, memory and
+              the last result of each feed it fetches.
+            </Text>
+            <Pressable
+              testID="run-diag-button"
+              disabled={!liveEnabled || diagBusy}
+              onPress={async () => {
+                if (!onRunDiag) return;
+                Haptics.selectionAsync().catch(() => {});
+                setDiagBusy(true);
+                try {
+                  await onRunDiag();
+                } finally {
+                  setDiagBusy(false);
+                }
+              }}
+              style={({ pressed }) => [
+                styles.wifiBtn,
+                (!liveEnabled || diagBusy) && { opacity: 0.5 },
+                pressed && styles.pressed,
+              ]}
+            >
+              {diagBusy ? (
+                <ActivityIndicator size="small" color={colors.onBrand} />
+              ) : (
+                <Ionicons name="pulse" size={18} color={colors.onBrand} />
+              )}
+              <Text style={styles.wifiBtnText}>
+                {liveEnabled ? "RUN DIAGNOSTICS" : "CONNECT TO RUN DIAGNOSTICS"}
+              </Text>
+            </Pressable>
+            {diag ? (
+              <View style={{ gap: 2 }}>
+                <Text style={styles.hint}>
+                  {`Firmware v${diag.fw ?? "?"} · up ${ago(diag.up ?? -1).replace(" ago", "")}`}
+                </Text>
+                <Text style={styles.hint}>{`Server: ${diag.url || "(not set)"}`}</Text>
+                <Text style={styles.hint}>
+                  {diag.wifi
+                    ? `Wi-Fi: connected · ${diag.ip ?? ""} · ${diag.rssi ?? 0} dBm`
+                    : "Wi-Fi: not connected"}
+                  {diag.clock === 0 ? " · clock not set" : ""}
+                </Text>
+                <Text style={styles.hint}>
+                  {`Memory: ${Math.round((diag.heap ?? 0) / 1024)} KB free (lowest ${Math.round(
+                    (diag.minHeap ?? 0) / 1024,
+                  )} KB, largest block ${Math.round((diag.blk ?? 0) / 1024)} KB) · PSRAM ${Math.round(
+                    (diag.psram ?? 0) / 1024,
+                  )} KB`}
+                </Text>
+                {Object.entries(diag.ep ?? {}).map(([k, v]) => (
+                  <Text key={k} style={styles.hint}>
+                    {`${EP_NAMES[k] ?? k}: ${codeText(v[0])}${
+                      v[0] !== 0 ? ` · tried ${ago(v[1])}` : ""
+                    } · last OK ${ago(v[2])}`}
+                  </Text>
+                ))}
+              </View>
+            ) : (
+              <Text style={styles.hint}>
+                Needs wall firmware 1.1.2 or newer.
+              </Text>
+            )}
+          </View>
+
           {/* App version footer */}
           <Pressable
             testID="app-version"
@@ -672,7 +872,7 @@ export function SettingsSheet({
                 : `Info Wall v${appVersion} · build ${buildNumber} · ${platformName} · tap to copy`}
             </Text>
           </Pressable>
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </View>
     </Modal>
   );

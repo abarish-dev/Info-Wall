@@ -87,6 +87,16 @@ export const DEFAULTS = {
   showCountdown: true,
   countdownLabel: "",
   countdownDate: "",
+  dogEnabled: true,
+  dogFreq: "some" as DogFreq,
+};
+
+// Dog walk-by frequency presets -> random interval range (minutes).
+export type DogFreq = "rare" | "some" | "often";
+export const DOG_FREQ: Record<DogFreq, { label: string; min: number; max: number }> = {
+  rare: { label: "Rarely", min: 30, max: 60 },
+  some: { label: "Sometimes", min: 10, max: 30 },
+  often: { label: "Often", min: 3, max: 10 },
 };
 
 export type Settings = {
@@ -119,6 +129,8 @@ export type Settings = {
   showCountdown: boolean;
   countdownLabel: string;
   countdownDate: string;
+  dogEnabled?: boolean;
+  dogFreq?: DogFreq;
 };
 
 export const MAX_ROWS = 8;

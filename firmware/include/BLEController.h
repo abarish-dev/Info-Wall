@@ -22,6 +22,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include "Version.h"
+#include "PsramJson.h"
 
 // --- Must match the app exactly -------------------------------------------
 static const char *SERVICE_UUID        = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
@@ -112,6 +113,21 @@ struct MatrixSettings {
   int    marketCount = 0;
   String marketStatus = "";     // "Open" | "Pre-mkt" | "After hrs" | "Closed"
   String teamShort[8];          // compact <=16-char status ("Sat 7:05p @ TB")
+  uint32_t teamTs[8] = {0};     // epoch when teamLabel/teamShort were last set (0 = unknown)
+  // One-team-per-page game card (backend fields op/ha/s/o/or/st/nd/nt).
+  String teamOpp[8];            // opponent abbr ("TB")
+  String teamOppRec[8];         // opponent record
+  String teamStatus[8];         // readable status ("Top 8th", "2nd 18:26", "FINAL")
+  String teamNextDay[8];        // "TOMORROW" / "TUE OCT 6"
+  String teamNextTime[8];       // "8:20 PM"
+  int8_t teamHome[8]     = {-1, -1, -1, -1, -1, -1, -1, -1};  // 1 home, 0 away, -1 unknown
+  int16_t teamScore[8]   = {-1, -1, -1, -1, -1, -1, -1, -1};
+  int16_t teamOppScore[8] = {-1, -1, -1, -1, -1, -1, -1, -1};
+
+  // Dog walk-by (a sprite of Adam's dachshund crosses the bottom of the panel)
+  bool dogEnabled = true;
+  int  dogMinMin  = 10;         // random interval between walks, minutes
+  int  dogMaxMin  = 30;
 
   // Wi-Fi self-fetch (panel pulls its own live data; no phone required)
   String apiBase        = "";   // e.g. "https://<host>"  (set via BLE "server")
@@ -136,6 +152,8 @@ struct MatrixSettings {
   String follyDir       = "";   // "in" (rising) | "out" (falling) | ""
   String lakeLvl        = "";   // current level, e.g. "97.5"
   String lakeFull       = "";   // vs full pond, e.g. "-2.5"
+  String lakeTgt        = "";   // Duke guide-curve target, e.g. "98.5"
+  String lakeTgtDiff    = "";   // level vs target, e.g. "-1.0"
   int    lakeWater      = 0;    // water temp F (0 = n/a)
 };
 
@@ -155,6 +173,9 @@ class BLEController {
   volatile bool flashRequested = false;
   volatile bool scoreFlashRequested = false;
   volatile bool otaRequested = false;   // BLE "ota": check + install update
+  volatile bool diagRequested = false;  // BLE "diag": loop() notifies a status JSON
+  volatile bool dogNowRequested = false; // BLE "dog" now:true -> walk immediately
+  volatile bool dogResched = false;      // dog settings changed -> pick a new time
   volatile bool planesPushed = false;   // phone pushed a nearest plane (fallback)
   PlaneInfo pushedPlane;
   String flashAbbr;
@@ -166,6 +187,37 @@ class BLEController {
   BLEServer         *server_ = nullptr;
   BLECharacteristic *ch_     = nullptr;
   bool               connected_ = false;
+  // What a READ of the characteristic should return. The BLE stack stores
+  // every incoming WRITE as the characteristic value (before onWrite runs),
+  // which used to wipe the {"fw":...} hello — the app then read back its own
+  // command and showed the firmware as "pre-1.1". onWrite restores this.
+  String             lastValue_;
+
+  // Make sure a stored JSON object always carries "fw" so a READ at any
+  // moment tells the app which firmware this is.
+  static String withFw(const String &json) {
+    if (!json.startsWith("{") || json.indexOf("\"fw\"") >= 0) return json;
+    String body = json.substring(1);
+    body.trim();
+    String o = "{\"fw\":\"" INFOWALL_FW_VERSION "\"";
+    if (!body.startsWith("}")) o += ",";
+    return o + body;
+  }
+  // Called from both the BLE task (onWrite/onConnect) and loop() (notify),
+  // so the shared String is guarded by a mutex.
+  SemaphoreHandle_t valueLock_ = nullptr;
+  void store(const String &json) {
+    String v = withFw(json);
+    if (valueLock_) xSemaphoreTake(valueLock_, portMAX_DELAY);
+    lastValue_ = v;
+    if (ch_) ch_->setValue((uint8_t *)lastValue_.c_str(), lastValue_.length());
+    if (valueLock_) xSemaphoreGive(valueLock_);
+  }
+  void restoreValue() {
+    if (valueLock_) xSemaphoreTake(valueLock_, portMAX_DELAY);
+    if (ch_) ch_->setValue((uint8_t *)lastValue_.c_str(), lastValue_.length());
+    if (valueLock_) xSemaphoreGive(valueLock_);
+  }
 
   void handleJson(const String &raw);
   friend class CharCallbacks;
@@ -182,10 +234,7 @@ class ServerCallbacks : public BLEServerCallbacks {
     // Let the app READ which firmware this is right after connecting (before
     // it sends anything). Firmware older than 1.1.0 never exposes "fw", which
     // is how the app knows not to send "version"/"ota" to it.
-    if (g_ble.ch_) {
-      static const char *hello = "{\"ready\":true,\"fw\":\"" INFOWALL_FW_VERSION "\"}";
-      g_ble.ch_->setValue((uint8_t *)hello, strlen(hello));
-    }
+    g_ble.store("{\"ready\":true,\"fw\":\"" INFOWALL_FW_VERSION "\"}");
   }
   void onDisconnect(BLEServer *s) override {
     g_ble.connected_ = false;
@@ -203,6 +252,9 @@ class CharCallbacks : public BLECharacteristicCallbacks {
     Serial.print("[BLE] rx: ");
     Serial.println(raw);
     g_ble.handleJson(raw);
+    // Undo the stack's "value = what was just written": put back the last
+    // status/hello (always with "fw"), or the read-back echo set by a sync.
+    g_ble.restoreValue();
   }
 };
 
@@ -213,6 +265,7 @@ inline void BLEController::begin() {
   char name[24];
   snprintf(name, sizeof(name), "InfoWall-%04X", (uint16_t)(chip & 0xFFFF));
 
+  if (!valueLock_) valueLock_ = xSemaphoreCreateMutex();
   BLEDevice::init(name);
   server_ = BLEDevice::createServer();
   server_->setCallbacks(new ServerCallbacks());
@@ -225,10 +278,7 @@ inline void BLEController::begin() {
           BLECharacteristic::PROPERTY_NOTIFY);
   ch_->addDescriptor(new BLE2902());   // enables notifications
   ch_->setCallbacks(new CharCallbacks());
-  {
-    static const char *hello = "{\"ready\":true,\"fw\":\"" INFOWALL_FW_VERSION "\"}";
-    ch_->setValue((uint8_t *)hello, strlen(hello));
-  }
+  store("{\"ready\":true,\"fw\":\"" INFOWALL_FW_VERSION "\"}");
 
   service->start();
 
@@ -246,7 +296,7 @@ inline void BLEController::notify(const String &json) {
   // ALWAYS store the value so the app can READ it back as a fallback, even if
   // the BLE link briefly dropped when Wi-Fi started (radio coexistence) and
   // the live notification below was lost.
-  ch_->setValue((uint8_t *)json.c_str(), json.length());
+  store(json);
   if (connected_) {
     ch_->notify();
     Serial.print("[BLE] tx: ");
@@ -260,7 +310,7 @@ inline void BLEController::notify(const String &json) {
 // ---------------------------------------------------------------------------
 // Parse one incoming JSON object and update g_settings. No reboot required.
 inline void BLEController::handleJson(const String &raw) {
-  JsonDocument doc;
+  PSRAM_JSON(doc);
   DeserializationError err = deserializeJson(doc, raw);
   if (err) {
     Serial.print("[JSON] parse error: ");
@@ -287,7 +337,14 @@ inline void BLEController::handleJson(const String &raw) {
     g_settings.isPinned = doc["isPinned"] | g_settings.isPinned;
 
   } else if (strcmp(cmd, "teams") == 0) {
-    for (int i = 0; i < 8; i++) { g_settings.teams[i] = ""; g_settings.teamColor[i] = ""; }
+    for (int i = 0; i < 8; i++) {
+      g_settings.teams[i] = ""; g_settings.teamColor[i] = "";
+      // Slots get re-assigned: drop the old team's game details.
+      g_settings.teamOpp[i] = ""; g_settings.teamOppRec[i] = ""; g_settings.teamStatus[i] = "";
+      g_settings.teamNextDay[i] = ""; g_settings.teamNextTime[i] = "";
+      g_settings.teamHome[i] = -1; g_settings.teamScore[i] = -1; g_settings.teamOppScore[i] = -1;
+      g_settings.teamTs[i] = 0;
+    }
     JsonArray arr = doc["teams"].as<JsonArray>();
     int i = 0;
     for (JsonVariant v : arr) { if (i < 8) g_settings.teams[i++] = v.as<const char *>(); }
@@ -349,7 +406,34 @@ inline void BLEController::handleJson(const String &raw) {
       g_settings.teamRecord[i] = (const char *)(doc[rk] | "");
       g_settings.teamLabel[i] = (const char *)(doc[lk] | "");
       g_settings.teamHL[i] = (const char *)(doc[hk] | "");
+      // The phone's label is newer than any compact Wi-Fi label; drop that so
+      // the display doesn't prefer a stale teamShort over it.
+      g_settings.teamShort[i] = "";
+      g_settings.teamTs[i] = g_settings.teamLabel[i].length() ? (uint32_t)time(nullptr) : 0;
     }
+
+  } else if (strcmp(cmd, "teamcard") == 0) {
+    // One team's game-card fields from the app (Wi-Fi fallback, app 1.1.2+):
+    // { i:1-8, op, ha:"h"|"a", s, o, or, st, nd, nt }. Sent per team so the
+    // write stays well under the BLE attribute size limit.
+    int i = (doc["i"] | 0) - 1;
+    if (i < 0 || i >= 8) return;
+    auto str = [&](const char *k, String &dst) { if (!doc[k].isNull()) dst = (const char *)(doc[k] | ""); };
+    auto num = [&](const char *k, int16_t &dst) {
+      if (!doc[k].isNull()) dst = doc[k].is<int>() ? (int16_t)doc[k].as<int>() : -1;
+    };
+    str("op", g_settings.teamOpp[i]);
+    str("or", g_settings.teamOppRec[i]);
+    str("st", g_settings.teamStatus[i]);
+    str("nd", g_settings.teamNextDay[i]);
+    str("nt", g_settings.teamNextTime[i]);
+    num("s", g_settings.teamScore[i]);
+    num("o", g_settings.teamOppScore[i]);
+    if (!doc["ha"].isNull()) {
+      const char *ha = doc["ha"] | "";
+      g_settings.teamHome[i] = ha[0] == 'h' ? 1 : (ha[0] == 'a' ? 0 : -1);
+    }
+    g_settings.teamTs[i] = (uint32_t)time(nullptr);
 
   } else if (strcmp(cmd, "showdetails") == 0) {
     // Per-show schedule label pushed by the phone (fallback to Wi-Fi fetch).
@@ -370,6 +454,9 @@ inline void BLEController::handleJson(const String &raw) {
     // Phone-pushed Lake Norman level + water temp fallback.
     g_settings.lakeLvl    = (const char *)(doc["lvl"] | "");
     g_settings.lakeFull   = (const char *)(doc["full"] | "");
+    // Optional (app with target support): keep the Wi-Fi value otherwise.
+    if (!doc["tgt"].isNull()) g_settings.lakeTgt = (const char *)(doc["tgt"] | "");
+    if (!doc["dt"].isNull())  g_settings.lakeTgtDiff = (const char *)(doc["dt"] | "");
     g_settings.lakeWater  = doc["w"] | 0;
 
   } else if (strcmp(cmd, "planes") == 0) {
@@ -469,6 +556,23 @@ inline void BLEController::handleJson(const String &raw) {
     notify("{\"fw\":\"" INFOWALL_FW_VERSION "\"}");
     return;
 
+  } else if (strcmp(cmd, "dog") == 0) {
+    // { enabled, min, max } (minutes) and/or { now:true } for a test walk.
+    if (!doc["enabled"].isNull()) g_settings.dogEnabled = doc["enabled"].as<bool>();
+    if (!doc["min"].isNull()) g_settings.dogMinMin = constrain(doc["min"].as<int>(), 1, 720);
+    if (!doc["max"].isNull()) g_settings.dogMaxMin = constrain(doc["max"].as<int>(), 1, 720);
+    if (g_settings.dogMaxMin < g_settings.dogMinMin) g_settings.dogMaxMin = g_settings.dogMinMin;
+    dogResched = true;
+    if (doc["now"] | false) {
+      dogNowRequested = true;
+      if (doc["enabled"].isNull() && doc["min"].isNull()) return;  // test walk only
+    }
+
+  } else if (strcmp(cmd, "diag") == 0) {
+    // App's diagnostics view. Built + notified from loop() (needs NetworkData).
+    diagRequested = true;
+    return;
+
   } else if (strcmp(cmd, "ota") == 0) {
     // App's "Install update" button. Runs in loop() (HTTPS + flash write must
     // not happen inside the BLE callback).
@@ -511,7 +615,7 @@ inline void BLEController::handleJson(const String &raw) {
       g_settings.stocks[i] = (const char *)(doc[sk] | "");
     }
     // Optional read-back so the app shows "confirmed": echo the same JSON.
-    if (ch_) ch_->setValue((uint8_t *)raw.c_str(), raw.length());
+    store(raw);
   }
 
   // Persist the latest config to flash (debounced in loop) and redraw so

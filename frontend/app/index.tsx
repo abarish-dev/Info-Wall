@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   KeyboardAwareScrollView,
   KeyboardStickyView,
+  useKeyboardState,
 } from "react-native-keyboard-controller";
 
 import {
@@ -70,7 +71,7 @@ import {
 } from "@/src/services/ble";
 import { geocodeZip, type GeoResult } from "@/src/services/geocode";
 import { buildBlePayload } from "@/src/services/payload";
-import { SettingsSheet } from "@/src/components/SettingsSheet";
+import { SettingsSheet, type WallDiag } from "@/src/components/SettingsSheet";
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
 
@@ -94,6 +95,7 @@ import {
   type SectionKey,
   type Profile,
   type Settings,
+  DOG_FREQ,
 } from "@/src/constants/controlPanel";
 import { makeStyles } from "@/src/styles/controlPanel";
 
@@ -155,6 +157,22 @@ export default function ControlPanel() {
   // which has no OTA and must be USB-flashed once), latest hosted build, and
   // the state of an in-progress "Install update".
   const [fwVersion, setFwVersion] = useState<string | null>(null);
+  // Wall firmware is at least `v` (unknown version = false: older firmware
+  // may treat an unknown command as a full sync).
+  const fwAtLeast = (v: string) => {
+    if (!fwVersion) return false;
+    const a = fwVersion.split(".").map((n) => parseInt(n, 10) || 0);
+    const b = v.split(".").map((n) => parseInt(n, 10) || 0);
+    for (let i = 0; i < 3; i++) {
+      if ((a[i] ?? 0) !== (b[i] ?? 0)) return (a[i] ?? 0) > (b[i] ?? 0);
+    }
+    return true;
+  };
+  // true once the post-connect version read finished (found or gave up)
+  const [fwChecked, setFwChecked] = useState(false);
+  const [fwRecheck, setFwRecheck] = useState(0);
+  // Last BLE "diag" reply (firmware 1.1.2+), shown in Display Settings.
+  const [diag, setDiag] = useState<WallDiag | null>(null);
   const [fwLatest, setFwLatest] = useState<{
     version: string;
     available: boolean;
@@ -167,6 +185,17 @@ export default function ControlPanel() {
   const [recentZips, setRecentZips] = useState<string[]>([]);
   const [reconnecting, setReconnecting] = useState(false);
   const [reconnectFailed, setReconnectFailed] = useState(false);
+  // Keyboard open => collapse the sticky header and hide the sync bar, which
+  // otherwise filled the space above the keyboard on Android.
+  const kbOpen = useKeyboardState((k) => k.isVisible);
+  // Latest status for async callbacks (a failed auto-reconnect must not
+  // clobber a connection the user made meanwhile).
+  const statusRef = useRef(status);
+  statusRef.current = status;
+  // Any successful connection clears a stale "Reconnect failed" pill.
+  useEffect(() => {
+    if (status === "connected") setReconnectFailed(false);
+  }, [status]);
   const [mapOpen, setMapOpen] = useState(false);
   const [mapZoom, setMapZoom] = useState(11);
   const [mapType, setMapType] = useState<"streets" | "satellite">("streets");
@@ -193,6 +222,8 @@ export default function ControlPanel() {
     lvl?: number | null;
     full?: number | null;
     w?: number | null;
+    tgt?: number | null; // Duke guide-curve target
+    dt?: number | null; // level - target
   } | null>(null);
   const [lastSync, setLastSync] = useState<{
     at: string;
@@ -386,8 +417,12 @@ export default function ControlPanel() {
       setDevice({ name: info.name, rssi: info.rssi });
       toast.show(`Reconnected to ${info.name}`, "success");
     } catch {
-      setStatus("disconnected");
-      setReconnectFailed(true);
+      // If another connect (manual tap, or the BLE stack) already got us
+      // connected, this failure is moot: keep the connection, no pill.
+      if (statusRef.current !== "connected") {
+        setStatus("disconnected");
+        setReconnectFailed(true);
+      }
     } finally {
       setReconnecting(false);
     }
@@ -511,9 +546,54 @@ export default function ControlPanel() {
           cmd[`hl${i + 1}`] = s?.highlight ?? "";
         });
       writeLive(cmd).catch(() => {});
+      // One-team-per-page card fields (firmware 1.1.2+), one write per team to
+      // stay under the BLE attribute size limit.
+      if (fwAtLeast("1.1.2")) {
+        (async () => {
+          const codes = settings.teams.map((x) => x.trim()).filter(Boolean);
+          for (let i = 0; i < codes.length; i++) {
+            const s: any = teamStatuses[codes[i].toUpperCase()];
+            if (!s) continue;
+            await writeLive({
+              command: "teamcard",
+              i: i + 1,
+              op: s.opponent ?? "",
+              ha: s.home === true ? "h" : s.home === false ? "a" : "",
+              s: s.score ?? -1,
+              o: s.oppScore ?? -1,
+              or: s.oppRecord ?? "",
+              st: s.statusText ?? "",
+              nd: s.nextDay ?? "",
+              nt: s.nextTime ?? "",
+            }).catch(() => {});
+            await new Promise((r) => setTimeout(r, 60));
+          }
+        })();
+      }
     }, 800);
     return () => clearTimeout(t);
-  }, [teamStatuses, settings.teams, status]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [teamStatuses, settings.teams, status, fwVersion]);
+
+  // Dog walk-by settings (firmware 1.1.2+).
+  const dogCmd = () => {
+    const f = DOG_FREQ[settings.dogFreq ?? "some"] ?? DOG_FREQ.some;
+    return { command: "dog", enabled: settings.dogEnabled ?? true, min: f.min, max: f.max };
+  };
+  useEffect(() => {
+    if (status !== "connected" || !fwAtLeast("1.1.2")) return;
+    const t = setTimeout(() => writeLive(dogCmd()).catch(() => {}), 800);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings.dogEnabled, settings.dogFreq, status, fwVersion]);
+  const dogWalkNow = async () => {
+    if (!fwAtLeast("1.1.2")) return;
+    try {
+      await writeLive({ command: "dog", now: true });
+    } catch {
+      toast.show("Couldn't reach the wall", "error");
+    }
+  };
 
   // Live push of per-show schedule labels (next episode / season premiere).
   useEffect(() => {
@@ -783,7 +863,7 @@ export default function ControlPanel() {
   // if the panel's own fetch returns a stale/blank temp. Mirrors the panel's
   // own formatting (level to 1dp; "full" as the signed delta from full pond).
   useEffect(() => {
-    if (status !== "connected" || !settings.showLKN || !lakeData) return;
+    if (status !== "connected" || !fwChecked || !settings.showLKN || !lakeData) return;
     const d: any = lakeData;
     if (d.lvl == null) return;
     const lvl = Number(d.lvl).toFixed(1);
@@ -793,8 +873,14 @@ export default function ControlPanel() {
       full = (diff >= 0 ? "+" : "") + diff.toFixed(1);
     }
     const w = d.w != null ? Math.round(Number(d.w)) : 0;
-    writeLive({ command: "lake", lvl, full, w }).catch(() => {});
-  }, [status, settings.showLKN, lakeData]);
+    const cmd: Record<string, unknown> = { command: "lake", lvl, full, w };
+    if (d.tgt != null) {
+      const dt = d.dt != null ? Number(d.dt) : Number(d.lvl) - Number(d.tgt);
+      cmd.tgt = Number(d.tgt).toFixed(1);
+      cmd.dt = (dt >= 0 ? "+" : "") + dt.toFixed(1);
+    }
+    writeLive(cmd).catch(() => {});
+  }, [status, fwChecked, settings.showLKN, lakeData]);
 
 
   // Auto full-sync whenever the phone (re)connects, so the wall always matches
@@ -822,7 +908,9 @@ export default function ControlPanel() {
   useEffect(() => {
     if (status !== "connected") return;
     monitorMatrix((obj) => {
+      setReconnectFailed(false); // the wall is talking to us
       if (typeof obj?.fw === "string") setFwVersion(obj.fw);
+      if (obj?.diag) setDiag({ ...obj, at: Date.now() });
       if (typeof obj?.ota === "string") {
         if (obj.ota === "installing") {
           setOtaState("installing");
@@ -860,23 +948,36 @@ export default function ControlPanel() {
   useEffect(() => {
     if (status !== "connected") {
       setFwVersion(null);
+      setFwChecked(false);
       setOtaState("idle");
       return;
     }
+    // The firmware's {"ready","fw"} hello lives on the same characteristic the
+    // app writes to, and ESP32 BLE overwrites it with every write (e.g. the
+    // lake push that fires the moment we connect). So: read early, retry a few
+    // times, and treat "no fw seen" as UNKNOWN, not pre-1.1.
     let cancelled = false;
-    const t = setTimeout(async () => {
+    let tries = 0;
+    let t: ReturnType<typeof setTimeout>;
+    const attempt = async () => {
       const v: any = await readSettings();
       if (cancelled) return;
+      if (v) setReconnectFailed(false);
       if (typeof v?.fw === "string") {
         setFwVersion(v.fw);
+        setFwChecked(true);
         writeLive({ command: "version" }).catch(() => {});
+        return;
       }
-    }, 400);
+      if (++tries < 4) t = setTimeout(attempt, 600);
+      else setFwChecked(true); // give up: show "couldn't read" + Re-check
+    };
+    t = setTimeout(attempt, 150);
     return () => {
       cancelled = true;
       clearTimeout(t);
     };
-  }, [status]);
+  }, [status, fwRecheck]);
 
   // Ask the backend for the latest hosted firmware once we know the version.
   useEffect(() => {
@@ -967,6 +1068,28 @@ export default function ControlPanel() {
       if (p) setLastPass(p);
     })();
   }, []);
+
+  // Display Settings → "Run diagnostics": ask the wall for its status. The
+  // reply arrives as a notify (handled by the monitor above); if that's lost,
+  // read the stored value back after ~700ms.
+  const runDiag = async () => {
+    if (!isConnected) return;
+    const sentAt = Date.now();
+    try {
+      await writeLive({ command: "diag" });
+    } catch {
+      return;
+    }
+    await new Promise((r) => setTimeout(r, 700));
+    const v: any = await readSettings();
+    if (v?.diag) setDiag({ ...v, at: Date.now() });
+    else
+      setDiag((d) => {
+        if (d?.at && d.at >= sentAt) return d; // notify already delivered it
+        toast.show("No diagnostics reply (wall firmware 1.1.2+ needed)", "info");
+        return d;
+      });
+  };
 
   const handleSaveWifi = async (ssid: string, password: string) => {
     if (!ssid.trim()) {
@@ -1426,6 +1549,7 @@ export default function ControlPanel() {
           countdownLabel: settings.countdownLabel.trim(),
           countdownDate: settings.countdownDate,
         },
+        ...(fwAtLeast("1.1.2") ? [dogCmd()] : []),
       ];
 
       let sent = 0;
@@ -1461,6 +1585,7 @@ export default function ControlPanel() {
         `${payload.radius} mi · ${teamCount} teams · ${showCount} shows · ` +
         `${payload.showWeather ? `wx ${payload.lat.toFixed(2)},${payload.lon.toFixed(2)}` : "wx off"} · ` +
         `${payload.trackFlight && payload.flightIdent ? `flight ${payload.flightIdent}` : "no flight"}`;
+      if (confirmed) setReconnectFailed(false);
       const record = { at: nowIso, summary };
       setLastSync(record);
       storage.setItem(LAST_SYNC_KEY, record);
@@ -1529,7 +1654,13 @@ export default function ControlPanel() {
           locations={[0, 0.55, 1]}
           style={StyleSheet.absoluteFill}
         />
-        <View style={[styles.heroContent, { paddingTop: insets.top + spacing.md }]}>
+        <View
+          style={[
+            styles.heroContent,
+            { paddingTop: insets.top + spacing.md },
+            kbOpen && { paddingBottom: spacing.sm },
+          ]}
+        >
           <View style={styles.brandRow}>
             <View style={[styles.logoBox, { borderColor: activeColor }]}>
               <Ionicons name="grid" size={18} color={activeColor} />
@@ -1578,6 +1709,9 @@ export default function ControlPanel() {
             </Pressable>
           </View>
 
+          {/* While typing, collapse the header to just the title row so the
+              focused field stays visible above the keyboard (Android). */}
+          {!kbOpen && (<>
           <View style={styles.statusRow}>
             <Pressable
               testID="connect-button"
@@ -1634,7 +1768,7 @@ export default function ControlPanel() {
                 </Text>
               </View>
             )}
-            {!reconnecting && reconnectFailed && (
+            {!reconnecting && reconnectFailed && status !== "connected" && (
               <Pressable
                 testID="reconnect-retry"
                 onPress={attemptReconnect}
@@ -1730,11 +1864,20 @@ export default function ControlPanel() {
             <View testID="firmware-row" style={styles.fwRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.fwLabel}>
-                  {fwVersion ? `Firmware v${fwVersion}` : "Firmware: pre-1.1"}
+                  {fwVersion
+                    ? `Firmware v${fwVersion}`
+                    : fwChecked
+                      ? "Firmware: unknown"
+                      : "Firmware: checking…"}
                 </Text>
-                <Text style={styles.fwSub}>
+                <Text
+                  style={styles.fwSub}
+                  onPress={() => !fwVersion && fwChecked && (setFwChecked(false), setFwRecheck((n) => n + 1))}
+                >
                   {!fwVersion
-                    ? "No wireless updates yet. Flash v1.1 over USB once."
+                    ? fwChecked
+                      ? "Couldn't read the version. Tap to re-check (pre-1.1 walls need one USB flash)."
+                      : "Reading the wall's firmware…"
                     : fwNewer
                       ? `v${fwLatest?.version} is available`
                       : fwLatest?.available
@@ -1758,6 +1901,7 @@ export default function ControlPanel() {
               )}
             </View>
           )}
+          </>)}
         </View>
       </View>
 
@@ -1768,7 +1912,7 @@ export default function ControlPanel() {
           styles.scrollContent,
           { paddingBottom: 120 + insets.bottom },
         ]}
-        bottomOffset={90}
+        bottomOffset={kbOpen ? 24 : 90}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -2032,6 +2176,13 @@ export default function ControlPanel() {
                       ).toFixed(1)} ft vs full`
                     : ""}
                 </Text>
+                {lakeData.tgt != null && (
+                  <Text style={styles.readoutSub}>
+                    {`Target ${Number(lakeData.tgt).toFixed(1)} ft  ·  ${
+                      (lakeData.dt ?? Number(lakeData.lvl) - Number(lakeData.tgt)) >= 0 ? "+" : ""
+                    }${Number(lakeData.dt ?? Number(lakeData.lvl) - Number(lakeData.tgt)).toFixed(1)} ft vs target`}
+                  </Text>
+                )}
                 {lakeData.w != null && lakeData.w > 0 && (
                   <Text style={styles.readoutSub}>
                     Water {lakeData.w}°F
@@ -2282,7 +2433,8 @@ export default function ControlPanel() {
         </Section>
       </KeyboardAwareScrollView>
 
-      {/* ---------- STICKY SYNC ---------- */}
+      {/* ---------- STICKY SYNC ---------- (hidden while typing) */}
+      {!kbOpen && (
       <KeyboardStickyView>
         <View
           style={[
@@ -2309,6 +2461,7 @@ export default function ControlPanel() {
           </Pressable>
         </View>
       </KeyboardStickyView>
+      )}
 
       {/* Map Peek */}
       <Modal
@@ -2587,6 +2740,13 @@ export default function ControlPanel() {
         wifiStatus={wifiStatus}
         themeId={themeId}
         onSetTheme={setTheme}
+        diag={diag}
+        onRunDiag={runDiag}
+        dogSupported={fwAtLeast("1.1.2")}
+        dogEnabled={settings.dogEnabled ?? true}
+        dogFreq={settings.dogFreq ?? "some"}
+        onDogChange={(p) => patchSettings(p)}
+        onDogNow={dogWalkNow}
       />
 
       {/* Device picker (multiple FlightWall- boards nearby) */}

@@ -24,9 +24,24 @@
 #include <ArduinoJson.h>
 #include <sys/time.h>
 #include "BLEController.h"
+#include "PsramJson.h"
+#include "Version.h"
 #include "DisplayManager.h"
 
 extern DisplayManager g_display;
+
+// Endpoints the panel fetches, for retry bookkeeping and the BLE "diag" reply.
+enum Endpoint { EP_TIME, EP_SCORES, EP_PLANES, EP_QUOTES, EP_MARKETS, EP_WEATHER,
+                EP_FOLLY, EP_LAKE, EP_TV, EP_COUNT };
+static const char *const kEpNames[EP_COUNT] = {"time", "sc", "pl", "qt", "mk",
+                                               "wx", "fo", "lk", "tv"};
+// Result codes besides HTTP status: -1 connection/TLS error, -2 skipped (low
+// internal heap), -3 JSON parse error, 0 never attempted.
+struct EpStat {
+  int16_t code = 0;
+  unsigned long atMs = 0;   // last attempt
+  unsigned long okMs = 0;   // last success
+};
 
 class NetworkData {
  public:
@@ -48,6 +63,9 @@ class NetworkData {
     // tick after Wi-Fi connects, when every feed is "due") fragments the heap
     // and makes later handshakes EOF (-29312). Spacing them lets RAM recover.
     if (now - tLastFetch_ < kFetchGapMs) return;
+    // A fetch blocks the loop for up to several seconds; don't start one while
+    // the dog is crossing the screen (it would freeze mid-step).
+    if (g_display.dogActive()) return;
 
     // Clock fallback: some networks block NTP (UDP 123) while allowing HTTPS,
     // so getLocalTime() may never succeed. If the clock still isn't valid,
@@ -63,17 +81,59 @@ class NetworkData {
       }
     }
 
-    if (due(now, tScores_, 30000))       { fetchScores();  tLastFetch_ = now; return; }
-    if (due(now, tPlanes_, 30000))       { fetchPlanes();  tLastFetch_ = now; return; }
-    if (due(now, tQuotes_, 120000))      { fetchQuotes();  tLastFetch_ = now; return; }
-    if (g_settings.showMarkets && due(now, tMarkets_, 60000)) { fetchMarkets(); tLastFetch_ = now; return; }
-    if (due(now, tWeather_, 900000))     { fetchWeather(); tLastFetch_ = now; return; }
-    if (due(now, tFolly_, 1800000))      { fetchFolly();   tLastFetch_ = now; return; }
-    if (due(now, tLake_, 3600000))       { fetchLake();    tLastFetch_ = now; return; }
-    if (due(now, tTv_, 3600000))         { fetchTv();      tLastFetch_ = now; return; }
+    // A fetch only counts as done when it SUCCEEDS. On a skip (low heap) or a
+    // failure it is retried in ~30s instead of waiting its full interval
+    // (an hour for lake/TV), which is what left the lake page blank.
+    if (due(now, tScores_, 30000))   { settle(now, tScores_, 30000, fetchScores());     tLastFetch_ = now; return; }
+    if (due(now, tPlanes_, 30000))   { settle(now, tPlanes_, 30000, fetchPlanes());     tLastFetch_ = now; return; }
+    if (due(now, tQuotes_, 120000))  { settle(now, tQuotes_, 120000, fetchQuotes());    tLastFetch_ = now; return; }
+    if (g_settings.showMarkets && due(now, tMarkets_, 60000)) { settle(now, tMarkets_, 60000, fetchMarkets()); tLastFetch_ = now; return; }
+    if (due(now, tWeather_, 900000)) { settle(now, tWeather_, 900000, fetchWeather());  tLastFetch_ = now; return; }
+    if (due(now, tFolly_, 1800000))  { settle(now, tFolly_, 1800000, fetchFolly());     tLastFetch_ = now; return; }
+    if (due(now, tLake_, 3600000))   { settle(now, tLake_, 3600000, fetchLake());       tLastFetch_ = now; return; }
+    if (due(now, tTv_, 3600000))     { settle(now, tTv_, 3600000, fetchTv());           tLastFetch_ = now; return; }
+  }
+
+  // Compact status for the app's diagnostics (BLE "diag"). Per endpoint:
+  // [last result code, seconds since last attempt, seconds since last OK]
+  // (-1 = never).
+  String diagJson() {
+    unsigned long now = millis();
+    auto ago = [now](unsigned long t) -> long { return t ? (long)((now - t) / 1000) : -1L; };
+    bool up = WiFi.status() == WL_CONNECTED;
+    String j = "{\"diag\":1,\"fw\":\"" INFOWALL_FW_VERSION "\",\"url\":\"";
+    j += g_settings.apiBase;
+    j += "\",\"wifi\":";
+    j += up ? "1" : "0";
+    j += ",\"ip\":\"";
+    j += up ? WiFi.localIP().toString() : String("");
+    j += "\",\"rssi\":" + String(up ? WiFi.RSSI() : 0);
+    j += ",\"heap\":" + String((unsigned)ESP.getFreeHeap());
+    j += ",\"minHeap\":" + String((unsigned)ESP.getMinFreeHeap());
+    j += ",\"blk\":" + String((unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL));
+    j += ",\"psram\":" + String((unsigned)ESP.getFreePsram());
+    j += ",\"clock\":" + String(clockValid_ ? 1 : 0);
+    j += ",\"up\":" + String(now / 1000);
+    j += ",\"ep\":{";
+    for (int i = 0; i < EP_COUNT; i++) {
+      if (i) j += ",";
+      j += "\""; j += kEpNames[i]; j += "\":[";
+      j += String(stat_[i].code) + "," + String(ago(stat_[i].atMs)) + "," + String(ago(stat_[i].okMs)) + "]";
+    }
+    j += "}}";
+    return j;
   }
 
  private:
+  EpStat stat_[EP_COUNT];
+  static const unsigned long kRetryMs = 30000;
+
+  // After a due() slot ran: on failure, pull the next attempt in to ~30s.
+  static void settle(unsigned long now, unsigned long &last, unsigned long every, bool ok) {
+    if (ok || every <= kRetryMs) return;
+    last = now - (every - kRetryMs);
+    if (last == 0) last = 1;
+  }
   unsigned long tScores_ = 0, tQuotes_ = 0, tWeather_ = 0, tPlanes_ = 0, tTv_ = 0;
   unsigned long tFolly_ = 0, tLake_ = 0, tMarkets_ = 0;
   unsigned long tLastFetch_ = 0;
@@ -104,15 +164,18 @@ class NetworkData {
   // Retries a few times — the ESP32 TLS handshake can transiently EOF
   // (-29312) under BLE + Wi-Fi memory pressure / Cloudflare. Guards against
   // low heap and gives the socket time to fully reset between attempts.
-  bool getJson(const String &path, JsonDocument &doc) {
+  bool getJson(const String &path, JsonDocument &doc, Endpoint ep,
+               const JsonDocument *filter = nullptr) {
+    EpStat &st = stat_[ep];
+    st.atMs = millis() | 1;
     String url = g_settings.apiBase + path;
     for (int attempt = 0; attempt < 3; attempt++) {
-      // A TLS handshake to Cloudflare needs a large contiguous allocation.
-      // If the heap is too low/fragmented the handshake WILL EOF, so skip and
-      // let the next cycle retry once RAM has recovered.
+      // A TLS handshake needs a large contiguous INTERNAL allocation. If the
+      // heap is too low the handshake will EOF, so skip; tick() retries in ~30s.
       if (ESP.getFreeHeap() < 45000) {
         Serial.printf("[NET] %s skip — low heap %u\n", path.c_str(),
                       (unsigned)ESP.getFreeHeap());
+        st.code = -2;
         return false;
       }
       WiFiClientSecure client;
@@ -122,6 +185,7 @@ class NetworkData {
       if (!http.begin(client, url)) {
         http.end();
         client.stop();
+        st.code = -1;
         delay(600);
         continue;
       }
@@ -129,17 +193,26 @@ class NetworkData {
       http.setTimeout(12000);
       int code = http.GET();
       if (code == 200) {
-        bool ok = deserializeJson(doc, http.getStream()) == DeserializationError::Ok;
+        // Parse straight from the socket into a PSRAM-backed document, keeping
+        // only the fields the panel actually uses.
+        DeserializationError err =
+            filter ? deserializeJson(doc, http.getStream(), DeserializationOption::Filter(*filter))
+                   : deserializeJson(doc, http.getStream());
         http.end();
         client.stop();
-        if (ok) {
+        if (!err) {
           Serial.printf("[NET] %s OK (heap %u)\n", path.c_str(),
                         (unsigned)ESP.getFreeHeap());
+          st.code = 200;
+          st.okMs = millis() | 1;
           return true;
         }
+        Serial.printf("[NET] %s parse error: %s\n", path.c_str(), err.c_str());
+        st.code = -3;
       } else {
         Serial.printf("[NET] %s -> HTTP %d (heap %u, try %d)\n", path.c_str(),
                       code, (unsigned)ESP.getFreeHeap(), attempt + 1);
+        st.code = code < 0 ? -1 : code;
         http.end();
         client.stop();
       }
@@ -151,8 +224,8 @@ class NetworkData {
   // Set the RTC from the backend's epoch (used when NTP is blocked). The TZ
   // env is already configured by configTzTime(), so localtime() stays Eastern.
   void httpSyncTime() {
-    JsonDocument doc;
-    if (!getJson("/api/device/time", doc)) return;
+    PSRAM_JSON(doc);
+    if (!getJson("/api/device/time", doc, EP_TIME)) return;
     long epoch = doc["epoch"] | 0L;
     if (epoch < 1000000000L) return;  // sanity: must be after 2001
     struct timeval tv;
@@ -173,11 +246,15 @@ class NetworkData {
     return s;
   }
 
-  void fetchScores() {
+  bool fetchScores() {
     String teams = csvTeams();
-    if (!teams.length()) return;
-    JsonDocument doc;
-    if (!getJson("/api/device/scores?teams=" + enc(teams), doc)) return;
+    if (!teams.length()) return true;
+    PSRAM_JSON(doc);
+    PSRAM_JSON(filter);
+    JsonObject ft = filter["t"].add<JsonObject>();
+    for (const char *k : {"c", "s", "h", "l", "r", "k", "o", "op", "ha", "or", "st", "nd", "nt"}) ft[k] = true;
+    if (!getJson("/api/device/scores?teams=" + enc(teams), doc, EP_SCORES, &filter)) return false;
+    const uint32_t nowEpoch = (uint32_t)time(nullptr);
     // Store per-team (aligned to g_settings.teams[]) so the display can show
     // the team abbr with its own record + next game / live score.
     for (JsonVariant e : doc["t"].as<JsonArray>()) {
@@ -188,6 +265,19 @@ class NetworkData {
       g_settings.teamRecord[slot] = (const char *)(e["r"] | "");
       g_settings.teamHL[slot]     = (const char *)(e["h"] | "");
       g_settings.teamShort[slot]  = (const char *)(e["k"] | "");
+      g_settings.teamTs[slot]     = nowEpoch;  // label freshness (display dims stale ones)
+      // One-team-per-page card (backend 1.1.2 fields; older backend: absent).
+      g_settings.teamOpp[slot]      = (const char *)(e["op"] | "");
+      g_settings.teamOppRec[slot]   = (const char *)(e["or"] | "");
+      g_settings.teamStatus[slot]   = (const char *)(e["st"] | "");
+      g_settings.teamNextDay[slot]  = (const char *)(e["nd"] | "");
+      g_settings.teamNextTime[slot] = (const char *)(e["nt"] | "");
+      {
+        const char *ha = e["ha"] | "";
+        g_settings.teamHome[slot] = ha[0] == 'h' ? 1 : (ha[0] == 'a' ? 0 : -1);
+      }
+      g_settings.teamScore[slot]    = e["s"].isNull() ? -1 : (int16_t)e["s"].as<float>();
+      g_settings.teamOppScore[slot] = e["o"].isNull() ? -1 : (int16_t)e["o"].as<float>();
       // On-device SCORE flash: a live team's score went up since last check.
       if (strcmp(g_settings.teamHL[slot].c_str(), "live") == 0 && !e["s"].isNull()) {
         float sc = e["s"].as<float>();
@@ -199,18 +289,19 @@ class NetworkData {
         g_settings.prevScore[slot] = sc;
       }
     }
+    return true;
   }
 
-  void fetchQuotes() {
+  bool fetchQuotes() {
     String syms;
     for (int i = 0; i < 8; i++)
       if (g_settings.stocks[i].length()) {
         if (syms.length()) syms += ",";
         syms += g_settings.stocks[i];
       }
-    if (!syms.length()) return;
-    JsonDocument doc;
-    if (!getJson("/api/device/quotes?symbols=" + enc(syms), doc)) return;
+    if (!syms.length()) return true;
+    PSRAM_JSON(doc);
+    if (!getJson("/api/device/quotes?symbols=" + enc(syms), doc, EP_QUOTES)) return false;
     // Track which configured symbols the feed actually priced this cycle.
     bool present[8] = {false, false, false, false, false, false, false, false};
     for (JsonVariant q : doc["q"].as<JsonArray>()) {
@@ -229,27 +320,34 @@ class NetworkData {
     for (int i = 0; i < 8; i++)
       if (g_settings.stocks[i].length())
         g_settings.stockOk[i] = present[i];
+    return true;
   }
 
-  void fetchWeather() {
-    if (!g_settings.showWeather) return;
+  bool fetchWeather() {
+    if (!g_settings.showWeather) return true;
     char path[64];
     snprintf(path, sizeof(path), "/api/weather/current?lat=%.4f&lon=%.4f",
              g_settings.lat, g_settings.lon);
-    JsonDocument doc;
-    if (!getJson(path, doc)) return;
+    PSRAM_JSON(doc);
+    PSRAM_JSON(filter);
+    for (const char *k : {"temp", "hi", "lo", "text"}) filter[k] = true;
+    if (!getJson(path, doc, EP_WEATHER, &filter)) return false;
     if (!doc["temp"].isNull()) g_settings.wxTemp = doc["temp"].as<int>();
     if (!doc["hi"].isNull()) g_settings.wxHi = doc["hi"].as<int>();
     if (!doc["lo"].isNull()) g_settings.wxLo = doc["lo"].as<int>();
     g_settings.wxText = (const char *)(doc["text"] | "");
+    return true;
   }
 
-  void fetchPlanes() {
+  bool fetchPlanes() {
     char path[80];
     snprintf(path, sizeof(path), "/api/device/planes?lat=%.4f&lon=%.4f&radius=%d",
              g_settings.lat, g_settings.lon, g_settings.radius);
-    JsonDocument doc;
-    if (!getJson(path, doc)) return;
+    PSRAM_JSON(doc);
+    PSRAM_JSON(filter);
+    JsonObject fp = filter["p"].add<JsonObject>();
+    for (const char *k : {"f", "fn", "al", "ia", "lg", "fr", "to", "typ", "alt", "spd", "d"}) fp[k] = true;
+    if (!getJson(path, doc, EP_PLANES, &filter)) return false;
     PlaneInfo list[6];
     int n = 0;
     for (JsonVariant f : doc["p"].as<JsonArray>()) {
@@ -275,11 +373,16 @@ class NetworkData {
     // Replaces the in-range list; new callsigns interrupt the rotation once,
     // gone ones drop out of the cycle immediately.
     g_display.notePlanes(list, n);
+    return true;
   }
 
-  void fetchMarkets() {
-    JsonDocument doc;
-    if (!getJson("/api/device/markets", doc)) return;
+  bool fetchMarkets() {
+    PSRAM_JSON(doc);
+    PSRAM_JSON(filter);
+    filter["st"] = true;
+    JsonObject fm = filter["m"].add<JsonObject>();
+    for (const char *k : {"n", "v", "c", "b", "sp"}) fm[k] = true;
+    if (!getJson("/api/device/markets", doc, EP_MARKETS, &filter)) return false;
     int n = 0;
     for (JsonVariant m : doc["m"].as<JsonArray>()) {
       if (n >= 3) break;
@@ -299,12 +402,13 @@ class NetworkData {
     }
     g_settings.marketCount = n;
     g_settings.marketStatus = (const char *)(doc["st"] | "");
+    return true;
   }
 
-  void fetchFolly() {
-    if (!g_settings.showFolly) return;
-    JsonDocument doc;
-    if (!getJson("/api/device/folly", doc)) return;
+  bool fetchFolly() {
+    if (!g_settings.showFolly) return true;
+    PSRAM_JSON(doc);
+    if (!getJson("/api/device/folly", doc, EP_FOLLY)) return false;
     String lines[2];
     int i = 0;
     for (JsonVariant ev : doc["e"].as<JsonArray>()) {
@@ -318,33 +422,44 @@ class NetworkData {
     g_settings.follyL2 = lines[1];
     g_settings.follyWater = doc["w"] | 0;
     g_settings.follyDir = (const char *)(doc["dir"] | "");
+    return true;
   }
 
-  void fetchLake() {
-    if (!g_settings.showLKN) return;
-    JsonDocument doc;
-    if (!getJson("/api/device/lake", doc)) return;
+  bool fetchLake() {
+    if (!g_settings.showLKN) return true;
+    PSRAM_JSON(doc);
+    if (!getJson("/api/device/lake", doc, EP_LAKE)) return false;
     if (!doc["lvl"].isNull()) {
       float lvl = doc["lvl"].as<float>();
       g_settings.lakeLvl = String(lvl, 1);
-      if (!doc["full"].isNull()) {
-        float diff = lvl - doc["full"].as<float>();
-        g_settings.lakeFull = (diff >= 0 ? String("+") : String("")) + String(diff, 1);
+      auto signedFt = [](float d) { return (d >= 0 ? String("+") : String("")) + String(d, 1); };
+      // Prefer the backend's differences (computed from unrounded levels).
+      if (!doc["df"].isNull()) g_settings.lakeFull = signedFt(doc["df"].as<float>());
+      else if (!doc["full"].isNull()) g_settings.lakeFull = signedFt(lvl - doc["full"].as<float>());
+      // Duke's guide-curve target for today, and the level's distance from it.
+      if (!doc["tgt"].isNull()) {
+        float tgt = doc["tgt"].as<float>();
+        g_settings.lakeTgt = String(tgt, 1);
+        g_settings.lakeTgtDiff = signedFt(doc["dt"].isNull() ? lvl - tgt : doc["dt"].as<float>());
       }
     }
     g_settings.lakeWater = doc["w"] | 0;
+    return true;
   }
 
-  void fetchTv() {
+  bool fetchTv() {
     String names;
     for (int i = 0; i < 8; i++)
       if (g_settings.shows[i].length()) {
         if (names.length()) names += "|";
         names += g_settings.shows[i];
       }
-    if (!names.length()) return;
-    JsonDocument doc;
-    if (!getJson("/api/device/tv?names=" + enc(names), doc)) return;
+    if (!names.length()) return true;
+    PSRAM_JSON(doc);
+    PSRAM_JSON(filter);
+    JsonObject fv = filter["v"].add<JsonObject>();
+    fv["n"] = true; fv["l"] = true;
+    if (!getJson("/api/device/tv?names=" + enc(names), doc, EP_TV, &filter)) return false;
     // Store each show's schedule label (next episode / season start) aligned
     // to shows[] so the panel can show WHEN, not just the show name.
     for (JsonVariant v : doc["v"].as<JsonArray>()) {
@@ -353,6 +468,7 @@ class NetworkData {
       for (int i = 0; i < 8; i++)
         if (g_settings.shows[i] == nm) g_settings.showLabel[i] = lbl;
     }
+    return true;
   }
 
   int teamSlot(const char *code) {

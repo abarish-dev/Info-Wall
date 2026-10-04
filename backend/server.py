@@ -544,6 +544,86 @@ def _to_int(v):
         return None
 
 
+def _live_detail(sport: str, status: dict) -> str:
+    """Compact, ASCII game-state for a LIVE game, sized for the panel's ~16-char
+    team row. Built from ESPN's status object (period/clock/type) with the
+    shortDetail text as fallback.
+      MLB:      T6 / B6 / M5 (middle) / E5 (end), DLY
+      NHL:      P2 4:12, INT1 (intermission), OT 3:10, 2OT, SO
+      NFL/NBA:  Q3 4:12, HALF, END Q1, OT 2:00
+    """
+    import re
+
+    st = status or {}
+    t = st.get("type") or {}
+    short = (t.get("shortDetail") or "").strip()
+    name = (t.get("name") or "").upper()
+    low = short.lower()
+    try:
+        per = int(st.get("period") or 0)
+    except (TypeError, ValueError):
+        per = 0
+    clock = (st.get("displayClock") or "").strip()
+    if clock in ("0:00", "0.0", "00:00"):
+        clock = ""
+
+    if "DELAY" in name or "delay" in low:
+        return "DLY"
+    if "SUSPEND" in name or "suspend" in low:
+        return "SUSP"
+
+    if sport == "baseball":
+        m = re.match(r"^(top|bot|bottom|mid|middle|end)\w*\s+(?:of\s+)?(?:the\s+)?(\d+)", low)
+        if m:
+            return {"t": "T", "b": "B", "m": "M", "e": "E"}[m.group(1)[0]] + m.group(2)
+        return short.replace(" - ", " ")[:8]
+
+    if sport == "hockey":
+        if "SHOOTOUT" in name or "shootout" in low or re.search(r"\bso\b", low):
+            return "SO"
+        reg = 3
+        if per > reg:
+            n = per - reg
+            pl = "OT" if n == 1 else f"{n}OT"
+        else:
+            pl = f"P{per}" if per else ""
+        if "END" in name or low.startswith("end") or "intermission" in low:
+            return f"INT{per}" if 0 < per < reg else f"END {pl}".strip()
+        return f"{pl} {clock}".strip() or short.replace(" - ", " ")
+
+    if sport in ("football", "basketball"):
+        if "HALFTIME" in name or "halftime" in low:
+            return "HALF"
+        reg = 4
+        if per > reg:
+            n = per - reg
+            pl = "OT" if n == 1 else f"{n}OT"
+        else:
+            pl = f"Q{per}" if per else ""
+        if "END" in name or low.startswith("end"):
+            return f"END {pl}".strip()
+        return f"{pl} {clock}".strip() or short.replace(" - ", " ")
+
+    return short.replace(" - ", " ")
+
+
+def _live_label(vs: str, opp, score_str: str, det: str, limit: int = 16) -> str:
+    """Live team label that always fits `limit` chars: drops the "@"/"vs",
+    then the opponent, before ever truncating."""
+    opp = opp or ""
+    cands = [
+        f"{vs} {opp} {score_str} {det}",
+        f"{opp} {score_str} {det}",
+        f"{score_str} {det}",
+        f"{score_str}",
+    ]
+    for c in cands:
+        c = " ".join(c.split())
+        if c and len(c) <= limit:
+            return c
+    return " ".join(cands[-1].split())[:limit] or "LIVE"
+
+
 def _scoreboard_map(sport: str, lg: str) -> dict:
     """abbr -> live/final game info from the league scoreboard (60s cache)."""
     import time as _time
@@ -576,9 +656,11 @@ def _scoreboard_map(sport: str, lg: str) -> dict:
                 m[ab.upper()] = {
                     "state": state,
                     "detail": detail,
+                    "cdet": _live_detail(sport, comp.get("status") or {}) if state == "in" else "",
                     "score": _to_int(c.get("score")),
                     "opp": (oc.get("team") or {}).get("abbreviation"),
                     "oppScore": _to_int(oc.get("score")),
+                    "oppRec": ((oc.get("records") or [{}])[0] or {}).get("summary"),
                     "home": c.get("homeAway") == "home",
                     "name": team.get("displayName"),
                     "logo": team.get("logo"),
@@ -618,6 +700,33 @@ def _next_event_from_schedule(sport: str, lg: str, abbr: str):
     except Exception as exc:  # noqa: BLE001
         logger.warning("espn schedule failed %s/%s %s: %s", sport, lg, abbr, exc)
         return None
+
+
+_record_cache: dict = {}
+
+
+def _team_record(code: str, sport: str, lg: str, abbr: str):
+    """W-L record for the live path (which skips the team endpoint), so the
+    panel's "NYY 93-68" header doesn't go blank during a game. Cached 1h."""
+    import time as _time
+
+    prev = (_team_cache.get(code) or {}).get("data") or {}
+    if prev.get("record"):
+        return prev["record"]
+    hit = _record_cache.get(code)
+    if hit and _time.time() - hit["ts"] < 3600:
+        return hit["rec"]
+    rec = None
+    try:
+        r = requests.get(f"{_ESPN_BASE}/{sport}/{lg}/teams/{abbr.lower()}",
+                         headers=_ESPN_HEADERS, timeout=5)
+        r.raise_for_status()
+        items = ((r.json().get("team") or {}).get("record") or {}).get("items") or []
+        rec = items[0].get("summary") if items else None
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("espn record failed %s: %s", code, exc)
+    _record_cache[code] = {"ts": _time.time(), "rec": rec}
+    return rec
 
 
 def _team_status_one(code: str) -> dict:
@@ -662,8 +771,18 @@ def _team_status_one(code: str) -> dict:
             date=g.get("date"),
         )
         bits = " ".join(x for x in [f"{vs} {opp}", score_str, g["detail"]] if x)
-        data.update(highlight="live", label=f"🔴 {bits}".strip(), vs=vs,
-                    detail=g["detail"])
+        # ASCII only: the app forwards this label to the panel over BLE, and
+        # the panel's 5x7 font draws a UTF-8 emoji as 4 garbage glyphs. The
+        # app pill and the panel already show their own red "live" marker.
+        # `label` is what the app pushes to the panel, so it must fit the
+        # ~16-char team row ("@ TB 0-1 E5"); `labelLong` is the readable form
+        # for the app's own UI ("@ TB 0-1 End 5th").
+        # Keep the team's record from the last non-live lookup if we have one.
+        cdet = g.get("cdet") or ""
+        data.update(highlight="live", oppRecord=g.get("oppRec"),
+                    label=_live_label(vs, opp, score_str, cdet),
+                    labelLong=bits.strip(), vs=vs, detail=g["detail"], cdet=cdet,
+                    record=_team_record(code, sport, lg, abbr))
         return data  # not cached — refreshes with the 60s scoreboard cache
 
     if g and g["state"] == "post":
@@ -688,6 +807,8 @@ def _team_status_one(code: str) -> dict:
                 highlight="recent",
                 label=f"Final {score_str} {vs} {opp}".strip(),
                 vs=vs,
+                detail=detail,
+                oppRecord=g.get("oppRec"),
             )
             return data
 
@@ -777,7 +898,10 @@ def _team_status_one(code: str) -> dict:
 
             if state == "in":
                 bits = " ".join(x for x in [score_str, short] if x)
-                data.update(highlight="live", label=f"🔴 {opp} {bits}".strip())
+                cdet = _live_detail(sport, comp.get("status") or {})
+                data.update(highlight="live", cdet=cdet,
+                            label=_live_label(vs, opp, score_str, cdet),
+                            labelLong=f"{matchup} {bits}".strip())
             elif recent_final:
                 data.update(
                     highlight="recent", label=f"Final {score_str} {matchup}".strip()
@@ -820,7 +944,9 @@ def teams_status(teams: str):
     for raw in teams.split("|"):
         code = raw.strip().upper()
         if code:
-            results.append(_team_status_one(code))
+            st = dict(_team_status_one(code))
+            st.update(_game_fields(code, st))
+            results.append(st)
     return {"results": results}
 
 
@@ -957,6 +1083,8 @@ def _compact_team_label(s: dict, limit: int = 16) -> str:
 
     if hl == "live":
         sc = f"{my}-{op}" if my is not None and op is not None else ""
+        if s.get("cdet") is not None:
+            return _live_label(vs, opp, sc, s.get("cdet") or "", limit)
         det = (s.get("detail") or "").replace(" - ", " ")
         return fit(f"{sc} {det}", f"{sc} {mt}", sc or "LIVE")
     if hl == "recent":
@@ -984,6 +1112,49 @@ def _compact_team_label(s: dict, limit: int = 16) -> str:
     return ""
 
 
+def _game_fields(code: str, s: dict) -> dict:
+    """Extra fields for the one-team-per-page game card (firmware 1.1.2+):
+    home/away, opponent record, a readable status line, and the next game's
+    day + time (ET). Opponent record comes from the scoreboard when the game is
+    live/final, otherwise from the opponent's team endpoint (cached 1h)."""
+    from datetime import datetime as _dt
+    from zoneinfo import ZoneInfo
+
+    hl = s.get("highlight")
+    opp = s.get("opponent")
+    league = code.split(":", 1)[0] if ":" in code else ""
+    out = {"home": None, "oppRecord": s.get("oppRecord"), "statusText": "",
+           "nextDay": "", "nextTime": ""}
+    if s.get("vs"):
+        out["home"] = s["vs"] == "vs"
+    if opp and not out["oppRecord"] and league in _LEAGUE_PATH:
+        sp, lg = _LEAGUE_PATH[league]
+        out["oppRecord"] = _team_record(f"{league}:{opp.upper()}", sp, lg, opp)
+    det = " ".join((s.get("detail") or "").replace(" - ", " ").split())
+    if hl == "live":
+        import re as _re
+        m = _re.match(r"^(\d+:\d+(?:\.\d)?) (.+)$", det)   # "18:38 2nd" -> "2nd 18:38"
+        if m:
+            det = f"{m.group(2)} {m.group(1)}"
+        out["statusText"] = det[:21] or "LIVE"
+    elif hl == "recent":
+        low = det.lower()
+        out["statusText"] = ("FINAL/" + det.split("/", 1)[1].upper()) if "/" in det and "final" in low else "FINAL"
+    date = s.get("date")
+    if hl in ("today", "soon", "upcoming") and date:
+        try:
+            et = _dt.fromisoformat(date.replace("Z", "+00:00")).astimezone(ZoneInfo("America/New_York"))
+            days = _days_from_today(et.strftime("%Y-%m-%d"))
+            out["nextDay"] = "TODAY" if days == 0 else ("TOMORROW" if days == 1 else et.strftime("%a %b %-d").upper())
+            if not (et.hour == 0 and et.minute == 0):   # ESPN's "time TBD" placeholder
+                out["nextTime"] = f"{et.hour % 12 or 12}:{et.minute:02d} {'AM' if et.hour < 12 else 'PM'}"
+            else:
+                out["nextTime"] = "TBD"
+        except Exception:  # noqa: BLE001
+            pass
+    return out
+
+
 @api_router.get("/device/scores")
 def device_scores(teams: str):
     def _ascii(s):
@@ -1007,6 +1178,17 @@ def device_scores(teams: str):
                 "k": _ascii(_compact_team_label(s)),
             }
         )
+        # One-team-per-page card fields (firmware 1.1.2+; older firmware's
+        # filter / parser ignores them).
+        gf = _game_fields(code, s)
+        out[-1].update({
+            "op": s.get("opponent") or "",
+            "ha": "" if gf["home"] is None else ("h" if gf["home"] else "a"),
+            "or": gf["oppRecord"] or "",
+            "st": _ascii(gf["statusText"]),
+            "nd": gf["nextDay"],
+            "nt": gf["nextTime"],
+        })
     return {"t": out}
 
 
@@ -1036,9 +1218,13 @@ def device_quotes(symbols: str):
 # Regional carriers fly under a mainline brand; show that brand's logo on the
 # panel (e.g. PSA / Piedmont / Envoy -> American). Keys are ICAO prefixes.
 _BRAND_LOGO = {
-    "JIA": "AAL", "PDT": "AAL", "ENY": "AAL", "ASH": "AAL",
+    # PSA (JIA), Piedmont (PDT) and Envoy (ENY) now have their own logos
+    # on the panel, so only regionals without one fall back to the mainline.
+    "ASH": "AAL",
     "EDV": "DAL", "CPZ": "DAL", "GJS": "UAL", "UCA": "UAL", "AWI": "UAL",
     "QXE": "ASA",
+    "JZA": "ACA", "ROU": "ACA",  # Air Canada Jazz / Rouge
+    "NJE": "EJA", "XOJ": "VJT",  # NetJets Europe, XOJET (VistaJet US)
 }
 _route_cache: dict = {}
 _ROUTE_TTL = 6 * 3600
@@ -1371,26 +1557,39 @@ LKN_TEMP_SITE = "0214264790"  # Catawba R above NC-73 at Cowans Ford (LKN dam)
 
 
 def _lake_water_temp() -> int | None:
-    try:
-        r = requests.get(
-            USGS_IV,
-            params={
-                "format": "json",
-                "sites": LKN_TEMP_SITE,
-                "parameterCd": "00010",  # water temperature, °C
-                "siteStatus": "active",
-            },
-            timeout=8,
-        )
-        r.raise_for_status()
-        ts = r.json()["value"]["timeSeries"]
-        for series in ts:
-            vals = series["values"][0]["value"]
-            if vals:
-                c = float(vals[-1]["value"])
-                return int(round(c * 9 / 5 + 32))
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("lake water temp failed: %s", exc)
+    """Latest Lake Norman water temp (F) from USGS. USGS intermittently 503s
+    or returns an empty latest value, so try twice, then fall back to the
+    last reading within the past 2 days (period=P2D)."""
+    import time as _time
+
+    attempts = (
+        {"siteStatus": "active"},
+        {"siteStatus": "active"},
+        {"period": "P2D"},
+    )
+    for i, extra in enumerate(attempts):
+        try:
+            r = requests.get(
+                USGS_IV,
+                params={
+                    "format": "json",
+                    "sites": LKN_TEMP_SITE,
+                    "parameterCd": "00010",  # water temperature, degrees C
+                    **extra,
+                },
+                timeout=5,
+            )
+            r.raise_for_status()
+            for series in r.json()["value"]["timeSeries"]:
+                vals = [v for v in series["values"][0]["value"]
+                        if v.get("value") not in (None, "", "-999999")]
+                if vals:
+                    c = float(vals[-1]["value"])
+                    return int(round(c * 9 / 5 + 32))
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("lake water temp attempt %d failed: %s", i + 1, exc)
+        if i == 0:
+            _time.sleep(0.7)
     return None
 
 
@@ -1403,7 +1602,7 @@ def device_lake():
     if cached and _time.time() - cached["ts"] < 3600:
         return cached["data"]
 
-    lvl = tgt = full = None
+    lvl = tgt = full = dt = df = lip = None
     try:
         r = requests.get(DUKE_LEVELS, timeout=8)
         r.raise_for_status()
@@ -1412,6 +1611,16 @@ def device_lake():
                 lvl = round(float(lk["Actual"]), 1)
                 tgt = round(float(lk["Target"]), 1)
                 full = round(float(lk["Max"]), 1)
+                # Differences from the unrounded values (97.46 - 98.50 = -1.0,
+                # not 97.5 - 98.5). "Target" is Duke's operating guide-curve
+                # target for today; "Max" is full pond (100.0).
+                act = float(lk["Actual"])
+                dt = round(act - float(lk["Target"]), 1)
+                df = round(act - float(lk["Max"]), 1)
+                try:
+                    lip = int(lk.get("LowInputStage") or 0)  # Low Inflow Protocol stage
+                except (TypeError, ValueError):
+                    lip = None
                 break
     except Exception as exc:  # noqa: BLE001
         logger.warning("lake level failed: %s", exc)
@@ -1426,13 +1635,15 @@ def device_lake():
     else:
         _lake_cache["w"] = w
 
-    out = {"lvl": lvl, "tgt": tgt, "full": full, "w": w}
+    out = {"lvl": lvl, "tgt": tgt, "full": full, "w": w,
+           "dt": dt, "df": df, "lip": lip}
     # Don't cache a failed cold-cache fetch (would blank the module for the TTL).
     if lvl is not None:
-        # If we still have no water temp, expire sooner (~5 min) so it retries
-        # instead of serving a blank temp for the full hour.
-        ts = _time.time() if w is not None else _time.time() - 3300
-        _lake_cache["d"] = {"ts": ts, "data": out}
+        # A response without a water temp is NOT cached: the panel fetches the
+        # lake only hourly and `w: null` blanks its WATER line, so every request
+        # should retry USGS until it gets a real reading.
+        if w is not None:
+            _lake_cache["d"] = {"ts": _time.time(), "data": out}
     return out
 
 # ---------------------------------------------------------------------------
@@ -1475,6 +1686,7 @@ def firmware_latest(current: str = ""):
         "available": has,
         "update": has and m.get("version", "") != (current or ""),
         "url": _FW_URL,
+        "sha256": m.get("sha256", ""),
     }
 
 

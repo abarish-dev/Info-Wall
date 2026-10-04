@@ -2,14 +2,14 @@
   "expo": {
     "name": "Info Wall",
     "slug": "info-wall",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "frontend",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "1",
+      "buildNumber": "2",
       "bundleIdentifier": "com.abarish.infowall",
       "infoPlist": {
         "NSBluetoothAlwaysUsageDescription": "Connect to your LED matrix to sync settings",
@@ -22,7 +22,8 @@
         "backgroundColor": "#0B1F3A"
       },
       "package": "com.abarish.infowall",
-      "versionCode": 4,
+      "versionCode": 5,
+      "softwareKeyboardLayoutMode": "resize",
       "permissions": [
         "android.permission.BLUETOOTH_SCAN",
         "android.permission.BLUETOOTH_CONNECT",

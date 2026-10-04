@@ -36,6 +36,9 @@ inline void serializeSettings(JsonDocument &d) {
   d["showFolly"] = g_settings.showFolly;
   d["showMkts"] = g_settings.showMarkets;
   d["showCountdown"] = g_settings.showCountdown;
+  d["dog"] = g_settings.dogEnabled;
+  d["dogMin"] = g_settings.dogMinMin;
+  d["dogMax"] = g_settings.dogMaxMin;
   d["countdownLabel"] = g_settings.countdownLabel;
   d["countdownDate"] = g_settings.countdownDate;
   d["showCustomMessage"] = g_settings.showCustomMessage;
@@ -53,6 +56,8 @@ inline void serializeSettings(JsonDocument &d) {
   d["follyDir"] = g_settings.follyDir;
   d["lakeLvl"] = g_settings.lakeLvl;
   d["lakeFull"] = g_settings.lakeFull;
+  d["lakeTgt"] = g_settings.lakeTgt;
+  d["lakeTgtD"] = g_settings.lakeTgtDiff;
   d["lakeW"] = g_settings.lakeWater;
   for (int i = 0; i < 8; i++) {
     d["team"][i] = g_settings.teams[i];
@@ -64,6 +69,15 @@ inline void serializeSettings(JsonDocument &d) {
     d["trec"][i] = g_settings.teamRecord[i];
     d["tlbl"][i] = g_settings.teamLabel[i];
     d["thl"][i] = g_settings.teamHL[i];
+    d["tts"][i] = g_settings.teamTs[i];
+    d["top"][i] = g_settings.teamOpp[i];
+    d["tor"][i] = g_settings.teamOppRec[i];
+    d["tst"][i] = g_settings.teamStatus[i];
+    d["tnd"][i] = g_settings.teamNextDay[i];
+    d["tnt"][i] = g_settings.teamNextTime[i];
+    d["tha"][i] = g_settings.teamHome[i];
+    d["tsc"][i] = g_settings.teamScore[i];
+    d["tos"][i] = g_settings.teamOppScore[i];
     d["slbl"][i] = g_settings.showLabel[i];
   }
   for (int i = 0; i < 4; i++) {
@@ -91,6 +105,9 @@ inline void applySettings(JsonDocument &d) {
   g_settings.showFolly = d["showFolly"] | g_settings.showFolly;
   g_settings.showMarkets = d["showMkts"] | g_settings.showMarkets;
   g_settings.showCountdown = d["showCountdown"] | g_settings.showCountdown;
+  g_settings.dogEnabled = d["dog"] | g_settings.dogEnabled;
+  g_settings.dogMinMin = d["dogMin"] | g_settings.dogMinMin;
+  g_settings.dogMaxMin = d["dogMax"] | g_settings.dogMaxMin;
   g_settings.countdownLabel = (const char *)(d["countdownLabel"] | "");
   g_settings.countdownDate = (const char *)(d["countdownDate"] | "");
   g_settings.showCustomMessage = d["showCustomMessage"] | g_settings.showCustomMessage;
@@ -108,6 +125,8 @@ inline void applySettings(JsonDocument &d) {
   g_settings.follyDir = (const char *)(d["follyDir"] | "");
   g_settings.lakeLvl = (const char *)(d["lakeLvl"] | "");
   g_settings.lakeFull = (const char *)(d["lakeFull"] | "");
+  g_settings.lakeTgt = (const char *)(d["lakeTgt"] | "");
+  g_settings.lakeTgtDiff = (const char *)(d["lakeTgtD"] | "");
   g_settings.lakeWater = d["lakeW"] | 0;
   for (int i = 0; i < 8; i++) {
     g_settings.teams[i] = (const char *)(d["team"][i] | "");
@@ -119,6 +138,15 @@ inline void applySettings(JsonDocument &d) {
     g_settings.teamRecord[i] = (const char *)(d["trec"][i] | "");
     g_settings.teamLabel[i] = (const char *)(d["tlbl"][i] | "");
     g_settings.teamHL[i] = (const char *)(d["thl"][i] | "");
+    g_settings.teamTs[i] = d["tts"][i] | (uint32_t)0;
+    g_settings.teamOpp[i] = (const char *)(d["top"][i] | "");
+    g_settings.teamOppRec[i] = (const char *)(d["tor"][i] | "");
+    g_settings.teamStatus[i] = (const char *)(d["tst"][i] | "");
+    g_settings.teamNextDay[i] = (const char *)(d["tnd"][i] | "");
+    g_settings.teamNextTime[i] = (const char *)(d["tnt"][i] | "");
+    g_settings.teamHome[i] = d["tha"][i] | (int8_t)-1;
+    g_settings.teamScore[i] = d["tsc"][i] | (int16_t)-1;
+    g_settings.teamOppScore[i] = d["tos"][i] | (int16_t)-1;
     g_settings.showLabel[i] = (const char *)(d["slbl"][i] | "");
   }
   for (int i = 0; i < 4; i++) {
@@ -137,7 +165,7 @@ inline void loadSettings() {
     Serial.println("[NVS] no saved config — using defaults");
     return;
   }
-  JsonDocument d;
+  PSRAM_JSON(d);
   if (deserializeJson(d, blob) == DeserializationError::Ok) {
     applySettings(d);
     Serial.println("[NVS] restored saved config");
@@ -156,7 +184,7 @@ inline void maybeSaveSettings() {
   }
   if (pending && millis() - lastChange > 1500) {
     pending = false;
-    JsonDocument d;
+    PSRAM_JSON(d);
     serializeSettings(d);
     String blob;
     serializeJson(d, blob);

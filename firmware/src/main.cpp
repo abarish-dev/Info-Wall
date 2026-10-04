@@ -113,7 +113,7 @@ static void otaCheck() {
       return;
     }
     int code = http.GET();
-    JsonDocument doc;
+    PSRAM_JSON(doc);
     bool ok = code == 200 && !deserializeJson(doc, http.getStream());
     http.end();
     if (!ok) {
@@ -207,6 +207,17 @@ void loop() {
   if (g_ble.otaRequested) {
     g_ble.otaRequested = false;
     otaCheck();
+  }
+
+  // Diagnostics for the app (BLE "diag"): firmware, saved URL, Wi-Fi/IP,
+  // heap and the last result of every Wi-Fi fetch.
+  // Dog walk-by: app's "Walk now" button / changed frequency.
+  if (g_ble.dogResched) { g_ble.dogResched = false; g_display.dogReschedule(); }
+  if (g_ble.dogNowRequested) { g_ble.dogNowRequested = false; g_display.dogNow(); }
+
+  if (g_ble.diagRequested) {
+    g_ble.diagRequested = false;
+    g_ble.notify(g_net.diagJson());
   }
 
   // Pull our own live data over Wi-Fi (scores/prices/weather/planes/TV) so the
