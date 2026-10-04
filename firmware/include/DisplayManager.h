@@ -20,6 +20,9 @@
 #include <time.h>
 #include "BLEController.h"
 #include "Logos.h"
+#include "DogSprite.h"
+#include <Fonts/FreeMono9pt7b.h>
+#include <esp_system.h>
 
 // --- Panel geometry: two chained 64x64 tiles = 128 wide x 64 tall ----------
 #ifndef PANEL_RES_X
@@ -34,6 +37,11 @@
 
 class DisplayManager {
  public:
+  // ---- Dog walk-by ---------------------------------------------------------
+  bool dogActive() const { return dogActive_; }
+  void dogNow() { dogForce_ = true; }
+  void dogReschedule() { dogNext_ = 0; }
+
   void begin() {
     HUB75_I2S_CFG mxconfig(PANEL_RES_X, PANEL_RES_Y, PANEL_CHAIN);
     // MatrixPortal S3 pin map. Adjust here if your wiring differs.
@@ -63,7 +71,13 @@ class DisplayManager {
 
     // 1) Effective brightness (schedule can dim / blank the wall).
     int eff = effectiveBrightness();
-    if (eff <= 0) { dma_->clearScreen(); return; }
+    if (eff <= 0) {
+      // Display off (schedule): a walk that comes due now is skipped, not
+      // saved up for the moment the screen comes back on.
+      if (!dogActive_ && dogNext_ && (long)(millis() - dogNext_) >= 0) scheduleDog(millis());
+      dma_->clearScreen();
+      return;
+    }
 
     unsigned long now = millis();
     // First page, or the current page stopped existing (module turned off,
@@ -78,9 +92,26 @@ class DisplayManager {
     // 2) Advance on hold timeout (unless pinned). A newly seen plane cuts in
     //    immediately (an interrupt card itself is shown for a full hold).
     int hold = max(2000, g_settings.holdDurationMs);
-    bool cutIn = queueLen_ > 0 && !g_settings.isPinned &&
+    // Live games stay up a bit longer than other pages.
+    if (cur_.m == M_SPORTS) {
+      int slot = teamSlotAt(cur_.idx);
+      if (slot >= 0 && g_settings.teamHL[slot] == "live") hold = hold * 3 / 2;
+    }
+
+    // Dog walk-by: at a random time (or on request from the app), the dog
+    // walks across the bottom of whatever page is up. The page doesn't change
+    // under it, and Wi-Fi fetches wait until it's gone.
+    if (!dogActive_) {
+      if (dogNext_ == 0) scheduleDog(now);
+      bool due = g_settings.dogEnabled && (long)(now - dogNext_) >= 0;
+      if ((dogForce_ || due) && !fading_ && hasPage_) {
+        dogActive_ = true; dogForce_ = false; dogStart_ = now;
+      }
+    }
+
+    bool cutIn = !dogActive_ && queueLen_ > 0 && !g_settings.isPinned &&
                  (!cur_.interrupt || now - lastSwitch_ >= (unsigned long)hold);
-    if (!fading_ && (cutIn || (!g_settings.isPinned &&
+    if (!fading_ && !dogActive_ && (cutIn || (!g_settings.isPinned &&
                                now - lastSwitch_ >= (unsigned long)hold))) {
       fading_    = true;
       fadeOut_   = true;
@@ -109,9 +140,17 @@ class DisplayManager {
     }
     dma_->setBrightness8(map(drawBright, 0, 100, 0, 255));
 
-    // 4) Draw the current page.
+    // 4) Draw the current page (+ the dog on top while it's walking).
     dma_->clearScreen();
     drawModule(cur_.m);
+    if (dogActive_) {
+      if (!drawDog(now)) {
+        dogActive_ = false;
+        scheduleDog(now);
+        // Give the page a couple of seconds after the dog leaves.
+        if (now - lastSwitch_ > (unsigned long)hold - 2000UL) lastSwitch_ = now - (hold - 2000UL);
+      }
+    }
   }
 
   // Replace the in-range aircraft list (nearest first). A callsign not seen in
@@ -230,7 +269,7 @@ class DisplayManager {
     Module tmp[14];
     switch (c) {
       case C_INFO:   return infoModules(tmp);
-      case C_TEAMS:  return (anyScore() ? 1 : 0) + teamPages();   // live/final first
+      case C_TEAMS:  return teamCount();   // one team per page (live/final first)
       case C_SHOWS:  return showPages();
       case C_PLANES: return g_settings.planeCount;
       default:       return 0;
@@ -240,8 +279,7 @@ class DisplayManager {
     Page p;
     if (c == C_INFO) { Module tmp[14]; infoModules(tmp); p.m = tmp[k]; }
     else if (c == C_TEAMS) {
-      if (anyScore()) { if (k == 0) { p.m = M_SCORES; return p; } k--; }
-      p.m = M_SPORTS; p.idx = k;
+      p.m = M_SPORTS; p.idx = k;   // k-th team in display order (teamSlotAt)
     }
     else if (c == C_SHOWS) { p.m = M_TV; p.idx = k; }
     else { p.m = M_PLANES; p.plane = g_settings.planes[k].cs; }
@@ -257,7 +295,7 @@ class DisplayManager {
     int n;
     switch (p.m) {
       case M_PLANES: return planeSlot(p.plane) >= 0;
-      case M_SPORTS: return p.idx < teamPages();
+      case M_SPORTS: return p.idx < teamCount();
       case M_SCORES: return anyScore();
       case M_TV:     return p.idx < showPages();
       default:
@@ -326,6 +364,148 @@ class DisplayManager {
   uint16_t softRed()   { return dma_->color565(215, 70, 60); }
   uint16_t routeBlue() { return dma_->color565(120, 175, 215); }
 
+  // ---- Dog walk-by state ----------------------------------------------------
+  bool dogActive_ = false, dogForce_ = false;
+  unsigned long dogStart_ = 0, dogNext_ = 0;
+  static const int kDogPxPerSec = 25;   // ~7s to cross 46 + 128 px
+  static const int kDogStepPx = 5;      // next walk frame every 5 px
+
+  void scheduleDog(unsigned long now) {
+    int lo = constrain(g_settings.dogMinMin, 1, 720);
+    int hi = max(lo, constrain(g_settings.dogMaxMin, 1, 720));
+    uint32_t mins = lo + esp_random() % (uint32_t)(hi - lo + 1);
+    dogNext_ = now + mins * 60000UL;
+    if (dogNext_ == 0) dogNext_ = 1;
+  }
+  // Draw the dog for this moment; false once it has walked off the right edge.
+  bool drawDog(unsigned long now) {
+    int x = -DOG_W + (int)((now - dogStart_) * kDogPxPerSec / 1000);
+    if (x >= width_) return false;
+    int f = ((x + DOG_W) / kDogStepPx) % DOG_FRAMES;
+    int y0 = height_ - DOG_H;
+    for (int r = 0; r < DOG_H; r++)
+      for (int c = 0; c < DOG_W; c++) {
+        int X = x + c;
+        if (X < 0 || X >= width_) continue;
+        uint8_t idx = pgm_read_byte(&DOG_PIX[f][r * DOG_W + c]);
+        if (idx) dma_->drawPixel(X, y0 + r, pgm_read_word(&DOG_PAL[idx]));
+      }
+    return true;
+  }
+
+  // ---- One team per page ------------------------------------------------------
+  // k-th team in display order: live games, then recent finals, then the rest
+  // (each group in the order the teams were added).
+  int teamSlotAt(int k) {
+    for (int pass = 0; pass < 3; pass++)
+      for (int i = 0; i < 8; i++) {
+        if (!g_settings.teams[i].length()) continue;
+        const String &hl = g_settings.teamHL[i];
+        int grp = hl == "live" ? 0 : (hl == "recent" ? 1 : 2);
+        if (grp != pass) continue;
+        if (k-- == 0) return i;
+      }
+    return -1;
+  }
+  // Same freshness rule as drawTeamRow: with a valid clock, data older than 3h
+  // (or never timestamped) isn't shown as current.
+  bool teamStale(int i) {
+    time_t nowT = time(nullptr);
+    if (nowT <= 1600000000) return false;
+    uint32_t ts = g_settings.teamTs[i];
+    return ts == 0 || (uint32_t)nowT - ts > kTeamLabelStaleSec;
+  }
+  // Center a string in FreeMono9pt7b (Aura's score font) at a baseline.
+  void monoCenter(const String &t, int baseline, uint16_t c, int left = 0, int w = -1) {
+    if (w < 0) w = width_;
+    int16_t x1, y1; uint16_t tw, th;
+    dma_->setFont(&FreeMono9pt7b);
+    dma_->setTextSize(1);
+    dma_->getTextBounds(t.c_str(), 0, baseline, &x1, &y1, &tw, &th);
+    dma_->setCursor(left + (w - (int)tw) / 2 - x1, baseline);
+    dma_->setTextColor(c);
+    dma_->print(t);
+    dma_->setFont(nullptr);
+  }
+  void centerIn(const String &t, int y, uint16_t c, int left, int w) {
+    int x = left + (w - (int)t.length() * 6) / 2;
+    textAt(t, x < left ? left : x, y, c);
+  }
+  void teamBadgeOrLogo(const String &league, const String &abbr, int x, int y, int slotColor) {
+    const LogoAsset *lg = league.length() ? teamLogo(league, abbr) : nullptr;
+    if (lg) { drawLogo(lg, x, y); return; }
+    uint16_t col = dma_->color565(120, 120, 120);
+    if (slotColor >= 0) {
+      String hex = g_settings.teamColor[slotColor];
+      if (hex.length() >= 7 && hex[0] == '#') {
+        long v = strtol(hex.c_str() + 1, nullptr, 16);
+        col = dma_->color565((v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF);
+      }
+    }
+    drawBadge(abbr, x, y, col);
+  }
+
+  // Live / final game card (Aura layout): away team on top, home below, each
+  // "ABBR score" in FreeMono with its record under it; status line at the
+  // bottom (red dot when live; FINAL green on a win). Upcoming: both logos,
+  // "@"/"vs", records, then day + time. Falls back to the old single row when
+  // the backend hasn't sent the card fields (or the data is stale).
+  void drawTeamPage(int i) {
+    if (i < 0) return;
+    String t = g_settings.teams[i];
+    int colon = t.indexOf(':');
+    String league = colon >= 0 ? t.substring(0, colon) : "";
+    String me = colon >= 0 ? t.substring(colon + 1) : t;
+    const String &hl = g_settings.teamHL[i];
+    const String &opp = g_settings.teamOpp[i];
+    bool stale = teamStale(i);
+    bool game = (hl == "live" || hl == "recent") && opp.length() &&
+                g_settings.teamScore[i] >= 0 && g_settings.teamOppScore[i] >= 0;
+    bool next = opp.length() && g_settings.teamNextDay[i].length();
+    if (stale || (!game && !next)) { drawTeamRow(i, 20); return; }
+
+    if (game) {
+      bool home = g_settings.teamHome[i] == 1;
+      String aw = home ? opp : me, hm = home ? me : opp;
+      int as = home ? g_settings.teamOppScore[i] : g_settings.teamScore[i];
+      int hs = home ? g_settings.teamScore[i] : g_settings.teamOppScore[i];
+      String ar = home ? g_settings.teamOppRec[i] : g_settings.teamRecord[i];
+      String hr = home ? g_settings.teamRecord[i] : g_settings.teamOppRec[i];
+      teamBadgeOrLogo(league, aw, 3, 1, home ? -1 : i);
+      teamBadgeOrLogo(league, hm, 3, 27, home ? i : -1);
+      const int L = 30, Wd = width_ - 32;
+      monoCenter(aw + " " + String(as), 16, as >= hs ? softWhite() : muted(), L, Wd);
+      if (ar.length()) centerIn(ar, 19, muted(), L, Wd);
+      dma_->drawFastHLine(32, 30, width_ - 36, faint());
+      monoCenter(hm + " " + String(hs), 42, hs >= as ? softWhite() : muted(), L, Wd);
+      if (hr.length()) centerIn(hr, 45, muted(), L, Wd);
+      String st = g_settings.teamStatus[i];
+      if (hl == "live") {
+        if (!st.length()) st = "LIVE";
+        st = fitWords(st, (width_ - 8) / 6);
+        int w = st.length() * 6 + 6, x = (width_ - w) / 2;
+        dma_->fillRect(x, 58, 3, 3, softRed());
+        textAt(st, x + 6, 56, softWhite());
+      } else {
+        if (!st.length()) st = "FINAL";
+        int my = g_settings.teamScore[i], op = g_settings.teamOppScore[i];
+        centerText(st, 56, my > op ? softGreen() : muted());
+      }
+      return;
+    }
+
+    // Upcoming
+    bool home = g_settings.teamHome[i] == 1;
+    teamBadgeOrLogo(league, me, 3, 3, i);
+    teamBadgeOrLogo(league, opp, width_ - 27, 3, -1);
+    monoCenter(home ? "vs" : "@", 20, softWhite(), 27, width_ - 54);
+    if (g_settings.teamRecord[i].length()) centerIn(g_settings.teamRecord[i], 30, muted(), 0, 30);
+    if (g_settings.teamOppRec[i].length()) centerIn(g_settings.teamOppRec[i], 30, muted(), width_ - 30, 30);
+    dma_->drawFastHLine(4, 40, width_ - 8, faint());
+    centerText(g_settings.teamNextDay[i], 44, hl == "today" ? softAmber() : muted());
+    if (g_settings.teamNextTime[i].length()) monoCenter(g_settings.teamNextTime[i], 62, softAmber());
+  }
+
   bool msgHasText() {
     return g_settings.msgLine1.length() || g_settings.msgLine2.length() ||
            g_settings.msgLine3.length();
@@ -355,7 +535,7 @@ class DisplayManager {
       case M_FLIGHT:    drawFlight();    break;
       case M_PLANES:    drawPlanes();    break;
       case M_WEATHER:   drawWeather();   break;
-      case M_SPORTS:    drawTeams();     break;
+      case M_SPORTS:    drawTeamPage(teamSlotAt(cur_.idx)); break;
       case M_SCORES:    drawScores();    break;
       case M_TV:        drawShows();     break;
       case M_STOCKS:    drawStocks();    break;

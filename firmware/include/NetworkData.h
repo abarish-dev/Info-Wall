@@ -63,6 +63,9 @@ class NetworkData {
     // tick after Wi-Fi connects, when every feed is "due") fragments the heap
     // and makes later handshakes EOF (-29312). Spacing them lets RAM recover.
     if (now - tLastFetch_ < kFetchGapMs) return;
+    // A fetch blocks the loop for up to several seconds; don't start one while
+    // the dog is crossing the screen (it would freeze mid-step).
+    if (g_display.dogActive()) return;
 
     // Clock fallback: some networks block NTP (UDP 123) while allowing HTTPS,
     // so getLocalTime() may never succeed. If the clock still isn't valid,
@@ -249,7 +252,7 @@ class NetworkData {
     PSRAM_JSON(doc);
     PSRAM_JSON(filter);
     JsonObject ft = filter["t"].add<JsonObject>();
-    for (const char *k : {"c", "s", "h", "l", "r", "k"}) ft[k] = true;
+    for (const char *k : {"c", "s", "h", "l", "r", "k", "o", "op", "ha", "or", "st", "nd", "nt"}) ft[k] = true;
     if (!getJson("/api/device/scores?teams=" + enc(teams), doc, EP_SCORES, &filter)) return false;
     const uint32_t nowEpoch = (uint32_t)time(nullptr);
     // Store per-team (aligned to g_settings.teams[]) so the display can show
@@ -263,6 +266,18 @@ class NetworkData {
       g_settings.teamHL[slot]     = (const char *)(e["h"] | "");
       g_settings.teamShort[slot]  = (const char *)(e["k"] | "");
       g_settings.teamTs[slot]     = nowEpoch;  // label freshness (display dims stale ones)
+      // One-team-per-page card (backend 1.1.2 fields; older backend: absent).
+      g_settings.teamOpp[slot]      = (const char *)(e["op"] | "");
+      g_settings.teamOppRec[slot]   = (const char *)(e["or"] | "");
+      g_settings.teamStatus[slot]   = (const char *)(e["st"] | "");
+      g_settings.teamNextDay[slot]  = (const char *)(e["nd"] | "");
+      g_settings.teamNextTime[slot] = (const char *)(e["nt"] | "");
+      {
+        const char *ha = e["ha"] | "";
+        g_settings.teamHome[slot] = ha[0] == 'h' ? 1 : (ha[0] == 'a' ? 0 : -1);
+      }
+      g_settings.teamScore[slot]    = e["s"].isNull() ? -1 : (int16_t)e["s"].as<float>();
+      g_settings.teamOppScore[slot] = e["o"].isNull() ? -1 : (int16_t)e["o"].as<float>();
       // On-device SCORE flash: a live team's score went up since last check.
       if (strcmp(g_settings.teamHL[slot].c_str(), "live") == 0 && !e["s"].isNull()) {
         float sc = e["s"].as<float>();

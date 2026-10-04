@@ -114,6 +114,20 @@ struct MatrixSettings {
   String marketStatus = "";     // "Open" | "Pre-mkt" | "After hrs" | "Closed"
   String teamShort[8];          // compact <=16-char status ("Sat 7:05p @ TB")
   uint32_t teamTs[8] = {0};     // epoch when teamLabel/teamShort were last set (0 = unknown)
+  // One-team-per-page game card (backend fields op/ha/s/o/or/st/nd/nt).
+  String teamOpp[8];            // opponent abbr ("TB")
+  String teamOppRec[8];         // opponent record
+  String teamStatus[8];         // readable status ("Top 8th", "2nd 18:26", "FINAL")
+  String teamNextDay[8];        // "TOMORROW" / "TUE OCT 6"
+  String teamNextTime[8];       // "8:20 PM"
+  int8_t teamHome[8]     = {-1, -1, -1, -1, -1, -1, -1, -1};  // 1 home, 0 away, -1 unknown
+  int16_t teamScore[8]   = {-1, -1, -1, -1, -1, -1, -1, -1};
+  int16_t teamOppScore[8] = {-1, -1, -1, -1, -1, -1, -1, -1};
+
+  // Dog walk-by (a sprite of Adam's dachshund crosses the bottom of the panel)
+  bool dogEnabled = true;
+  int  dogMinMin  = 10;         // random interval between walks, minutes
+  int  dogMaxMin  = 30;
 
   // Wi-Fi self-fetch (panel pulls its own live data; no phone required)
   String apiBase        = "";   // e.g. "https://<host>"  (set via BLE "server")
@@ -158,6 +172,8 @@ class BLEController {
   volatile bool scoreFlashRequested = false;
   volatile bool otaRequested = false;   // BLE "ota": check + install update
   volatile bool diagRequested = false;  // BLE "diag": loop() notifies a status JSON
+  volatile bool dogNowRequested = false; // BLE "dog" now:true -> walk immediately
+  volatile bool dogResched = false;      // dog settings changed -> pick a new time
   volatile bool planesPushed = false;   // phone pushed a nearest plane (fallback)
   PlaneInfo pushedPlane;
   String flashAbbr;
@@ -319,7 +335,14 @@ inline void BLEController::handleJson(const String &raw) {
     g_settings.isPinned = doc["isPinned"] | g_settings.isPinned;
 
   } else if (strcmp(cmd, "teams") == 0) {
-    for (int i = 0; i < 8; i++) { g_settings.teams[i] = ""; g_settings.teamColor[i] = ""; }
+    for (int i = 0; i < 8; i++) {
+      g_settings.teams[i] = ""; g_settings.teamColor[i] = "";
+      // Slots get re-assigned: drop the old team's game details.
+      g_settings.teamOpp[i] = ""; g_settings.teamOppRec[i] = ""; g_settings.teamStatus[i] = "";
+      g_settings.teamNextDay[i] = ""; g_settings.teamNextTime[i] = "";
+      g_settings.teamHome[i] = -1; g_settings.teamScore[i] = -1; g_settings.teamOppScore[i] = -1;
+      g_settings.teamTs[i] = 0;
+    }
     JsonArray arr = doc["teams"].as<JsonArray>();
     int i = 0;
     for (JsonVariant v : arr) { if (i < 8) g_settings.teams[i++] = v.as<const char *>(); }
@@ -385,6 +408,28 @@ inline void BLEController::handleJson(const String &raw) {
       // the display doesn't prefer a stale teamShort over it.
       g_settings.teamShort[i] = "";
       g_settings.teamTs[i] = g_settings.teamLabel[i].length() ? (uint32_t)time(nullptr) : 0;
+      // Game-card fields (app 1.1.2+); absent keys leave the Wi-Fi values.
+      char k[8];
+      auto str = [&](const char *p, String &dst) {
+        snprintf(k, sizeof(k), "%s%d", p, i + 1);
+        if (!doc[k].isNull()) dst = (const char *)(doc[k] | "");
+      };
+      auto num = [&](const char *p, int16_t &dst) {
+        snprintf(k, sizeof(k), "%s%d", p, i + 1);
+        if (!doc[k].isNull()) dst = doc[k].is<int>() ? (int16_t)doc[k].as<int>() : -1;
+      };
+      str("op", g_settings.teamOpp[i]);
+      str("or", g_settings.teamOppRec[i]);
+      str("st", g_settings.teamStatus[i]);
+      str("nd", g_settings.teamNextDay[i]);
+      str("nt", g_settings.teamNextTime[i]);
+      num("s", g_settings.teamScore[i]);
+      num("o", g_settings.teamOppScore[i]);
+      snprintf(k, sizeof(k), "ha%d", i + 1);
+      if (!doc[k].isNull()) {
+        const char *ha = doc[k] | "";
+        g_settings.teamHome[i] = ha[0] == 'h' ? 1 : (ha[0] == 'a' ? 0 : -1);
+      }
     }
 
   } else if (strcmp(cmd, "showdetails") == 0) {
@@ -504,6 +549,18 @@ inline void BLEController::handleJson(const String &raw) {
     // App asks which firmware is flashed -> notify {"fw":"x.y.z"} back.
     notify("{\"fw\":\"" INFOWALL_FW_VERSION "\"}");
     return;
+
+  } else if (strcmp(cmd, "dog") == 0) {
+    // { enabled, min, max } (minutes) and/or { now:true } for a test walk.
+    if (!doc["enabled"].isNull()) g_settings.dogEnabled = doc["enabled"].as<bool>();
+    if (!doc["min"].isNull()) g_settings.dogMinMin = constrain(doc["min"].as<int>(), 1, 720);
+    if (!doc["max"].isNull()) g_settings.dogMaxMin = constrain(doc["max"].as<int>(), 1, 720);
+    if (g_settings.dogMaxMin < g_settings.dogMinMin) g_settings.dogMaxMin = g_settings.dogMinMin;
+    dogResched = true;
+    if (doc["now"] | false) {
+      dogNowRequested = true;
+      if (doc["enabled"].isNull() && doc["min"].isNull()) return;  // test walk only
+    }
 
   } else if (strcmp(cmd, "diag") == 0) {
     // App's diagnostics view. Built + notified from loop() (needs NetworkData).
