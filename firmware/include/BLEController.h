@@ -408,29 +408,30 @@ inline void BLEController::handleJson(const String &raw) {
       // the display doesn't prefer a stale teamShort over it.
       g_settings.teamShort[i] = "";
       g_settings.teamTs[i] = g_settings.teamLabel[i].length() ? (uint32_t)time(nullptr) : 0;
-      // Game-card fields (app 1.1.2+); absent keys leave the Wi-Fi values.
-      char k[8];
-      auto str = [&](const char *p, String &dst) {
-        snprintf(k, sizeof(k), "%s%d", p, i + 1);
-        if (!doc[k].isNull()) dst = (const char *)(doc[k] | "");
-      };
-      auto num = [&](const char *p, int16_t &dst) {
-        snprintf(k, sizeof(k), "%s%d", p, i + 1);
-        if (!doc[k].isNull()) dst = doc[k].is<int>() ? (int16_t)doc[k].as<int>() : -1;
-      };
-      str("op", g_settings.teamOpp[i]);
-      str("or", g_settings.teamOppRec[i]);
-      str("st", g_settings.teamStatus[i]);
-      str("nd", g_settings.teamNextDay[i]);
-      str("nt", g_settings.teamNextTime[i]);
-      num("s", g_settings.teamScore[i]);
-      num("o", g_settings.teamOppScore[i]);
-      snprintf(k, sizeof(k), "ha%d", i + 1);
-      if (!doc[k].isNull()) {
-        const char *ha = doc[k] | "";
-        g_settings.teamHome[i] = ha[0] == 'h' ? 1 : (ha[0] == 'a' ? 0 : -1);
-      }
     }
+
+  } else if (strcmp(cmd, "teamcard") == 0) {
+    // One team's game-card fields from the app (Wi-Fi fallback, app 1.1.2+):
+    // { i:1-8, op, ha:"h"|"a", s, o, or, st, nd, nt }. Sent per team so the
+    // write stays well under the BLE attribute size limit.
+    int i = (doc["i"] | 0) - 1;
+    if (i < 0 || i >= 8) return;
+    auto str = [&](const char *k, String &dst) { if (!doc[k].isNull()) dst = (const char *)(doc[k] | ""); };
+    auto num = [&](const char *k, int16_t &dst) {
+      if (!doc[k].isNull()) dst = doc[k].is<int>() ? (int16_t)doc[k].as<int>() : -1;
+    };
+    str("op", g_settings.teamOpp[i]);
+    str("or", g_settings.teamOppRec[i]);
+    str("st", g_settings.teamStatus[i]);
+    str("nd", g_settings.teamNextDay[i]);
+    str("nt", g_settings.teamNextTime[i]);
+    num("s", g_settings.teamScore[i]);
+    num("o", g_settings.teamOppScore[i]);
+    if (!doc["ha"].isNull()) {
+      const char *ha = doc["ha"] | "";
+      g_settings.teamHome[i] = ha[0] == 'h' ? 1 : (ha[0] == 'a' ? 0 : -1);
+    }
+    g_settings.teamTs[i] = (uint32_t)time(nullptr);
 
   } else if (strcmp(cmd, "showdetails") == 0) {
     // Per-show schedule label pushed by the phone (fallback to Wi-Fi fetch).
