@@ -934,7 +934,181 @@ def _team_status_one(code: str) -> dict:
         _team_cache[code] = {"ts": _time.time(), "data": data}
     except Exception as exc:  # noqa: BLE001
         logger.warning("espn team status failed %s: %s", code, exc)
+        # ESPN hiccup: serve the last good answer (if any) rather than a blank
+        # label, which the panel would show as an empty line.
+        if cached and cached.get("data", {}).get("label"):
+            return cached["data"]
     return data
+
+
+# ---------------------------------------------------------------------------
+# Postseason context (MLB/NBA/NHL/NFL playoffs). ESPN marks playoff games with
+# a note headline like "ALDS - Game 2"; the team's postseason schedule lists
+# every game of the round, so the series score is counted from its finals.
+# ---------------------------------------------------------------------------
+_ps_cache: dict = {}
+_PS_TTL = 600
+_ROUND_ABBR = {
+    "world series": "WS", "stanley cup final": "SCF", "nba finals": "FINALS",
+    "super bowl": "SB", "wild card": "WC", "divisional round": "DIV",
+    "conference championship": "CONF", "afc championship": "AFC",
+    "nfc championship": "NFC", "first round": "R1", "second round": "R2",
+}
+
+
+def _round_abbr(name: str) -> str:
+    n = " ".join((name or "").split())
+    if not n:
+        return ""
+    if len(n) <= 5 and " " not in n:
+        return n.upper()
+    low = n.lower()
+    for k, v in _ROUND_ABBR.items():
+        if low == k or low.endswith(" " + k):
+            pre = n[: len(n) - len(k)].strip()
+            # "East First Round" -> "E R1", "Western Conference Final" -> generic below
+            if pre and pre.isupper() and len(pre) <= 3:   # "AFC Wild Card" -> "AFC WC"
+                return f"{pre} {v}"
+            return (pre[:1].upper() + " " + v).strip() if pre and len(v) <= 3 else v
+    words = [w for w in n.replace("-", " ").split() if w[:1].isalpha()]
+    return "".join(w[0] for w in words).upper()[:5]
+
+
+def _ps_schedule(sport: str, lg: str, abbr: str) -> list:
+    import time as _time
+
+    key = f"{sport}/{lg}/{abbr.lower()}"
+    hit = _ps_cache.get(key)
+    if hit and _time.time() - hit["ts"] < _PS_TTL:
+        return hit["ev"]
+    ev: list = []
+    try:
+        r = requests.get(
+            f"{_ESPN_BASE}/{sport}/{lg}/teams/{abbr.lower()}/schedule",
+            params={"seasontype": 3},
+            headers=_ESPN_HEADERS,
+            timeout=6,
+        )
+        r.raise_for_status()
+        ev = r.json().get("events") or []
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("espn postseason schedule failed %s: %s", key, exc)
+        if hit:
+            return hit["ev"]
+    _ps_cache[key] = {"ts": _time.time(), "ev": ev}
+    return ev
+
+
+def _postseason_info(code: str, s: dict):
+    """{"round","game","ps","w","l","series"} when the team's current/next game
+    is a postseason game, else None."""
+    import re as _re
+
+    if ":" not in code or not s.get("date"):
+        return None
+    league, abbr = code.split(":", 1)
+    if league not in _LEAGUE_PATH:
+        return None
+    sport, lg = _LEAGUE_PATH[league]
+    events = _ps_schedule(sport, lg, abbr)
+    if not events:
+        return None
+
+    def head(e):
+        comp = (e.get("competitions") or [{}])[0]
+        for n in comp.get("notes") or []:
+            if n.get("headline"):
+                return n["headline"]
+        return ""
+
+    def parts(h):
+        m = _re.match(r"^(.*?)\s*-\s*Game\s+(\d+)", h or "", _re.I)
+        if m:
+            return m.group(1).strip(), int(m.group(2))
+        return (h or "").strip(), None
+
+    cur = next((e for e in events if e.get("date") == s["date"]), None)
+    if cur is None:
+        return None
+    rnd_name, game = parts(head(cur))
+    rnd = _round_abbr(rnd_name)
+    me = abbr.upper()
+    w = l = 0
+    games_in_round = 0
+    for e in events:
+        rn, _g = parts(head(e))
+        if rn != rnd_name:
+            continue
+        games_in_round += 1
+        comp = (e.get("competitions") or [{}])[0]
+        if ((comp.get("status") or {}).get("type") or {}).get("state") != "post":
+            continue
+        mine = other = None
+        for c in comp.get("competitors") or []:
+            sc = c.get("score")
+            if isinstance(sc, dict):
+                sc = sc.get("value", sc.get("displayValue"))
+            try:
+                sc = float(sc)
+            except (TypeError, ValueError):
+                sc = None
+            if ((c.get("team") or {}).get("abbreviation") or "").upper() == me:
+                mine = sc
+            else:
+                other = sc
+        if mine is None or other is None:
+            continue
+        if mine > other:
+            w += 1
+        elif mine < other:
+            l += 1
+    opp = (s.get("opponent") or "").upper()
+    series = ""
+    if games_in_round > 1:
+        need = games_in_round // 2 + 1
+        if w >= need:
+            series = f"{me} wins {w}-{l}"
+        elif l >= need:
+            series = f"{opp} wins {l}-{w}" if opp else f"Lost {w}-{l}"
+        elif w == l:
+            series = f"Tied {w}-{l}" if w else ""
+        elif w > l:
+            series = f"{me} leads {w}-{l}"
+        else:
+            series = f"{opp} leads {l}-{w}" if opp else f"Trail {w}-{l}"
+    ps = f"{rnd} G{game}" if rnd and game else rnd
+    return {"round": rnd, "game": game, "ps": ps, "w": w, "l": l,
+            "series": series, "multi": games_in_round > 1}
+
+
+def _apply_postseason(code: str, s: dict) -> dict:
+    """Postseason: series W-L in the record slots, round + game in the labels
+    ("G2 Mon 8p @ TB", "ALDS G2 TOMORROW"). Returns a new dict."""
+    s = dict(s)
+    try:
+        ps = _postseason_info(code, s)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("postseason info failed %s: %s", code, exc)
+        ps = None
+    if not ps:
+        return s
+    s["postseason"] = True
+    s["round"] = ps["round"]
+    s["game"] = ps["game"]
+    s["seriesText"] = ps["series"]
+    s["seasonRecord"] = s.get("record")
+    if ps["multi"]:
+        s["record"] = f"{ps['w']}-{ps['l']}"
+        s["oppRecord"] = f"{ps['l']}-{ps['w']}"
+        s["seriesRecord"] = s["record"]
+    s["ps"] = ps["ps"]
+    lab = s.get("label") or ""
+    if lab and s.get("highlight") in ("today", "soon", "upcoming") and ps["game"]:
+        for c in (f"{ps['ps']} {lab}", f"G{ps['game']} {lab}"):
+            if len(c) <= 16:
+                s["label"] = c
+                break
+    return s
 
 
 @api_router.get("/teams/status")
@@ -944,7 +1118,7 @@ def teams_status(teams: str):
     for raw in teams.split("|"):
         code = raw.strip().upper()
         if code:
-            st = dict(_team_status_one(code))
+            st = _apply_postseason(code, _team_status_one(code))
             st.update(_game_fields(code, st))
             results.append(st)
     return {"results": results}
@@ -1100,16 +1274,18 @@ def _compact_team_label(s: dict, limit: int = 16) -> str:
             d = _dt.strptime(local, "%Y-%m-%d")
         except Exception:  # noqa: BLE001
             d = None
+        g = s.get("game") if s.get("ps") else None
+        gp = f"G{g} " if g else ""
         if hl == "today":
-            return fit(f"{t} {mt}", f"Today {mt}", mt)
+            return fit(f"{gp}{t} {mt}", f"{t} {mt}", f"Today {mt}", mt)
         dow = d.strftime("%a") if d else ""
         md = d.strftime("%b %-d") if d else ""
         if hl == "soon":
-            return fit(f"{dow} {t} {mt}", f"{dow} {mt}", f"{dow} {t}")
-        return fit(f"{md} {t} {mt}", f"{md} {mt}", md)
+            return fit(f"{gp}{dow} {t} {mt}", f"{dow} {t} {mt}", f"{dow} {mt}", f"{dow} {t}")
+        return fit(f"{gp}{md} {t} {mt}", f"{md} {t} {mt}", f"{md} {mt}", md)
     if hl == "offseason":
         return "Offseason"
-    return ""
+    return "No game sched"
 
 
 def _game_fields(code: str, s: dict) -> dict:
@@ -1152,6 +1328,23 @@ def _game_fields(code: str, s: dict) -> dict:
                 out["nextTime"] = "TBD"
         except Exception:  # noqa: BLE001
             pass
+    ps = s.get("ps")
+    if ps:
+        # Postseason: round + game on the card ("ALDS G2 Bot 8th",
+        # "ALDS G2 TOMORROW", "FINAL TB leads 1-0"); the firmware's lines fit
+        # ~20 chars, so fall back to the plain text when it would overflow.
+        def pre(a, b):
+            c = f"{a} {b}".strip()
+            return c if len(c) <= 20 else b
+        if hl == "live":
+            out["statusText"] = pre(ps, out["statusText"])
+        elif hl == "recent":
+            ser = (s.get("seriesText") or "").upper()
+            out["statusText"] = pre(out["statusText"], ser) if ser else pre(ps, out["statusText"])
+            if ser and len(f"{out['statusText']}") > 20:
+                out["statusText"] = ser
+        elif out["nextDay"]:
+            out["nextDay"] = pre(ps, out["nextDay"])
     return out
 
 
@@ -1165,14 +1358,14 @@ def device_scores(teams: str):
         code = raw.strip().upper()
         if not code:
             continue
-        s = _team_status_one(code)
+        s = _apply_postseason(code, _team_status_one(code))
         out.append(
             {
                 "c": code,
                 "s": s.get("score"),
                 "o": s.get("oppScore"),
                 "h": s.get("highlight"),
-                "l": _ascii(s.get("label")),
+                "l": _ascii(s.get("label")) or _ascii(_compact_team_label(s)),
                 "r": s.get("record"),
                 # Compact (<=16 char) line for the logo layout (firmware 1.1+).
                 "k": _ascii(_compact_team_label(s)),
