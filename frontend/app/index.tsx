@@ -222,6 +222,8 @@ export default function ControlPanel() {
     lvl?: number | null;
     full?: number | null;
     w?: number | null;
+    tgt?: number | null; // Duke guide-curve target
+    dt?: number | null; // level - target
   } | null>(null);
   const [lastSync, setLastSync] = useState<{
     at: string;
@@ -871,7 +873,13 @@ export default function ControlPanel() {
       full = (diff >= 0 ? "+" : "") + diff.toFixed(1);
     }
     const w = d.w != null ? Math.round(Number(d.w)) : 0;
-    writeLive({ command: "lake", lvl, full, w }).catch(() => {});
+    const cmd: Record<string, unknown> = { command: "lake", lvl, full, w };
+    if (d.tgt != null) {
+      const dt = d.dt != null ? Number(d.dt) : Number(d.lvl) - Number(d.tgt);
+      cmd.tgt = Number(d.tgt).toFixed(1);
+      cmd.dt = (dt >= 0 ? "+" : "") + dt.toFixed(1);
+    }
+    writeLive(cmd).catch(() => {});
   }, [status, fwChecked, settings.showLKN, lakeData]);
 
 
@@ -2168,6 +2176,13 @@ export default function ControlPanel() {
                       ).toFixed(1)} ft vs full`
                     : ""}
                 </Text>
+                {lakeData.tgt != null && (
+                  <Text style={styles.readoutSub}>
+                    {`Target ${Number(lakeData.tgt).toFixed(1)} ft  ·  ${
+                      (lakeData.dt ?? Number(lakeData.lvl) - Number(lakeData.tgt)) >= 0 ? "+" : ""
+                    }${Number(lakeData.dt ?? Number(lakeData.lvl) - Number(lakeData.tgt)).toFixed(1)} ft vs target`}
+                  </Text>
+                )}
                 {lakeData.w != null && lakeData.w > 0 && (
                   <Text style={styles.readoutSub}>
                     Water {lakeData.w}°F

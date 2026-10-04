@@ -152,6 +152,8 @@ struct MatrixSettings {
   String follyDir       = "";   // "in" (rising) | "out" (falling) | ""
   String lakeLvl        = "";   // current level, e.g. "97.5"
   String lakeFull       = "";   // vs full pond, e.g. "-2.5"
+  String lakeTgt        = "";   // Duke guide-curve target, e.g. "98.5"
+  String lakeTgtDiff    = "";   // level vs target, e.g. "-1.0"
   int    lakeWater      = 0;    // water temp F (0 = n/a)
 };
 
@@ -452,6 +454,9 @@ inline void BLEController::handleJson(const String &raw) {
     // Phone-pushed Lake Norman level + water temp fallback.
     g_settings.lakeLvl    = (const char *)(doc["lvl"] | "");
     g_settings.lakeFull   = (const char *)(doc["full"] | "");
+    // Optional (app with target support): keep the Wi-Fi value otherwise.
+    if (!doc["tgt"].isNull()) g_settings.lakeTgt = (const char *)(doc["tgt"] | "");
+    if (!doc["dt"].isNull())  g_settings.lakeTgtDiff = (const char *)(doc["dt"] | "");
     g_settings.lakeWater  = doc["w"] | 0;
 
   } else if (strcmp(cmd, "planes") == 0) {

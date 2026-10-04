@@ -432,9 +432,15 @@ class NetworkData {
     if (!doc["lvl"].isNull()) {
       float lvl = doc["lvl"].as<float>();
       g_settings.lakeLvl = String(lvl, 1);
-      if (!doc["full"].isNull()) {
-        float diff = lvl - doc["full"].as<float>();
-        g_settings.lakeFull = (diff >= 0 ? String("+") : String("")) + String(diff, 1);
+      auto signedFt = [](float d) { return (d >= 0 ? String("+") : String("")) + String(d, 1); };
+      // Prefer the backend's differences (computed from unrounded levels).
+      if (!doc["df"].isNull()) g_settings.lakeFull = signedFt(doc["df"].as<float>());
+      else if (!doc["full"].isNull()) g_settings.lakeFull = signedFt(lvl - doc["full"].as<float>());
+      // Duke's guide-curve target for today, and the level's distance from it.
+      if (!doc["tgt"].isNull()) {
+        float tgt = doc["tgt"].as<float>();
+        g_settings.lakeTgt = String(tgt, 1);
+        g_settings.lakeTgtDiff = signedFt(doc["dt"].isNull() ? lvl - tgt : doc["dt"].as<float>());
       }
     }
     g_settings.lakeWater = doc["w"] | 0;

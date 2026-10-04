@@ -579,6 +579,24 @@ class DisplayManager {
   }
 
   void drawLake() {
+    if (g_settings.lakeLvl.length() && g_settings.lakeTgt.length()) {
+      // 5-line layout with Duke's guide-curve target ("TGT 98.5 -1.0ft"):
+      // green when within 0.5 ft of target, amber otherwise.
+      centerText("LAKE NORMAN", 3, cyan());
+      centerText(String("LEVEL ") + g_settings.lakeLvl + "ft", 16, white());
+      float d = g_settings.lakeTgtDiff.toFloat();
+      String t = String("TGT ") + g_settings.lakeTgt;
+      if (g_settings.lakeTgtDiff.length()) t += " " + g_settings.lakeTgtDiff + "ft";
+      centerText(t, 28, fabsf(d) <= 0.5f ? green() : amber());
+      if (g_settings.lakeFull.length())
+        centerText(String("FULL ") + g_settings.lakeFull + "ft", 40, dma_->color565(120, 175, 215));
+      if (g_settings.lakeWater > 0) {
+        char w[16];
+        snprintf(w, sizeof(w), "WATER %d\xF7", g_settings.lakeWater);
+        centerText(w, 53, green());
+      }
+      return;
+    }
     centerText("LAKE NORMAN", 6, cyan());
     if (g_settings.lakeLvl.length()) {
       centerText(String("LEVEL ") + g_settings.lakeLvl + "ft", 22, white());

@@ -56,6 +56,8 @@ inline void serializeSettings(JsonDocument &d) {
   d["follyDir"] = g_settings.follyDir;
   d["lakeLvl"] = g_settings.lakeLvl;
   d["lakeFull"] = g_settings.lakeFull;
+  d["lakeTgt"] = g_settings.lakeTgt;
+  d["lakeTgtD"] = g_settings.lakeTgtDiff;
   d["lakeW"] = g_settings.lakeWater;
   for (int i = 0; i < 8; i++) {
     d["team"][i] = g_settings.teams[i];
@@ -123,6 +125,8 @@ inline void applySettings(JsonDocument &d) {
   g_settings.follyDir = (const char *)(d["follyDir"] | "");
   g_settings.lakeLvl = (const char *)(d["lakeLvl"] | "");
   g_settings.lakeFull = (const char *)(d["lakeFull"] | "");
+  g_settings.lakeTgt = (const char *)(d["lakeTgt"] | "");
+  g_settings.lakeTgtDiff = (const char *)(d["lakeTgtD"] | "");
   g_settings.lakeWater = d["lakeW"] | 0;
   for (int i = 0; i < 8; i++) {
     g_settings.teams[i] = (const char *)(d["team"][i] | "");
