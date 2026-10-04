@@ -173,7 +173,7 @@ export function TeamRows({
                 <View style={styles.pillRow}>
                   <Ionicons name={meta.icon} size={12} color={meta.color()} />
                   <Text style={[styles.pillText, { color: meta.color() }]}>
-                    {st.label}
+                    {st.labelLong || st.label}
                   </Text>
                 </View>
               ) : (

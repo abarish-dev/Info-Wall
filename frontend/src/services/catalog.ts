@@ -128,7 +128,8 @@ export type TeamStatus = {
   name: string | null;
   logo: string | null;
   highlight: TeamGameHighlight;
-  label: string | null;
+  label: string | null; // compact (<=16 chars when live): what the panel shows
+  labelLong?: string | null; // readable live form for the app ("@ TB 0-1 Top 5th")
   record: string | null;
   opponent: string | null;
   date: string | null;
