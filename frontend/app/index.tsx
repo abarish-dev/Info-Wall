@@ -95,6 +95,7 @@ import {
   type SectionKey,
   type Profile,
   type Settings,
+  DOG_FREQ,
 } from "@/src/constants/controlPanel";
 import { makeStyles } from "@/src/styles/controlPanel";
 
@@ -156,6 +157,17 @@ export default function ControlPanel() {
   // which has no OTA and must be USB-flashed once), latest hosted build, and
   // the state of an in-progress "Install update".
   const [fwVersion, setFwVersion] = useState<string | null>(null);
+  // Wall firmware is at least `v` (unknown version = false: older firmware
+  // may treat an unknown command as a full sync).
+  const fwAtLeast = (v: string) => {
+    if (!fwVersion) return false;
+    const a = fwVersion.split(".").map((n) => parseInt(n, 10) || 0);
+    const b = v.split(".").map((n) => parseInt(n, 10) || 0);
+    for (let i = 0; i < 3; i++) {
+      if ((a[i] ?? 0) !== (b[i] ?? 0)) return (a[i] ?? 0) > (b[i] ?? 0);
+    }
+    return true;
+  };
   // true once the post-connect version read finished (found or gave up)
   const [fwChecked, setFwChecked] = useState(false);
   const [fwRecheck, setFwRecheck] = useState(0);
@@ -532,9 +544,54 @@ export default function ControlPanel() {
           cmd[`hl${i + 1}`] = s?.highlight ?? "";
         });
       writeLive(cmd).catch(() => {});
+      // One-team-per-page card fields (firmware 1.1.2+), one write per team to
+      // stay under the BLE attribute size limit.
+      if (fwAtLeast("1.1.2")) {
+        (async () => {
+          const codes = settings.teams.map((x) => x.trim()).filter(Boolean);
+          for (let i = 0; i < codes.length; i++) {
+            const s: any = teamStatuses[codes[i].toUpperCase()];
+            if (!s) continue;
+            await writeLive({
+              command: "teamcard",
+              i: i + 1,
+              op: s.opponent ?? "",
+              ha: s.home === true ? "h" : s.home === false ? "a" : "",
+              s: s.score ?? -1,
+              o: s.oppScore ?? -1,
+              or: s.oppRecord ?? "",
+              st: s.statusText ?? "",
+              nd: s.nextDay ?? "",
+              nt: s.nextTime ?? "",
+            }).catch(() => {});
+            await new Promise((r) => setTimeout(r, 60));
+          }
+        })();
+      }
     }, 800);
     return () => clearTimeout(t);
-  }, [teamStatuses, settings.teams, status]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [teamStatuses, settings.teams, status, fwVersion]);
+
+  // Dog walk-by settings (firmware 1.1.2+).
+  const dogCmd = () => {
+    const f = DOG_FREQ[settings.dogFreq ?? "some"] ?? DOG_FREQ.some;
+    return { command: "dog", enabled: settings.dogEnabled ?? true, min: f.min, max: f.max };
+  };
+  useEffect(() => {
+    if (status !== "connected" || !fwAtLeast("1.1.2")) return;
+    const t = setTimeout(() => writeLive(dogCmd()).catch(() => {}), 800);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings.dogEnabled, settings.dogFreq, status, fwVersion]);
+  const dogWalkNow = async () => {
+    if (!fwAtLeast("1.1.2")) return;
+    try {
+      await writeLive({ command: "dog", now: true });
+    } catch {
+      toast.show("Couldn't reach the wall", "error");
+    }
+  };
 
   // Live push of per-show schedule labels (next episode / season premiere).
   useEffect(() => {
@@ -1484,6 +1541,7 @@ export default function ControlPanel() {
           countdownLabel: settings.countdownLabel.trim(),
           countdownDate: settings.countdownDate,
         },
+        ...(fwAtLeast("1.1.2") ? [dogCmd()] : []),
       ];
 
       let sent = 0;
@@ -2669,6 +2727,11 @@ export default function ControlPanel() {
         onSetTheme={setTheme}
         diag={diag}
         onRunDiag={runDiag}
+        dogSupported={fwAtLeast("1.1.2")}
+        dogEnabled={settings.dogEnabled ?? true}
+        dogFreq={settings.dogFreq ?? "some"}
+        onDogChange={(p) => patchSettings(p)}
+        onDogNow={dogWalkNow}
       />
 
       {/* Device picker (multiple FlightWall- boards nearby) */}

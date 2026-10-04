@@ -130,6 +130,13 @@ export type TeamStatus = {
   highlight: TeamGameHighlight;
   label: string | null; // compact (<=16 chars when live): what the panel shows
   labelLong?: string | null; // readable live form for the app ("@ TB 0-1 Top 5th")
+  // Game-card fields (backend 1.1.2+), forwarded to the panel as "teamcard".
+  vs?: string | null;
+  home?: boolean | null;
+  oppRecord?: string | null;
+  statusText?: string | null;
+  nextDay?: string | null;
+  nextTime?: string | null;
   record: string | null;
   opponent: string | null;
   date: string | null;

@@ -23,6 +23,7 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import * as Haptics from "expo-haptics";
 import { colors, spacing, radius, fonts, fontSize } from "@/src/theme";
 import { ACCENTS, type AccentId } from "@/src/theme";
+import { DOG_FREQ, type DogFreq } from "@/src/constants/controlPanel";
 import { useThemedStyles } from "@/src/hooks/useThemedStyles";
 
 // Reply to the firmware's BLE "diag" command (v1.1.2+).
@@ -163,6 +164,11 @@ export function SettingsSheet({
   onSetTheme,
   diag,
   onRunDiag,
+  dogSupported,
+  dogEnabled,
+  dogFreq,
+  onDogChange,
+  onDogNow,
 }: {
   visible: boolean;
   onClose: () => void;
@@ -202,6 +208,11 @@ export function SettingsSheet({
   onSetTheme?: (id: AccentId) => void;
   diag?: WallDiag | null;
   onRunDiag?: () => Promise<void>;
+  dogSupported?: boolean;
+  dogEnabled?: boolean;
+  dogFreq?: DogFreq;
+  onDogChange?: (p: { dogEnabled?: boolean; dogFreq?: DogFreq }) => void;
+  onDogNow?: () => void;
 }) {
   const styles = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
@@ -433,6 +444,68 @@ export function SettingsSheet({
                   : "Connect to push brightness live (saved & synced otherwise)"}
               </Text>
             </View>
+          </View>
+
+          {/* Dog walk-by (firmware 1.1.2+) */}
+          <View style={styles.card} testID="dog-card">
+            <View style={styles.rowBetween}>
+              <View style={{ flex: 1, paddingRight: spacing.md }}>
+                <Text style={styles.sectionTitle}>DOG WALK-BY</Text>
+                <Text style={styles.hint}>
+                  {dogSupported
+                    ? "Every so often the dog walks across the bottom of the wall"
+                    : "Needs wall firmware 1.1.2 or newer"}
+                </Text>
+              </View>
+              <Pressable
+                testID="dog-toggle"
+                onPress={() => {
+                  Haptics.selectionAsync().catch(() => {});
+                  onDogChange?.({ dogEnabled: !dogEnabled });
+                }}
+                style={[styles.switchTrack, dogEnabled && styles.switchTrackOn]}
+              >
+                <View style={[styles.switchThumb, dogEnabled && styles.switchThumbOn]} />
+              </Pressable>
+            </View>
+            {dogEnabled && (
+              <View style={[styles.profileRow, { marginTop: spacing.sm, flexDirection: "row", flexWrap: "wrap" }]}>
+                {(Object.keys(DOG_FREQ) as DogFreq[]).map((k) => {
+                  const active = (dogFreq ?? "some") === k;
+                  return (
+                    <Pressable
+                      key={k}
+                      testID={`dog-freq-${k}`}
+                      onPress={() => {
+                        Haptics.selectionAsync().catch(() => {});
+                        onDogChange?.({ dogFreq: k });
+                      }}
+                      style={[styles.profileChip, active && styles.profileChipActive]}
+                    >
+                      <Text style={[styles.profileChipText, active && styles.profileChipTextActive]}>
+                        {`${DOG_FREQ[k].label} · ${DOG_FREQ[k].min}-${DOG_FREQ[k].max}m`}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
+            <Pressable
+              testID="dog-walk-now"
+              disabled={!liveEnabled || !dogSupported}
+              onPress={() => {
+                Haptics.selectionAsync().catch(() => {});
+                onDogNow?.();
+              }}
+              style={({ pressed }) => [
+                styles.wifiBtn,
+                (!liveEnabled || !dogSupported) && { opacity: 0.5 },
+                pressed && styles.pressed,
+              ]}
+            >
+              <Ionicons name="paw" size={18} color={colors.onBrand} />
+              <Text style={styles.wifiBtnText}>WALK NOW</Text>
+            </Pressable>
           </View>
 
           {/* Display schedule */}
