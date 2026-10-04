@@ -1541,7 +1541,7 @@ def device_lake():
     if cached and _time.time() - cached["ts"] < 3600:
         return cached["data"]
 
-    lvl = tgt = full = None
+    lvl = tgt = full = dt = df = lip = None
     try:
         r = requests.get(DUKE_LEVELS, timeout=8)
         r.raise_for_status()
@@ -1550,6 +1550,16 @@ def device_lake():
                 lvl = round(float(lk["Actual"]), 1)
                 tgt = round(float(lk["Target"]), 1)
                 full = round(float(lk["Max"]), 1)
+                # Differences from the unrounded values (97.46 - 98.50 = -1.0,
+                # not 97.5 - 98.5). "Target" is Duke's operating guide-curve
+                # target for today; "Max" is full pond (100.0).
+                act = float(lk["Actual"])
+                dt = round(act - float(lk["Target"]), 1)
+                df = round(act - float(lk["Max"]), 1)
+                try:
+                    lip = int(lk.get("LowInputStage") or 0)  # Low Inflow Protocol stage
+                except (TypeError, ValueError):
+                    lip = None
                 break
     except Exception as exc:  # noqa: BLE001
         logger.warning("lake level failed: %s", exc)
@@ -1564,7 +1574,8 @@ def device_lake():
     else:
         _lake_cache["w"] = w
 
-    out = {"lvl": lvl, "tgt": tgt, "full": full, "w": w}
+    out = {"lvl": lvl, "tgt": tgt, "full": full, "w": w,
+           "dt": dt, "df": df, "lip": lip}
     # Don't cache a failed cold-cache fetch (would blank the module for the TTL).
     if lvl is not None:
         # A response without a water temp is NOT cached: the panel fetches the
