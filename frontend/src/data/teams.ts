@@ -146,6 +146,7 @@ export const TEAMS: Record<League, Team[]> = {
     { abbr: "STL", city: "St. Louis", name: "Blues", color: "#002F87" },
     { abbr: "TB", city: "Tampa Bay", name: "Lightning", color: "#002868" },
     { abbr: "TOR", city: "Toronto", name: "Maple Leafs", color: "#00205B" },
+    { abbr: "UTAH", city: "Utah", name: "Mammoth", color: "#6CACE4" },
     { abbr: "VAN", city: "Vancouver", name: "Canucks", color: "#00205B" },
     { abbr: "VGK", city: "Vegas", name: "Golden Knights", color: "#B4975A" },
     { abbr: "WSH", city: "Washington", name: "Capitals", color: "#C8102E" },

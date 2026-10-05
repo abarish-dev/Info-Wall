@@ -522,6 +522,32 @@ _LEAGUE_PATH = {
     "MLB": ("baseball", "mlb"),
     "NHL": ("hockey", "nhl"),
 }
+
+# ESPN is inconsistent about some team codes: the NHL Mammoth are "UTAH" in
+# the team list / team page but "UTA" on scoreboards, schedules and nextEvent.
+# Canonicalize per league so the panel text matches its logo key ("vs UTAH").
+# NBA Jazz stay "UTAH" and are untouched. (Firmware logo aliases for LAK/TBL/
+# NJD/SJS/WAS etc. live separately; those are for logo lookup only.)
+_ABBR_CANON = {"NHL": {"UTA": "UTAH"}}
+
+
+def _canon_abbr(league: str, ab) -> str:
+    ab = (ab or "").upper()
+    return _ABBR_CANON.get((league or "").upper(), {}).get(ab, ab)
+
+
+def _scoreboard_for(sport: str, lg: str, league: str, abbr: str):
+    """Lookup a team on today's scoreboard, accepting ESPN's raw abbrs that map
+    to our canonical form (e.g. UTA -> UTAH for a followed NHL:UTAH)."""
+    m = _scoreboard_map(sport, lg)
+    ab = (abbr or "").upper()
+    if ab in m:
+        return m[ab]
+    for raw, can in _ABBR_CANON.get((league or "").upper(), {}).items():
+        if can == ab and raw in m:
+            return m[raw]
+    return None
+
 _team_cache: dict = {}
 _TEAM_TTL = 120
 # ESPN's site.api.espn.com is Akamai-blocked from datacenter IPs (Vercel gets
@@ -751,11 +777,14 @@ def _team_status_one(code: str) -> dict:
     if not sport_lg:
         return data
     sport, lg = sport_lg
+    abbr = _canon_abbr(league, abbr)  # NHL:UTA -> look up as UTAH
+    code = f"{league}:{abbr}"
+    data["team"] = code
 
     # Live/just-finished games come from the scoreboard (has scores + clock).
-    g = _scoreboard_map(sport, lg).get(abbr.upper())
+    g = _scoreboard_for(sport, lg, league, abbr)
     if g and g["state"] == "in":
-        opp = g["opp"]
+        opp = _canon_abbr(league, g["opp"])
         vs = "vs" if g["home"] else "@"
         score_str = (
             f"{g['score']}-{g['oppScore']}"
@@ -794,7 +823,7 @@ def _team_status_one(code: str) -> dict:
         hrs = _hours_since(g.get("date")) if g.get("date") else None
         has = g["score"] is not None and g["oppScore"] is not None
         if "final" in detail.lower() and has and hrs is not None and 0 <= hrs <= 14:
-            opp = g["opp"]
+            opp = _canon_abbr(league, g["opp"])
             vs = "vs" if g["home"] else "@"
             score_str = f"{g['score']}-{g['oppScore']}"
             data.update(
@@ -870,9 +899,11 @@ def _team_status_one(code: str) -> dict:
                     vs = "@" if c.get("homeAway") == "away" else "vs"
                     my_score = sc
                 else:
-                    opp = (c.get("team") or {}).get("abbreviation") or (
-                        c.get("team") or {}
-                    ).get("shortDisplayName")
+                    opp = _canon_abbr(
+                        league,
+                        (c.get("team") or {}).get("abbreviation")
+                        or (c.get("team") or {}).get("shortDisplayName"),
+                    )
                     opp_score = sc
             data["opponent"] = opp
             data["vs"] = vs
