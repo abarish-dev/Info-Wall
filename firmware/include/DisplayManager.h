@@ -166,7 +166,10 @@ class DisplayManager {
     }
     bool pageChanged = !bufferValid_ || cur_.m != lastDrawnM_ || cur_.idx != lastDrawnIdx_;
     bool contentChanged = fp != lastFp_ || wxMin != lastWxMin_;
-    bool mustDraw = pageChanged || contentChanged || dogActive_ || (fading_ && fadeOut_ == false && frameStart_ == now);
+    // Marquee (TV titles that don't fit) advances with millis()-frameStart_;
+    // it only moves if we keep redrawing. Static pages still hold.
+    bool mustDraw = pageChanged || contentChanged || dogActive_ || pageNeedsScroll() ||
+                    (fading_ && fadeOut_ == false && frameStart_ == now);
     // After advancing mid-fade, force one redraw of the new page.
     if (fading_ && !fadeOut_ && (now - fadeStart_ < 30)) mustDraw = true;
 
@@ -193,6 +196,26 @@ class DisplayManager {
         if (now - lastSwitch_ > (unsigned long)hold - 2000UL) lastSwitch_ = now - (hold - 2000UL);
       }
     }
+  }
+
+  // True when the current page has at least one marquee line (text wider than
+  // the panel). Those pages must redraw every tick so the scroll offset moves.
+  bool pageNeedsScroll() {
+    if (cur_.m == M_TV) {
+      int total = showCount();
+      if (total == 0) return false;
+      int pages = (total + SHOWS_PER_PAGE - 1) / SHOWS_PER_PAGE;
+      int page = cur_.idx;
+      if (page < 0 || page >= pages) page = 0;
+      int seen = 0, onPage = 0;
+      for (int i = 0; i < 8 && onPage < SHOWS_PER_PAGE; i++) {
+        if (!g_settings.shows[i].length()) continue;
+        if (seen++ < page * SHOWS_PER_PAGE) continue;
+        onPage++;
+        if (textW(g_settings.shows[i]) > width_) return true;
+      }
+    }
+    return false;
   }
 
   // Cheap fingerprint of the fields the current page reads, so a Wi-Fi/BLE
