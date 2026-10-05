@@ -51,6 +51,15 @@ class DisplayManager {
     mxconfig.gpio.d  = 35; mxconfig.gpio.e  = 21;
     mxconfig.gpio.lat = 47; mxconfig.gpio.oe = 14; mxconfig.gpio.clk = 2;
     mxconfig.clkphase = false;
+    // Library defaults we leave explicit so scanline tearing is easier to reason
+    // about: single DMA buffer (writing while the panel is scanning tears),
+    // 8 MHz I2S, min_refresh_rate 60 Hz, 8-bit color. Double-buffering would
+    // hide tears but costs a second internal-SRAM framebuffer (~Aura left it
+    // off for Wi-Fi/BLE heap). We avoid tearing by not clear+redrawing every
+    // loop tick — see tick().
+    mxconfig.double_buff = false;
+    mxconfig.i2sspeed = HUB75_I2S_CFG::HZ_8M;
+    mxconfig.min_refresh_rate = 60;
 
     dma_ = new MatrixPanel_I2S_DMA(mxconfig);
     dma_->begin();
@@ -138,19 +147,135 @@ class DisplayManager {
         drawBright = fadeOut_ ? (int)(eff * (1.0f - t)) : (int)(eff * t);
       }
     }
-    dma_->setBrightness8(map(drawBright, 0, 100, 0, 255));
+    uint8_t br8 = (uint8_t)map(drawBright, 0, 100, 0, 255);
+    if (br8 != lastBright8_) {
+      dma_->setBrightness8(br8);
+      lastBright8_ = br8;
+    }
 
-    // 4) Draw the current page (+ the dog on top while it's walking).
-    dma_->clearScreen();
-    drawModule(cur_.m);
+    // 4) Draw the current page. The DMA framebuffer is single-buffered and is
+    // scanned top→bottom at ~min_refresh_rate while we write it — a full
+    // clearScreen()+redraw every loop (~15ms) looks like scanline flashing.
+    // Only rebuild the buffer when the picture actually changes (new page,
+    // fade page swap, dog walk, weather minute, or live content fingerprint).
+    uint32_t fp = pageFingerprint();
+    int wxMin = -1;
+    if (cur_.m == M_WEATHER) {
+      struct tm t;
+      if (getLocalTime(&t, 0)) wxMin = t.tm_hour * 60 + t.tm_min;
+    }
+    bool pageChanged = !bufferValid_ || cur_.m != lastDrawnM_ || cur_.idx != lastDrawnIdx_;
+    bool contentChanged = fp != lastFp_ || wxMin != lastWxMin_;
+    bool mustDraw = pageChanged || contentChanged || dogActive_ || (fading_ && fadeOut_ == false && frameStart_ == now);
+    // After advancing mid-fade, force one redraw of the new page.
+    if (fading_ && !fadeOut_ && (now - fadeStart_ < 30)) mustDraw = true;
+
+    if (mustDraw) {
+      dma_->clearScreen();
+      drawModule(cur_.m);
+      lastDrawnM_ = cur_.m;
+      lastDrawnIdx_ = cur_.idx;
+      lastFp_ = fp;
+      lastWxMin_ = wxMin;
+      bufferValid_ = true;
+    }
     if (dogActive_) {
+      // Dog is animated: redraw the whole page under it each step so we don't
+      // leave trails (still only while walking — a few seconds).
+      if (!mustDraw) {
+        dma_->clearScreen();
+        drawModule(cur_.m);
+      }
       if (!drawDog(now)) {
         dogActive_ = false;
         scheduleDog(now);
-        // Give the page a couple of seconds after the dog leaves.
+        bufferValid_ = false;  // restore a clean page without the dog
         if (now - lastSwitch_ > (unsigned long)hold - 2000UL) lastSwitch_ = now - (hold - 2000UL);
       }
     }
+  }
+
+  // Cheap fingerprint of the fields the current page reads, so a Wi-Fi/BLE
+  // update triggers one redraw without clearing 60×/s.
+  uint32_t pageFingerprint() {
+    auto mix = [](uint32_t h, uint32_t v) {
+      h ^= v + 0x9e3779b9u + (h << 6) + (h >> 2);
+      return h;
+    };
+    auto mixStr = [&](uint32_t h, const String &s) {
+      for (unsigned i = 0; i < s.length(); i++) h = mix(h, (uint8_t)s[i]);
+      return mix(h, s.length());
+    };
+    uint32_t h = (uint32_t)cur_.m * 131u + (uint32_t)cur_.idx;
+    switch (cur_.m) {
+      case M_WEATHER:
+        h = mix(h, (uint32_t)g_settings.wxTemp);
+        h = mix(h, (uint32_t)g_settings.wxHi);
+        h = mix(h, (uint32_t)g_settings.wxLo);
+        h = mixStr(h, g_settings.wxText);
+        break;
+      case M_LKN:
+        h = mixStr(h, g_settings.lakeLvl);
+        h = mixStr(h, g_settings.lakeTgt);
+        h = mixStr(h, g_settings.lakeTgtDiff);
+        h = mixStr(h, g_settings.lakeFull);
+        h = mix(h, (uint32_t)g_settings.lakeWater);
+        break;
+      case M_SPORTS: {
+        int i = teamSlotAt(cur_.idx);
+        if (i >= 0) {
+          h = mixStr(h, g_settings.teamRecord[i]);
+          h = mixStr(h, g_settings.teamLabel[i]);
+          h = mixStr(h, g_settings.teamShort[i]);
+          h = mixStr(h, g_settings.teamOpp[i]);
+          h = mixStr(h, g_settings.teamOppRec[i]);
+          h = mixStr(h, g_settings.teamStatus[i]);
+          h = mixStr(h, g_settings.teamNextDay[i]);
+          h = mixStr(h, g_settings.teamNextTime[i]);
+          h = mixStr(h, g_settings.teamHL[i]);
+          h = mix(h, (uint32_t)(uint16_t)g_settings.teamScore[i]);
+          h = mix(h, (uint32_t)(uint16_t)g_settings.teamOppScore[i]);
+        }
+        break;
+      }
+      case M_FOLLY:
+        h = mixStr(h, g_settings.follyL1);
+        h = mixStr(h, g_settings.follyL2);
+        h = mix(h, (uint32_t)g_settings.follyWater);
+        h = mixStr(h, g_settings.follyDir);
+        break;
+      case M_STOCKS:
+        for (int i = 0; i < 8; i++) {
+          h = mixStr(h, g_settings.stocks[i]);
+          h = mix(h, (uint32_t)(g_settings.stockPrice[i] * 100));
+        }
+        break;
+      case M_MARKETS:
+        h = mixStr(h, g_settings.marketStatus);
+        h = mix(h, (uint32_t)g_settings.marketCount);
+        break;
+      case M_PLANES: {
+        // Plane pages use DisplayManager's own list; idx is enough with notePlanes
+        // forcing a redraw via bufferValid_ clear if we add that later.
+        break;
+      }
+      case M_MESSAGE:
+        h = mixStr(h, g_settings.msgLine1);
+        h = mixStr(h, g_settings.msgLine2);
+        h = mixStr(h, g_settings.msgLine3);
+        break;
+      case M_TV: {
+        int i = cur_.idx;
+        if (i >= 0 && i < 8) {
+          h = mixStr(h, g_settings.shows[i]);
+          h = mixStr(h, g_settings.showLabel[i]);
+        }
+        break;
+      }
+      default:
+        break;
+    }
+    return h;
   }
 
   // Replace the in-range aircraft list (nearest first). A callsign not seen in
@@ -158,6 +283,7 @@ class DisplayManager {
   // first fetch after boot only seeds the list. Planes no longer reported drop
   // out of the cycle immediately (pageValid() fails for them).
   void notePlanes(const PlaneInfo *list, int n) {
+    bufferValid_ = false;  // plane cards read this list
     unsigned long now = millis();
     bool seeding = !planesSeeded_ || now < 45000UL;
     for (int i = 0; i < n; i++) {
@@ -363,6 +489,14 @@ class DisplayManager {
   uint16_t softGreen() { return dma_->color565(80, 190, 115); }
   uint16_t softRed()   { return dma_->color565(215, 70, 60); }
   uint16_t routeBlue() { return dma_->color565(120, 175, 215); }
+
+  // ---- Redraw gating (single DMA buffer) ------------------------------------
+  bool bufferValid_ = false;
+  Module lastDrawnM_ = M_MESSAGE;
+  int lastDrawnIdx_ = -1;
+  uint32_t lastFp_ = 0;
+  int lastWxMin_ = -2;
+  uint8_t lastBright8_ = 0xFF;
 
   // ---- Dog walk-by state ----------------------------------------------------
   bool dogActive_ = false, dogForce_ = false;
