@@ -296,6 +296,116 @@ def tv_search(q: str):
     return {"results": results}
 
 
+# ---------------------------------------------------------------------------
+# US-first air dates. TVmaze lists a show under its ORIGIN network, so a UK
+# show (e.g. All Creatures Great and Small, Channel 5) reports UK dates that
+# PBS airs months later. Order of preference:
+#   1. the matched show is US-origin (US network, or a streamer with a US /
+#      global web channel) -> use TVmaze as-is;
+#   2. an exact-title, running, US-origin TVmaze show exists -> use that one;
+#   3. a per-show override below with a still-relevant US date -> use it;
+#   4. otherwise the TVmaze origin dates (old behaviour).
+# Overrides expire on their own: an entry is ignored once its last projected
+# US episode is >3 days past, or as soon as rule 1/2 finds real US data.
+# ---------------------------------------------------------------------------
+_US_AIRING_OVERRIDES = {
+    # TVmaze id -> list of US season runs (dates/times are US Eastern).
+    42836: [  # All Creatures Great and Small (2020) - Channel 5 UK -> PBS MASTERPIECE
+        {"season": 7, "premiere": "2027-01-17", "time": "21:00",
+         "network": "PBS", "weekly": True, "episodes": None},  # None -> TVmaze season count
+    ],
+}
+_TV_RECENT_DAYS = 3
+
+
+def _is_us_origin(show: dict) -> bool:
+    net = show.get("network") or {}
+    if net:
+        return ((net.get("country") or {}).get("code")) == "US"
+    web = show.get("webChannel") or {}
+    if web:
+        cc = (web.get("country") or {}).get("code")
+        return cc in (None, "US")  # Apple TV / Netflix / Paramount+ are global
+    return False
+
+
+def _norm_title(t: str) -> str:
+    import re as _re
+    return _re.sub(r"[^a-z0-9]+", " ", (t or "").lower().replace("&", "and")).strip()
+
+
+def _us_alternative(name: str, exclude_id) -> dict | None:
+    """Exact-title, running, US-origin TVmaze show other than the match."""
+    try:
+        r = requests.get("https://api.tvmaze.com/search/shows",
+                         params={"q": name}, timeout=8)
+        r.raise_for_status()
+        want = _norm_title(name)
+        for row in r.json() or []:
+            sh = row.get("show") or {}
+            if (sh.get("id") != exclude_id and _norm_title(sh.get("name")) == want
+                    and sh.get("status") == "Running" and _is_us_origin(sh)):
+                rr = requests.get(f"https://api.tvmaze.com/shows/{sh['id']}",
+                                  params={"embed[]": ["nextepisode", "previousepisode"]},
+                                  timeout=8)
+                rr.raise_for_status()
+                return rr.json()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("tvmaze US alternative failed %s: %s", name, exc)
+    return None
+
+
+def _season_episode_count(show_id: int, season: int) -> int | None:
+    try:
+        r = requests.get(f"https://api.tvmaze.com/shows/{show_id}/episodes", timeout=8)
+        r.raise_for_status()
+        n = sum(1 for e in r.json() or []
+                if e.get("season") == season and e.get("type", "regular") == "regular")
+        return n or None
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _us_override_dates(show_id, today=None):
+    """Projected US episode dates (ISO) for the active override run, or None."""
+    from datetime import date as _date, timedelta as _td, datetime as _dt
+    from zoneinfo import ZoneInfo
+
+    runs = _US_AIRING_OVERRIDES.get(show_id)
+    if not runs:
+        return None
+    today = today or _dt.now(ZoneInfo("America/New_York")).date()
+    for run in runs:
+        first = _date.fromisoformat(run["premiere"])
+        n = run.get("episodes") or (_season_episode_count(show_id, run["season"])
+                                    if run.get("weekly") else 1) or 1
+        dates = [first + _td(weeks=i) for i in range(n if run.get("weekly") else 1)]
+        if (today - dates[-1]).days <= _TV_RECENT_DAYS:  # not expired yet
+            return {"dates": [d.isoformat() for d in dates], "run": run}
+    return None
+
+
+def _label_for(next_iso, prev_iso, status):
+    """(highlight, label, airdate) from next/previous episode dates."""
+    if next_iso:
+        dd = _days_from_today(next_iso)
+        if dd == 0:
+            return "new", "New episode today!", next_iso
+        if dd is not None and 0 < dd <= 7:
+            return "soon", f"New episode {_fmt_date(next_iso)}", next_iso
+        if dd is not None and dd > 7:
+            return "returning", f"Returns {_fmt_date(next_iso)}", next_iso
+    if prev_iso:
+        dd = _days_from_today(prev_iso)
+        if dd is not None and -_TV_RECENT_DAYS <= dd <= 0:
+            return "new", "New episode out now", prev_iso
+    if status == "Ended":
+        return "ended", "Series ended", None
+    if prev_iso or status == "Running":
+        return "between", "Between seasons", None
+    return "none", None, None
+
+
 def _tv_status_one(name: str) -> dict:
     import time as _time
 
@@ -314,6 +424,9 @@ def _tv_status_one(name: str) -> dict:
         "nextAirdate": None,
         "image": None,
         "imdb": None,
+        "source": None,   # tvmaze | tvmaze-us-alt | us-override
+        "usNetwork": None,
+        "usAirtime": None,
     }
     try:
         r = requests.get(
@@ -327,36 +440,29 @@ def _tv_status_one(name: str) -> dict:
             return data
         r.raise_for_status()
         show = r.json()
+        source = "tvmaze"
+        if not _is_us_origin(show):
+            alt = _us_alternative(name, show.get("id"))
+            if alt:
+                show, source = alt, "tvmaze-us-alt"
         emb = show.get("_embedded") or {}
-        nxt = emb.get("nextepisode") or {}
-        prv = emb.get("previousepisode") or {}
+        nxt = (emb.get("nextepisode") or {}).get("airdate")
+        prv = (emb.get("previousepisode") or {}).get("airdate")
         status = show.get("status")
         img = (show.get("image") or {}).get("medium")
         imdb = (show.get("externals") or {}).get("imdb")
 
-        highlight, label, airdate = "none", None, None
-        if nxt.get("airdate"):
-            dd = _days_from_today(nxt["airdate"])
-            airdate = nxt["airdate"]
-            if dd == 0:
-                highlight, label = "new", "New episode today!"
-            elif dd is not None and 0 < dd <= 7:
-                highlight, label = "soon", f"New episode {_fmt_date(nxt['airdate'])}"
-            elif dd is not None and dd > 7:
-                highlight, label = "returning", f"Returns {_fmt_date(nxt['airdate'])}"
-        elif prv.get("airdate"):
-            dd = _days_from_today(prv["airdate"])
-            if dd is not None and -3 <= dd <= 0:
-                highlight, label, airdate = "new", "New episode out now", prv["airdate"]
-            elif status == "Ended":
-                highlight, label = "ended", "Series ended"
-            else:
-                highlight, label = "between", "Between seasons"
-        else:
-            if status == "Ended":
-                highlight, label = "ended", "Series ended"
-            elif status == "Running":
-                highlight, label = "between", "Between seasons"
+        ov = None if source != "tvmaze" or _is_us_origin(show) else _us_override_dates(show.get("id"))
+        if ov:
+            source = "us-override"
+            dates = ov["dates"]
+            past = [d for d in dates if (_days_from_today(d) or 0) < 0]
+            future = [d for d in dates if (_days_from_today(d) or 0) >= 0]
+            nxt = future[0] if future else None
+            prv = past[-1] if past else None
+            data.update(usNetwork=ov["run"]["network"], usAirtime=ov["run"].get("time"))
+            status = "Running"
+        highlight, label, airdate = _label_for(nxt, prv, status)
 
         data.update(
             matchedName=show.get("name"),
@@ -367,6 +473,7 @@ def _tv_status_one(name: str) -> dict:
             nextAirdate=airdate,
             image=img,
             imdb=f"https://www.imdb.com/title/{imdb}" if imdb else None,
+            source=source,
         )
         _tv_cache[key] = {"ts": _time.time(), "data": data}
     except Exception as exc:  # noqa: BLE001
