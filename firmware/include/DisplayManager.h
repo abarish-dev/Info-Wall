@@ -387,12 +387,13 @@ class DisplayManager {
   enum Cat { C_INFO = 0, C_TEAMS, C_SHOWS, C_PLANES, C_COUNT };
   static constexpr int PATTERN_LEN = 5;
   const Cat PATTERN[PATTERN_LEN] = {C_INFO, C_TEAMS, C_INFO, C_SHOWS, C_PLANES};
-  // While any followed team is LIVE: every other page is a live game, and the
-  // Teams turn only cycles the live teams (non-live team pages - tomorrow's
-  // games, offseason records - sit out until no game is live).
+  // While any followed team is LIVE: every third page is a live game (with
+  // the 2x hold that's ~45% of screen time), and the Teams turn only cycles
+  // the live teams (non-live team pages - tomorrow's games, offseason
+  // records - sit out until no game is live).
   static constexpr int LIVE_PATTERN_LEN = 6;
-  const Cat LIVE_PATTERN[LIVE_PATTERN_LEN] = {C_TEAMS, C_INFO, C_TEAMS, C_SHOWS,
-                                              C_TEAMS, C_PLANES};
+  const Cat LIVE_PATTERN[LIVE_PATTERN_LEN] = {C_TEAMS, C_INFO, C_SHOWS,
+                                              C_TEAMS, C_INFO, C_PLANES};
   int patPos_ = 0;
   bool liveMode_ = false;
   int cursor_[C_COUNT] = {0, 0, 0, 0};
