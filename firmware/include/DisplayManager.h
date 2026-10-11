@@ -101,10 +101,10 @@ class DisplayManager {
     // 2) Advance on hold timeout (unless pinned). A newly seen plane cuts in
     //    immediately (an interrupt card itself is shown for a full hold).
     int hold = max(2000, g_settings.holdDurationMs);
-    // Live games stay up a bit longer than other pages.
+    // Live games stay up twice as long as other pages (was 1.5x).
     if (cur_.m == M_SPORTS) {
       int slot = teamSlotAt(cur_.idx);
-      if (slot >= 0 && g_settings.teamHL[slot] == "live") hold = hold * 3 / 2;
+      if (slot >= 0 && g_settings.teamHL[slot] == "live") hold = hold * 2;
     }
 
     // Dog walk-by: at a random time (or on request from the app), the dog
@@ -387,7 +387,14 @@ class DisplayManager {
   enum Cat { C_INFO = 0, C_TEAMS, C_SHOWS, C_PLANES, C_COUNT };
   static constexpr int PATTERN_LEN = 5;
   const Cat PATTERN[PATTERN_LEN] = {C_INFO, C_TEAMS, C_INFO, C_SHOWS, C_PLANES};
+  // While any followed team is LIVE: every other page is a live game, and the
+  // Teams turn only cycles the live teams (non-live team pages - tomorrow's
+  // games, offseason records - sit out until no game is live).
+  static constexpr int LIVE_PATTERN_LEN = 6;
+  const Cat LIVE_PATTERN[LIVE_PATTERN_LEN] = {C_TEAMS, C_INFO, C_TEAMS, C_SHOWS,
+                                              C_TEAMS, C_PLANES};
   int patPos_ = 0;
+  bool liveMode_ = false;
   int cursor_[C_COUNT] = {0, 0, 0, 0};
 
   // New-plane interrupt queue (callsigns, nearest first) + "seen" memory.
@@ -412,13 +419,19 @@ class DisplayManager {
     if (g_settings.showFolly) out[n++] = M_FOLLY;
     return n;
   }
+  int liveCount() {
+    int n = 0;
+    for (int i = 0; i < 8; i++)
+      if (g_settings.teams[i].length() && g_settings.teamHL[i] == "live" && !teamStale(i)) n++;
+    return n;
+  }
   int teamPages() { return (teamCount() + TEAMS_PER_PAGE - 1) / TEAMS_PER_PAGE; }
   int showPages() { return (showCount() + SHOWS_PER_PAGE - 1) / SHOWS_PER_PAGE; }
   int catCount(Cat c) {
     Module tmp[14];
     switch (c) {
       case C_INFO:   return infoModules(tmp);
-      case C_TEAMS:  return teamCount();   // one team per page (live/final first)
+      case C_TEAMS:  { int l = liveCount(); return l ? l : teamCount(); }  // live only while any is live
       case C_SHOWS:  return showPages();
       case C_PLANES: return g_settings.planeCount;
       default:       return 0;
@@ -464,9 +477,17 @@ class DisplayManager {
       cur_.m = M_PLANES; cur_.plane = cs; cur_.interrupt = true;
       return true;
     }
-    for (int t = 0; t < PATTERN_LEN; t++) {
-      Cat c = PATTERN[patPos_];
-      patPos_ = (patPos_ + 1) % PATTERN_LEN;
+    bool live = liveCount() > 0;
+    if (live != liveMode_) {            // a game started / ended: restart the
+      liveMode_ = live;                 // pattern so a new live game shows next
+      patPos_ = 0;
+      cursor_[C_TEAMS] = 0;
+    }
+    const Cat *pat = live ? LIVE_PATTERN : PATTERN;
+    const int len = live ? LIVE_PATTERN_LEN : PATTERN_LEN;
+    for (int t = 0; t < len; t++) {
+      Cat c = pat[patPos_ % len];
+      patPos_ = (patPos_ + 1) % len;
       int n = catCount(c);
       if (n == 0) continue;
       int k = cursor_[c] % n;
@@ -558,7 +579,7 @@ class DisplayManager {
       for (int i = 0; i < 8; i++) {
         if (!g_settings.teams[i].length()) continue;
         const String &hl = g_settings.teamHL[i];
-        int grp = hl == "live" ? 0 : (hl == "recent" ? 1 : 2);
+        int grp = (hl == "live" && !teamStale(i)) ? 0 : (hl == "recent" ? 1 : 2);
         if (grp != pass) continue;
         if (k-- == 0) return i;
       }
