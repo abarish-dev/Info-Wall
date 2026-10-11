@@ -60,7 +60,7 @@ AIRLINES = {
     # --- Middle East / Asia / Oceania ---
     "UAE": {"name": "Emirates", "iata": "EK"},
     "QTR": {"name": "Qatar Airways", "iata": "QR"},
-    "ETD": {"name": "Etihad Airways", "iata": "EY"},
+    "ETD": {"name": "Etihad", "iata": "EY"},
     "SVA": {"name": "Saudia", "iata": "SV"},
     "ELY": {"name": "El Al", "iata": "LY"},
     "SIA": {"name": "Singapore Airlines", "iata": "SQ"},
