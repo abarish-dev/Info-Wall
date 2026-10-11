@@ -97,6 +97,7 @@ AIRLINES = {
     "JTZ": {"name": "Nicholas Air", "iata": None},
     "EJM": {"name": "Executive Jet Management", "iata": None},
     "TWY": {"name": "Solairus", "iata": None},  # Solairus Aviation (charter)
+    "POD": {"name": "Craft Charter", "iata": None},  # US charter, callsign AIRPOD
     "PJS": {"name": "Jet Aviation", "iata": None},
     "FWK": {"name": "Flightworks", "iata": None},
     "KOW": {"name": "Baker Aviation", "iata": None},
