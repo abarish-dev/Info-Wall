@@ -2,7 +2,7 @@
   "expo": {
     "name": "Info Wall",
     "slug": "info-wall",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "frontend",
@@ -22,7 +22,7 @@
         "backgroundColor": "#0B1F3A"
       },
       "package": "com.abarish.infowall",
-      "versionCode": 5,
+      "versionCode": 6,
       "softwareKeyboardLayoutMode": "resize",
       "permissions": [
         "android.permission.BLUETOOTH_SCAN",
