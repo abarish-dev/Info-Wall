@@ -2,7 +2,9 @@
 // Concrete implementations live in index.ts (native) and index.web.ts (web).
 
 export type StorageItemKey = string;
-export type StorageItemValue = string | number | boolean | null;
+// Values are JSON-serialized by the native/web implementations, so plain
+// objects and arrays (settings, profiles, reminders) are valid too.
+export type StorageItemValue = string | number | boolean | null | object;
 
 // Helper for subclasses to enforce that they don't declare methods beyond
 // StorageBase. Use as: type _ = AssertNoExtras<Exclude<keyof Storage, keyof StorageBase>>;

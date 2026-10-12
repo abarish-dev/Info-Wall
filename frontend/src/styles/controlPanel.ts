@@ -357,7 +357,7 @@ export const makeStyles = () =>
   readoutMain: {
     color: colors.onSurface,
     fontFamily: fonts.textMedium,
-    fontSize: fontSize.md,
+    fontSize: fontSize.base, // was fontSize.md (undefined -> RN default 14)
   },
   readoutSub: {
     color: colors.info,

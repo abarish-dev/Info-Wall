@@ -71,7 +71,7 @@ export default function AnimatedSplash({ onDone }: { onDone: () => void }) {
   const dondone = useRef(false);
 
   // Load the user's chosen accent so the splash matches their theme.
-  const [accent, setAccent] = useState(colors.brand);
+  const [accent, setAccent] = useState<string>(colors.brand);
   useEffect(() => {
     storage
       .getItem<AccentId>(THEME_KEY, "orange")
