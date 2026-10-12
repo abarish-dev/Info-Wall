@@ -63,6 +63,7 @@ export const DEFAULTS = {
   trackFlight: false,
   flightIdent: "",
   showWeather: true,
+  showForecast: false, // 3-day forecast page on the panel (firmware 1.1.8+)
   zipCode: "28117",
   trackingMode: "radius",
   polygon: [] as number[][],
@@ -105,6 +106,7 @@ export type Settings = {
   trackFlight: boolean;
   flightIdent: string;
   showWeather: boolean;
+  showForecast: boolean;
   zipCode: string;
   trackingMode: string;
   polygon: number[][];

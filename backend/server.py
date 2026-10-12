@@ -1284,9 +1284,10 @@ def _wx_openmeteo(lat: float, lon: float) -> dict:
             "latitude": lat,
             "longitude": lon,
             "current": "temperature_2m,weather_code",
-            "daily": "temperature_2m_max,temperature_2m_min",
+            "daily": "temperature_2m_max,temperature_2m_min,weather_code",
             "temperature_unit": "fahrenheit",
             "timezone": "auto",
+            "forecast_days": 4,
         },
         timeout=8,
     )
@@ -1301,7 +1302,50 @@ def _wx_openmeteo(lat: float, lon: float) -> dict:
         "text": _WMO.get(code, "Clear"),
         "hi": round(daily["temperature_2m_max"][0]) if daily.get("temperature_2m_max") else None,
         "lo": round(daily["temperature_2m_min"][0]) if daily.get("temperature_2m_min") else None,
+        "fc": _forecast_days(daily),
     }
+
+
+def _wx_icon(code) -> str:
+    """WMO weather code -> one of the panel's six flat icons."""
+    if code is None:
+        return "cloud"
+    c = int(code)
+    if c in (0, 1):
+        return "sun"
+    if c == 2:
+        return "partly"
+    if c in (3, 45, 48):
+        return "cloud"
+    if c in (71, 73, 75, 77, 85, 86):
+        return "snow"
+    if c >= 95:
+        return "storm"
+    if 51 <= c <= 67 or 80 <= c <= 82:
+        return "rain"
+    return "cloud"
+
+
+def _forecast_days(daily: dict, n: int = 3) -> list:
+    """Next `n` days AFTER today (today's hi/lo is already on the weather
+    page): [{"d": "Mon", "i": "sun", "h": 81, "l": 57}, ...]."""
+    from datetime import date as _date
+
+    out = []
+    days = daily.get("time") or []
+    for k in range(1, min(len(days), n + 1)):
+        try:
+            hi = daily["temperature_2m_max"][k]
+            lo = daily["temperature_2m_min"][k]
+            out.append({
+                "d": _date.fromisoformat(days[k]).strftime("%a"),
+                "i": _wx_icon((daily.get("weather_code") or [None] * (k + 1))[k]),
+                "h": round(hi) if hi is not None else None,
+                "l": round(lo) if lo is not None else None,
+            })
+        except Exception:  # noqa: BLE001
+            continue
+    return out
 
 
 def _wx_wttr(lat: float, lon: float) -> dict:
@@ -1363,7 +1407,7 @@ def weather_current(lat: float, lon: float):
     # All sources failed — serve last good value (stale) if we have one.
     if cached:
         return cached["data"]
-    return {"temp": None, "code": None, "text": None, "hi": None, "lo": None}
+    return {"temp": None, "code": None, "text": None, "hi": None, "lo": None, "fc": []}
 
 
 # ---------------------------------------------------------------------------

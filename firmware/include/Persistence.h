@@ -22,6 +22,7 @@ inline void serializeSettings(JsonDocument &d) {
   d["trackFlight"] = g_settings.trackFlight;
   d["flightIdent"] = g_settings.flightIdent;
   d["showWeather"] = g_settings.showWeather;
+  d["showForecast"] = g_settings.showForecast;
   d["lat"] = g_settings.lat;
   d["lon"] = g_settings.lon;
   d["trackingMode"] = g_settings.trackingMode;
@@ -91,6 +92,7 @@ inline void applySettings(JsonDocument &d) {
   g_settings.trackFlight = d["trackFlight"] | g_settings.trackFlight;
   g_settings.flightIdent = (const char *)(d["flightIdent"] | "");
   g_settings.showWeather = d["showWeather"] | g_settings.showWeather;
+  g_settings.showForecast = d["showForecast"] | g_settings.showForecast;
   g_settings.lat = d["lat"] | g_settings.lat;
   g_settings.lon = d["lon"] | g_settings.lon;
   g_settings.trackingMode = (const char *)(d["trackingMode"] | "radius");

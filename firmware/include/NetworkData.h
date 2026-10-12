@@ -342,11 +342,17 @@ class NetworkData {
     PSRAM_JSON(doc);
     PSRAM_JSON(filter);
     for (const char *k : {"temp", "hi", "lo", "text"}) filter[k] = true;
+    if (g_settings.showForecast) {
+      JsonObject ff = filter["fc"].add<JsonObject>();
+      for (const char *k : {"d", "i", "h", "l"}) ff[k] = true;
+    }
     if (!getJson(path, doc, EP_WEATHER, &filter)) return false;
     if (!doc["temp"].isNull()) g_settings.wxTemp = doc["temp"].as<int>();
     if (!doc["hi"].isNull()) g_settings.wxHi = doc["hi"].as<int>();
     if (!doc["lo"].isNull()) g_settings.wxLo = doc["lo"].as<int>();
     g_settings.wxText = (const char *)(doc["text"] | "");
+    if (g_settings.showForecast && doc["fc"].is<JsonArrayConst>())
+      applyForecast(doc["fc"].as<JsonArrayConst>());
     return true;
   }
 

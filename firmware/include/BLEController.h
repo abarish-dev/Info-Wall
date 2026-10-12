@@ -23,6 +23,7 @@
 #include <sys/time.h>
 #include "Version.h"
 #include "PsramJson.h"
+#include "WeatherIcons.h"
 
 // --- Must match the app exactly -------------------------------------------
 static const char *SERVICE_UUID        = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
@@ -65,6 +66,7 @@ struct MatrixSettings {
   bool  trackFlight     = false;
   String flightIdent    = "";
   bool  showWeather     = true;
+  bool  showForecast    = false;  // 3-day forecast page (app toggle, default off)
   float lat             = 0.0f;
   float lon             = 0.0f;
   String trackingMode   = "radius";   // "radius" | "polygon"
@@ -135,6 +137,12 @@ struct MatrixSettings {
   int    wxHi           = 0;
   int    wxLo           = 0;
   String wxText         = "";
+  // 3-day forecast (next 3 days after today) from /api/weather/current "fc".
+  uint8_t fcN           = 0;
+  String  fcDay[3];
+  uint8_t fcIcon[3]     = {2, 2, 2};
+  int16_t fcHi[3]       = {0, 0, 0};
+  int16_t fcLo[3]       = {0, 0, 0};
   String planeLine      = "";   // nearest overhead flight
   String planeCode      = "";   // airline IATA/ICAO code for the badge (e.g. DAL)
   // Every aircraft currently in range (backend /api/device/planes, nearest
@@ -158,6 +166,21 @@ struct MatrixSettings {
 };
 
 extern MatrixSettings g_settings;
+
+// Store up to 3 forecast days ({"d","i","h","l"}) from the server or the phone.
+inline void applyForecast(JsonArrayConst fc) {
+  uint8_t n = 0;
+  for (JsonObjectConst d : fc) {
+    if (n >= 3) break;
+    if (d["h"].isNull() || d["l"].isNull()) continue;
+    g_settings.fcDay[n]  = (const char *)(d["d"] | "");
+    g_settings.fcIcon[n] = wxIconIndex(d["i"] | "cloud");
+    g_settings.fcHi[n]   = d["h"].as<int>();
+    g_settings.fcLo[n]   = d["l"].as<int>();
+    n++;
+  }
+  if (n) g_settings.fcN = n;   // keep the last good forecast on an empty reply
+}
 extern volatile bool g_settingsDirty;
 
 // ===========================================================================
@@ -527,6 +550,9 @@ inline void BLEController::handleJson(const String &raw) {
     if (!doc["hi"].isNull()) g_settings.wxHi = doc["hi"].as<int>();
     if (!doc["lo"].isNull()) g_settings.wxLo = doc["lo"].as<int>();
     if (!doc["text"].isNull()) g_settings.wxText = (const char *)(doc["text"] | "");
+    g_settings.showForecast = doc["showForecast"] | g_settings.showForecast;
+    // Optional phone-pushed forecast: "fc": [{"d":"Mon","i":"sun","h":81,"l":57}, ...]
+    if (doc["fc"].is<JsonArrayConst>()) applyForecast(doc["fc"].as<JsonArrayConst>());
 
   } else if (strcmp(cmd, "zone") == 0) {
     g_settings.trackingMode = (const char *)(doc["trackingMode"] | g_settings.trackingMode.c_str());
@@ -610,6 +636,7 @@ inline void BLEController::handleJson(const String &raw) {
     g_settings.trackFlight     = doc["trackFlight"]     | g_settings.trackFlight;
     g_settings.flightIdent     = (const char *)(doc["flightIdent"] | g_settings.flightIdent.c_str());
     g_settings.showWeather     = doc["showWeather"]     | g_settings.showWeather;
+    g_settings.showForecast    = doc["showForecast"]    | g_settings.showForecast;
     g_settings.lat             = doc["lat"]             | g_settings.lat;
     g_settings.lon             = doc["lon"]             | g_settings.lon;
     g_settings.trackingMode    = (const char *)(doc["trackingMode"] | g_settings.trackingMode.c_str());

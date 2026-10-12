@@ -649,6 +649,7 @@ export default function ControlPanel() {
       const cmd: Record<string, unknown> = {
         command: "weather",
         showWeather: settings.showWeather,
+        showForecast: !!settings.showForecast,
         lat: geo?.lat ?? 0,
         lon: geo?.lon ?? 0,
       };
@@ -663,6 +664,9 @@ export default function ControlPanel() {
             if (w?.hi != null) cmd.hi = w.hi;
             if (w?.lo != null) cmd.lo = w.lo;
             if (w?.text) cmd.text = w.text;
+            // 3-day forecast so the panel's forecast page fills without Wi-Fi.
+            if (settings.showForecast && Array.isArray(w?.fc) && w.fc.length)
+              cmd.fc = w.fc.slice(0, 3);
           }
         } catch {
           /* coords still pushed; panel can try its own fetch */
@@ -679,7 +683,7 @@ export default function ControlPanel() {
       clearTimeout(first);
       clearInterval(iv);
     };
-  }, [settings.showWeather, geo, status]);
+  }, [settings.showWeather, settings.showForecast, geo, status]);
 
   // Live push of the tracking zone: radius mode vs polygon (debounced).
   useEffect(() => {
@@ -1510,6 +1514,7 @@ export default function ControlPanel() {
         {
           command: "weather",
           showWeather: settings.showWeather,
+          showForecast: !!settings.showForecast,
           lat: coords?.lat ?? 0,
           lon: coords?.lon ?? 0,
         },
@@ -2146,6 +2151,24 @@ export default function ControlPanel() {
               </ScrollView>
             </View>
           )}
+
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleTextWrap}>
+              <Text style={styles.fieldLabel}>3-Day Forecast</Text>
+              <Text style={styles.toggleHint}>
+                Add a page with the next 3 days (icon + high/low)
+              </Text>
+            </View>
+            <Switch
+              testID="forecast-toggle"
+              value={!!settings.showForecast}
+              disabled={!settings.showWeather}
+              onValueChange={(v) => setSettings((s) => ({ ...s, showForecast: v }))}
+              trackColor={{ false: colors.surfaceTertiary, true: colors.brand }}
+              thumbColor={colors.onSurface}
+              ios_backgroundColor={colors.surfaceTertiary}
+            />
+          </View>
 
           <View style={styles.divider} />
           <View style={styles.toggleRow}>

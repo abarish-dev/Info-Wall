@@ -6,6 +6,7 @@ export type BlePayload = {
   trackFlight: boolean; // boolean
   flightIdent: string; // string
   showWeather: boolean; // boolean
+  showForecast?: boolean;
   lat: number; // number
   lon: number; // number
   trackingMode: string; // "radius" | "polygon"
@@ -46,6 +47,7 @@ type SettingsShape = {
   trackFlight: boolean;
   flightIdent: string;
   showWeather: boolean;
+  showForecast?: boolean;
   trackingMode: string;
   polygon: number[][];
   brightness: number;
@@ -70,6 +72,7 @@ export function buildBlePayload(
     trackFlight: s.trackFlight,
     flightIdent: s.flightIdent.trim(),
     showWeather: s.showWeather,
+    showForecast: !!s.showForecast,
     lat: coords?.lat ?? 0,
     lon: coords?.lon ?? 0,
     trackingMode: s.trackingMode,

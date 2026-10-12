@@ -237,6 +237,14 @@ class DisplayManager {
         h = mix(h, (uint32_t)g_settings.wxLo);
         h = mixStr(h, g_settings.wxText);
         break;
+      case M_FORECAST:
+        for (int i = 0; i < g_settings.fcN; i++) {
+          h = mixStr(h, g_settings.fcDay[i]);
+          h = mix(h, g_settings.fcIcon[i]);
+          h = mix(h, (uint32_t)(uint16_t)g_settings.fcHi[i]);
+          h = mix(h, (uint32_t)(uint16_t)g_settings.fcLo[i]);
+        }
+        break;
       case M_LKN:
         h = mixStr(h, g_settings.lakeLvl);
         h = mixStr(h, g_settings.lakeTgt);
@@ -365,7 +373,7 @@ class DisplayManager {
  private:
   static const uint32_t kTeamLabelStaleSec = 3 * 3600;  // saved team label max age
   enum Module { M_MARKETS, M_MESSAGE, M_FLIGHT, M_PLANES, M_WEATHER, M_SPORTS, M_SCORES,
-                M_TV, M_STOCKS, M_COUNTDOWN, M_REMINDERS, M_LKN, M_FOLLY };
+                M_TV, M_STOCKS, M_COUNTDOWN, M_REMINDERS, M_LKN, M_FOLLY, M_FORECAST };
 
   MatrixPanel_I2S_DMA *dma_ = nullptr;
   int width_ = 128, height_ = 64;
@@ -412,6 +420,7 @@ class DisplayManager {
     if (g_settings.showCustomMessage && msgHasText()) out[n++] = M_MESSAGE;
     if (g_settings.trackFlight && g_settings.flightIdent.length()) out[n++] = M_FLIGHT;
     if (g_settings.showWeather) out[n++] = M_WEATHER;
+    if (g_settings.showWeather && g_settings.showForecast && g_settings.fcN > 0) out[n++] = M_FORECAST;
     if (anyStock()) out[n++] = M_STOCKS;
     if (g_settings.showMarkets && g_settings.marketCount > 0) out[n++] = M_MARKETS;
     if (g_settings.showCountdown && g_settings.countdownLabel.length()) out[n++] = M_COUNTDOWN;
@@ -714,6 +723,7 @@ class DisplayManager {
       case M_FLIGHT:    drawFlight();    break;
       case M_PLANES:    drawPlanes();    break;
       case M_WEATHER:   drawWeather();   break;
+      case M_FORECAST:  drawForecast();  break;
       case M_SPORTS:    drawTeamPage(teamSlotAt(cur_.idx)); break;
       case M_SCORES:    drawScores();    break;
       case M_TV:        drawShows();     break;
@@ -942,6 +952,41 @@ class DisplayManager {
     if (textW(line) > width_ && dist.endsWith("mi"))
       line = fitWords(name, (width_ / 6) - dist.length() - 1) + " " + dist;
     centerText(fitWords(line, width_ / 6), 48, softWhite());
+  }
+
+  // 3-day forecast: three columns of day / 16x12 icon / hi (2x) / lo.
+  //    Mon      Tue      Wed
+  //    [sun]    [pc]     [rain]
+  //    81deg    83deg    66deg  <- amber, 2x (degree mark 1x)
+  //    57deg    56deg    58deg  <- cyan
+  void drawForecast() {
+    const int n = min((int)g_settings.fcN, 3);
+    for (int k = 0; k < n; k++) {
+      int cx = (width_ * (2 * k + 1)) / 6;
+      const String &day = g_settings.fcDay[k];
+      textAt(day, cx - (int)day.length() * 3, 3, titleBlue());
+      const uint8_t *ic = WX_ICONS[g_settings.fcIcon[k] % WX_ICON_N];
+      for (int r = 0; r < WX_ICON_H; r++)
+        for (int c = 0; c < WX_ICON_W; c++) {
+          uint8_t p = pgm_read_byte(&ic[r * WX_ICON_W + c]);
+          if (p) dma_->drawPixel(cx - 8 + c, 15 + r,
+                                 dma_->color565(WX_ICON_PAL[p][0], WX_ICON_PAL[p][1], WX_ICON_PAL[p][2]));
+        }
+      char hi[8], lo[8];
+      snprintf(hi, sizeof(hi), "%d", g_settings.fcHi[k]);
+      int hw = strlen(hi) * 12;
+      dma_->setFont(nullptr);
+      dma_->setTextSize(2);
+      dma_->setTextColor(amber());
+      int x0 = cx - (hw + 7) / 2;          // number + gap + 1x degree mark, centered
+      dma_->setCursor(x0, 31);
+      dma_->print(hi);
+      dma_->setTextSize(1);
+      dma_->setCursor(x0 + hw + 1, 31);
+      dma_->print('\xF7');
+      snprintf(lo, sizeof(lo), "%d\xF7", g_settings.fcLo[k]);
+      textAt(lo, cx - (int)strlen(lo) * 3, 51, cyan());
+    }
   }
 
   void drawWeather() {
