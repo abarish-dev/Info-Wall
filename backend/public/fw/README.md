@@ -14,7 +14,7 @@ After that, the app's **Install update** button updates the panel over Wi-Fi.
 
 ## Publishing a new build
 
-1. Bump `INFOWALL_FW_VERSION` in `firmware/include/Version.h` (e.g. `1.1.8`).
+1. Bump `INFOWALL_FW_VERSION` in `firmware/include/Version.h` (e.g. `1.1.9`).
    The panel only installs a version strictly **higher** than the one it runs.
 2. Build: `cd firmware && pio run`. Output:
    `firmware/.pio/build/adafruit_matrixportal_esp32s3/firmware.bin`.
