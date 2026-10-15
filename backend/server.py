@@ -1601,6 +1601,50 @@ _BRAND_LOGO = {
     "JZA": "ACA", "ROU": "ACA",  # Air Canada Jazz / Rouge
     "NJE": "EJA", "XOJ": "VJT",  # NetJets Europe, XOJET (VistaJet US)
 }
+
+# ---------------------------------------------------------------------------
+# Republic (RPA) flies as United Express, Delta Connection and American Eagle.
+# Neither the ADS-B feed nor adsbdb names the marketing carrier (adsbdb gives
+# Republic's own RW#### number), so it is GUESSED from the route: each airport
+# lists the mainline carriers that run a hub/focus city there; the guess is the
+# carrier common to every end of the route that is a hub for anyone. Shared
+# hubs and conflicting ends (e.g. IAH-PHL = UA vs AA) give no guess, and the
+# panel keeps the Republic logo/name. Keys of _RPA_PARTNER are the logo keys.
+# ---------------------------------------------------------------------------
+_RPA_PARTNER = {
+    "UAL": "United Express",
+    "DAL": "Delta Connect",   # 13 chars: the panel's name column fits ~15
+    "AAL": "American Eagle",
+}
+_HUB_CARRIERS = {
+    # United
+    "EWR": {"UAL"}, "IAD": {"UAL"}, "DEN": {"UAL"}, "IAH": {"UAL"},
+    "SFO": {"UAL"}, "CLE": {"UAL"},
+    # Delta
+    "ATL": {"DAL"}, "DTW": {"DAL"}, "MSP": {"DAL"}, "LGA": {"DAL"},
+    "BOS": {"DAL"}, "SLC": {"DAL"}, "SEA": {"DAL"},
+    # American (DCA: American's hub; Delta also flies there, see tests/notes)
+    "CLT": {"AAL"}, "PHL": {"AAL"}, "DFW": {"AAL"}, "MIA": {"AAL"},
+    "DCA": {"AAL"}, "PHX": {"AAL"},
+    # Shared: no single owner, so these never decide a guess by themselves
+    "ORD": {"UAL", "AAL"}, "JFK": {"DAL", "AAL"},
+    "LAX": {"UAL", "DAL", "AAL"},
+}
+
+
+def _rpa_partner(frm, to):
+    """(logo_key, display_name) for a Republic flight, or None if unsure."""
+    cands = None
+    for ap in (frm, to):
+        hub = _HUB_CARRIERS.get((ap or "").upper())
+        if hub:
+            cands = set(hub) if cands is None else cands & hub
+    if cands and len(cands) == 1:
+        k = next(iter(cands))
+        return k, _RPA_PARTNER[k]
+    return None
+
+
 _route_cache: dict = {}
 _ROUTE_TTL = 6 * 3600
 
@@ -1694,6 +1738,10 @@ def device_planes(lat: float, lon: float, radius: float = 25):
             for k in ("fn", "fr", "to"):
                 if rt.get(k):
                     row[k] = rt[k]
+            if ia == "RPA":
+                pm = _rpa_partner(rt.get("fr"), rt.get("to"))
+                if pm:
+                    row["lg"], row["al"] = pm
         out.append(row)
     return {"p": out}
 
