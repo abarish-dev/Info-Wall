@@ -284,9 +284,14 @@ class CharCallbacks : public BLECharacteristicCallbacks {
 // ---------------------------------------------------------------------------
 inline void BLEController::begin() {
   // Advertise a name the app scans for (prefix "InfoWall-").
+  // Suffix = LAST two MAC bytes, as printed at the end of the MAC address
+  // (AA:BB:CC:DD:EE:FF -> "EEFF"). getEfuseMac() is little-endian (byte 0 is
+  // the low byte), so the old `chip & 0xFFFF` was bytes 0-1: the manufacturer
+  // prefix, identical on every board of a batch.
   uint64_t chip = ESP.getEfuseMac();
   char name[24];
-  snprintf(name, sizeof(name), "InfoWall-%04X", (uint16_t)(chip & 0xFFFF));
+  snprintf(name, sizeof(name), "InfoWall-%02X%02X",
+           (unsigned)((chip >> 32) & 0xFF), (unsigned)((chip >> 40) & 0xFF));
 
   if (!valueLock_) valueLock_ = xSemaphoreCreateMutex();
   BLEDevice::init(name);
