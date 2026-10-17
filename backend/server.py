@@ -1536,6 +1536,24 @@ def _game_fields(code: str, s: dict) -> dict:
     return out
 
 
+_WIN_ALIAS = {"NHL:CAR": "CANES", "NHL:NJ": "DEVILS", "NHL:NJD": "DEVILS", "MLB:NYY": "YANKEES"}
+
+
+def _win_name(code: str, s: dict) -> str:
+    """Short team name for the on-panel 'X WIN!' flash (<=10 chars, ASCII)."""
+    if code in _WIN_ALIAS:
+        return _WIN_ALIAS[code]
+    nm = (s.get("name") or "").encode("ascii", "ignore").decode().strip()
+    words = nm.split()
+    if words:
+        last = words[-1].upper()
+        if last == "SOX" and len(words) >= 2:
+            last = f"{words[-2].upper()} SOX"
+        if 0 < len(last) <= 10:
+            return last
+    return code.split(":")[-1].upper()
+
+
 @api_router.get("/device/scores")
 def device_scores(teams: str):
     def _ascii(s):
@@ -1569,6 +1587,7 @@ def device_scores(teams: str):
             "st": _ascii(gf["statusText"]),
             "nd": gf["nextDay"],
             "nt": gf["nextTime"],
+            "wn": _win_name(code, s),
         })
     return {"t": out}
 

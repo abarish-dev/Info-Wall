@@ -263,7 +263,7 @@ class NetworkData {
     PSRAM_JSON(doc);
     PSRAM_JSON(filter);
     JsonObject ft = filter["t"].add<JsonObject>();
-    for (const char *k : {"c", "s", "h", "l", "r", "k", "o", "op", "ha", "or", "st", "nd", "nt"}) ft[k] = true;
+    for (const char *k : {"c", "s", "h", "l", "r", "k", "o", "op", "ha", "or", "st", "nd", "nt", "wn"}) ft[k] = true;
     if (!getJson("/api/device/scores?teams=" + enc(teams), doc, EP_SCORES, &filter)) return false;
     const uint32_t nowEpoch = (uint32_t)time(nullptr);
     // Store per-team (aligned to g_settings.teams[]) so the display can show
@@ -314,6 +314,15 @@ class NetworkData {
         }
         g_settings.prevScore[slot] = sc;
       } else {
+        // Live -> final with our team ahead: celebrate the win.
+        if (g_settings.prevScore[slot] >= 0 && strcmp(g_settings.teamHL[slot].c_str(), "recent") == 0 &&
+            g_settings.teamScore[slot] > g_settings.teamOppScore[slot] && g_settings.teamOppScore[slot] >= 0) {
+          uint8_t r, gg, b;
+          teamRGB(code, r, gg, b);
+          String wn = (const char *)(e["wn"] | "");
+          if (!wn.length()) wn = abbrOf(code);
+          g_display.scoreFlash(wn, r, gg, b, "WIN!");
+        }
         g_settings.prevScore[slot] = -1;  // not live: next live score is a fresh baseline
       }
     }
