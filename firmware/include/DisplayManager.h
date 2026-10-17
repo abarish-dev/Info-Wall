@@ -19,6 +19,7 @@
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
 #include <time.h>
 #include "BLEController.h"
+#include "MarketHours.h"
 #include "Logos.h"
 #include "DogSprite.h"
 #include <Fonts/FreeMono9pt7b.h>
@@ -422,7 +423,7 @@ class DisplayManager {
     if (g_settings.showWeather) out[n++] = M_WEATHER;
     if (g_settings.showWeather && g_settings.showForecast && g_settings.fcN > 0) out[n++] = M_FORECAST;
     if (anyStock()) out[n++] = M_STOCKS;
-    if (g_settings.showMarkets && g_settings.marketCount > 0) out[n++] = M_MARKETS;
+    if (g_settings.showMarkets && g_settings.marketCount > 0 && !marketsClosedNow()) out[n++] = M_MARKETS;
     if (g_settings.showCountdown && g_settings.countdownLabel.length()) out[n++] = M_COUNTDOWN;
     if (anyReminder()) out[n++] = M_REMINDERS;
     if (g_settings.showLKN)   out[n++] = M_LKN;
@@ -702,7 +703,20 @@ class DisplayManager {
   bool anyShow()  { for (int i=0;i<8;i++) if (g_settings.shows[i].length())  return true; return false; }
   int  teamCount(){ int n=0; for (int i=0;i<8;i++) if (g_settings.teams[i].length()) n++; return n; }
   int  showCount(){ int n=0; for (int i=0;i<8;i++) if (g_settings.shows[i].length()) n++; return n; }
-  bool anyStock() { for (int i=0;i<8;i++) if (g_settings.stocks[i].length()) return true; return false; }
+  // Weekend rule (US Eastern; the RTC is set via NTP/HTTP/phone with the
+  // Eastern TZ). Unknown clock => false, so nothing is hidden by mistake.
+  bool marketsClosedNow() {
+    struct tm t;
+    if (!getLocalTime(&t, 0)) return false;
+    return marketsClosedDay(t.tm_wday);
+  }
+  // A followed ticker gets a row/slide unless markets are closed and it is not
+  // a 24/7 (crypto) symbol.
+  bool stockShown(int i) {
+    if (!g_settings.stocks[i].length()) return false;
+    return !marketsClosedNow() || tradesOnWeekends(g_settings.stocks[i].c_str());
+  }
+  bool anyStock() { for (int i=0;i<8;i++) if (stockShown(i)) return true; return false; }
   bool anyScore() { for (int i=0;i<8;i++) if (g_settings.teams[i].length() && (g_settings.teamHL[i]=="live"||g_settings.teamHL[i]=="recent")) return true; return false; }
   bool anyReminder() { for (int i=0;i<4;i++) if (g_settings.reminders[i].length()) return true; return false; }
 
@@ -1205,13 +1219,13 @@ class DisplayManager {
 
   void drawStocks() {
     int n = 0;
-    for (int i = 0; i < 8; i++) if (g_settings.stocks[i].length()) n++;
+    for (int i = 0; i < 8; i++) if (stockShown(i)) n++;
     int top = (height_ - (12 + n * 12)) / 2;  // center header + rows
     if (top < 1) top = 1;
     centerText("MARKETS", top, green());
     int y = top + 14;
     for (int i = 0; i < 8 && y < height_ - 6; i++) {
-      if (!g_settings.stocks[i].length()) continue;
+      if (!stockShown(i)) continue;
       if (!g_settings.stockOk[i]) {
         // No live data (e.g. delisted / unknown) — flag it dimly so the user
         // knows to remove it, rather than showing a stale/blank price.

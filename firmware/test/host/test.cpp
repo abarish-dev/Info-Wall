@@ -7,6 +7,7 @@
 #include <sstream>
 #include <string>
 #include <initializer_list>
+#include "../../include/MarketHours.h"
 
 // Same shape as PsramAllocator, but counting (heap_caps_* replaced by malloc).
 struct CountingAllocator : ArduinoJson::Allocator {
@@ -84,6 +85,17 @@ int main() {
     JsonDocument d; deserializeJson(d, body, DeserializationOption::Filter(f));
     CHECK(d["st"].is<const char*>()); CHECK(d["m"][0]["sp"].as<JsonArray>().size() > 0);
   }
+  { // weekend rule (1.1.10): helpers + the server's empty-markets reply hides the page
+    CHECK(marketsClosedDay(0) && marketsClosedDay(6));
+    for (int d = 1; d <= 5; d++) CHECK(!marketsClosedDay(d));
+    CHECK(tradesOnWeekends("BTC-USD") && tradesOnWeekends("eth-usd"));
+    CHECK(!tradesOnWeekends("AAPL") && !tradesOnWeekends("BRK-B") && !tradesOnWeekends("USD") && !tradesOnWeekends(""));
+    JsonDocument f; f["st"] = true; JsonObject fm = f["m"].add<JsonObject>();
+    for (const char *k : {"n","v","c","b","sp"}) fm[k] = true;
+    JsonDocument d; CHECK(!deserializeJson(d, "{\"st\":\"Closed\",\"m\":[]}", DeserializationOption::Filter(f)));
+    int n = 0; for (JsonVariant m : d["m"].as<JsonArray>()) { (void)m; n++; }   // fetchMarkets loop
+    CHECK(n == 0); CHECK(std::string(d["st"] | "") == "Closed");
+    printf("weekend rule: ok\n"); }
   { // weather
     CountingAllocator a, b; JsonDocument f;
     for (const char *k : {"temp","hi","lo","text"}) f[k] = true;
