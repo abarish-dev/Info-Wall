@@ -1800,6 +1800,15 @@ def _market_one(sym: str, name: str) -> dict:
             "c": pct, "sp": spark, "b": base, "_reg": (start, end)}
 
 
+def _markets_weekend_closed(now=None) -> bool:
+    """True on Saturday/Sunday in US Eastern (no trading at all)."""
+    from datetime import datetime as _dt
+    from zoneinfo import ZoneInfo
+
+    et = now.astimezone(ZoneInfo("America/New_York")) if now else _dt.now(ZoneInfo("America/New_York"))
+    return et.weekday() >= 5
+
+
 @api_router.get("/device/markets")
 def device_markets():
     """Compact payload for the panel's optional Markets page.
@@ -1809,6 +1818,10 @@ def device_markets():
     from concurrent.futures import ThreadPoolExecutor
 
     now = _time.time()
+    if _markets_weekend_closed():
+        # US markets are shut all day Sat/Sun (Eastern). An empty list makes
+        # the panel (any firmware) drop the Markets page from the rotation.
+        return {"st": "Closed", "m": []}
     cached = _markets_cache.get("d")
     if cached and now - cached["ts"] < 60:
         return cached["data"]
