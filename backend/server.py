@@ -481,15 +481,21 @@ def _tv_status_one(name: str) -> dict:
     return data
 
 
+def _tv_status_many(nms):
+    """Look up several shows at once so a cold cache stays fast."""
+    if len(nms) <= 1:
+        return [_tv_status_one(n) for n in nms]
+    from concurrent.futures import ThreadPoolExecutor
+
+    with ThreadPoolExecutor(max_workers=min(8, len(nms))) as ex:
+        return list(ex.map(_tv_status_one, nms))
+
+
 @api_router.get("/tv/status")
 def tv_status(names: str):
     """Release status for a pipe-separated list of show names."""
-    results = []
-    for raw in names.split("|"):
-        nm = raw.strip()
-        if nm:
-            results.append(_tv_status_one(nm))
-    return {"results": results}
+    nms = [r.strip() for r in names.split("|") if r.strip()]
+    return {"results": _tv_status_many(nms)}
 
 
 # ---------------------------------------------------------------------------
@@ -1861,12 +1867,9 @@ def device_tv(names: str):
     def _ascii(s):
         return (s or "").encode("ascii", "ignore").decode().strip()
 
+    nms = [r.strip() for r in names.split("|") if r.strip()]
     out = []
-    for raw in names.split("|"):
-        nm = raw.strip()
-        if not nm:
-            continue
-        s = _tv_status_one(nm)
+    for nm, s in zip(nms, _tv_status_many(nms)):
         out.append({"n": nm, "h": s.get("highlight"), "l": _ascii(s.get("label"))})
     return {"v": out}
 
