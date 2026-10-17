@@ -429,11 +429,22 @@ def _tv_status_one(name: str) -> dict:
         "usAirtime": None,
     }
     try:
-        r = requests.get(
-            "https://api.tvmaze.com/singlesearch/shows",
-            params={"q": name, "embed[]": ["nextepisode", "previousepisode"]},
-            timeout=8,
-        )
+        # TVmaze is sometimes very slow on the first hit (10s+) and fast right
+        # after, so use short timeouts and retry instead of one long wait.
+        r = None
+        last_exc = None
+        for _attempt in range(3):
+            try:
+                r = requests.get(
+                    "https://api.tvmaze.com/singlesearch/shows",
+                    params={"q": name, "embed[]": ["nextepisode", "previousepisode"]},
+                    timeout=(3, 3),
+                )
+                break
+            except requests.exceptions.RequestException as exc:  # noqa: PERF203
+                last_exc = exc
+        if r is None:
+            raise last_exc
         if r.status_code == 404:
             data["highlight"] = "unknown"
             _tv_cache[key] = {"ts": _time.time(), "data": data}
@@ -478,6 +489,8 @@ def _tv_status_one(name: str) -> dict:
         _tv_cache[key] = {"ts": _time.time(), "data": data}
     except Exception as exc:  # noqa: BLE001
         logger.warning("tvmaze status failed %s: %s", name, exc)
+        if cached:  # serve the last good answer rather than blank fields
+            return cached["data"]
     return data
 
 
