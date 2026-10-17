@@ -433,12 +433,12 @@ def _tv_status_one(name: str) -> dict:
         # after, so use short timeouts and retry instead of one long wait.
         r = None
         last_exc = None
-        for _attempt in range(3):
+        for _attempt, _to in enumerate((7, 4)):
             try:
                 r = requests.get(
                     "https://api.tvmaze.com/singlesearch/shows",
                     params={"q": name, "embed[]": ["nextepisode", "previousepisode"]},
-                    timeout=(3, 3),
+                    timeout=_to,
                 )
                 break
             except requests.exceptions.RequestException as exc:  # noqa: PERF203
@@ -491,6 +491,7 @@ def _tv_status_one(name: str) -> dict:
         logger.warning("tvmaze status failed %s: %s", name, exc)
         if cached:  # serve the last good answer rather than blank fields
             return cached["data"]
+        data["failed"] = True
     return data
 
 
@@ -1901,7 +1902,12 @@ def device_tv(names: str):
 
     nms = [r.strip() for r in names.split("|") if r.strip()]
     out = []
-    for nm, s in zip(nms, _tv_status_many(nms)):
+    res = _tv_status_many(nms)
+    if any(x.get("failed") for x in res):
+        # Let the panel keep its previous labels and retry soon, instead of
+        # overwriting them with blanks.
+        raise HTTPException(status_code=503, detail="tv lookup incomplete")
+    for nm, s in zip(nms, res):
         out.append({"n": nm, "h": s.get("highlight"), "l": _ascii(s.get("label"))})
     return {"v": out}
 
