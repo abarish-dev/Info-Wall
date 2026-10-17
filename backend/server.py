@@ -334,6 +334,27 @@ def _norm_title(t: str) -> str:
     return _re.sub(r"[^a-z0-9]+", " ", (t or "").lower().replace("&", "and")).strip()
 
 
+def _attach_episodes(show: dict) -> dict:
+    """Fill show['_embedded'] with next/previous episodes via the show's links.
+    TVmaze's ?embed[]= variant is often very slow on a cache miss (10s+), while
+    plain show and episode fetches answer in well under a second."""
+    emb = show.setdefault("_embedded", {})
+    links = show.get("_links") or {}
+    for key in ("nextepisode", "previousepisode"):
+        if emb.get(key) is not None:
+            continue
+        href = (links.get(key) or {}).get("href")
+        if not href:
+            continue
+        try:
+            rr = requests.get(href, timeout=4)
+            if rr.ok:
+                emb[key] = rr.json()
+        except requests.exceptions.RequestException:
+            pass
+    return show
+
+
 def _us_alternative(name: str, exclude_id) -> dict | None:
     """Exact-title, running, US-origin TVmaze show other than the match."""
     try:
@@ -346,10 +367,9 @@ def _us_alternative(name: str, exclude_id) -> dict | None:
             if (sh.get("id") != exclude_id and _norm_title(sh.get("name")) == want
                     and sh.get("status") == "Running" and _is_us_origin(sh)):
                 rr = requests.get(f"https://api.tvmaze.com/shows/{sh['id']}",
-                                  params={"embed[]": ["nextepisode", "previousepisode"]},
                                   timeout=8)
                 rr.raise_for_status()
-                return rr.json()
+                return _attach_episodes(rr.json())
     except Exception as exc:  # noqa: BLE001
         logger.warning("tvmaze US alternative failed %s: %s", name, exc)
     return None
@@ -437,7 +457,7 @@ def _tv_status_one(name: str) -> dict:
             try:
                 r = requests.get(
                     "https://api.tvmaze.com/singlesearch/shows",
-                    params={"q": name, "embed[]": ["nextepisode", "previousepisode"]},
+                    params={"q": name},
                     timeout=_to,
                 )
                 break
@@ -456,6 +476,7 @@ def _tv_status_one(name: str) -> dict:
             alt = _us_alternative(name, show.get("id"))
             if alt:
                 show, source = alt, "tvmaze-us-alt"
+        _attach_episodes(show)
         emb = show.get("_embedded") or {}
         nxt = (emb.get("nextepisode") or {}).get("airdate")
         prv = (emb.get("previousepisode") or {}).get("airdate")
