@@ -341,7 +341,8 @@ class DisplayManager {
   }
 
   // Celebrate a score: blink the team color with the abbr + "SCORE" (~2.4s).
-  void scoreFlash(const String &abbr, uint8_t r, uint8_t g, uint8_t b) {
+  void scoreFlash(const String &abbr, uint8_t r, uint8_t g, uint8_t b,
+                  const char *msg = "SCORE!") {
     if (!dma_) return;
     dma_->setBrightness8(255);
     uint16_t bg = dma_->color565(r, g, b);
@@ -352,7 +353,7 @@ class DisplayManager {
     for (int i = 0; i < 4; i++) {
       dma_->fillScreen(bg);
       centerText(abbr, height_ / 2 - 14, fg, 2);
-      centerText("SCORE!", height_ / 2 + 4, fg, 2);
+      centerText(msg, height_ / 2 + 4, fg, 2);
       delay(320);
       dma_->clearScreen();
       delay(140);

@@ -98,7 +98,7 @@ struct MatrixSettings {
   // Content
   String teams[8];
   String teamColor[8];          // "#RRGGBB" per team (for on-device score flash)
-  float  prevScore[8] = {0};    // last seen live score (score-flash detection)
+  float  prevScore[8] = {-1,-1,-1,-1,-1,-1,-1,-1};    // last seen live score (score-flash detection)
   String shows[8];
   String stocks[8];
   float  stockPrice[8] = {0};

@@ -289,15 +289,32 @@ class NetworkData {
       }
       g_settings.teamScore[slot]    = e["s"].isNull() ? -1 : (int16_t)e["s"].as<float>();
       g_settings.teamOppScore[slot] = e["o"].isNull() ? -1 : (int16_t)e["o"].as<float>();
-      // On-device SCORE flash: a live team's score went up since last check.
+      // On-device score flash: a live team's score went up since last check.
+      // Hockey says GOAL!, football says TOUCHDOWN / FIELD GOAL, others SCORE!.
       if (strcmp(g_settings.teamHL[slot].c_str(), "live") == 0 && !e["s"].isNull()) {
         float sc = e["s"].as<float>();
-        if (g_settings.prevScore[slot] > 0 && sc > g_settings.prevScore[slot]) {
-          uint8_t r, gg, b;
-          teamRGB(code, r, gg, b);
-          g_display.scoreFlash(abbrOf(code), r, gg, b);
+        float prev = g_settings.prevScore[slot];
+        if (prev >= 0 && sc > prev) {
+          int d = (int)(sc - prev);
+          String lg = code;
+          bool nfl = lg.startsWith("NFL:") || lg.startsWith("CFB:") || lg.startsWith("NCAAF:");
+          const char *msg = "SCORE!";
+          bool show = true;
+          if (lg.startsWith("NHL:")) msg = "GOAL!";
+          else if (nfl) {
+            if (d >= 6) msg = "TOUCHDOWN";
+            else if (d == 3) msg = "FIELD GOAL";
+            else if (d == 1) show = false;  // extra point after a TD we just showed
+          }
+          if (show) {
+            uint8_t r, gg, b;
+            teamRGB(code, r, gg, b);
+            g_display.scoreFlash(abbrOf(code), r, gg, b, msg);
+          }
         }
         g_settings.prevScore[slot] = sc;
+      } else {
+        g_settings.prevScore[slot] = -1;  // not live: next live score is a fresh baseline
       }
     }
     return true;
