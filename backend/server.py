@@ -182,7 +182,7 @@ def tickers_verify(symbols: str):
 # and the "new episode" highlights.
 # ---------------------------------------------------------------------------
 _tv_cache: dict = {}
-_TV_TTL = 3600  # 1 hour
+_TV_TTL = 6 * 3600  # 6 hours: schedules rarely change
 
 
 def _fmt_date(iso: str) -> str:
@@ -426,6 +426,22 @@ def _label_for(next_iso, prev_iso, status):
     return "none", None, None
 
 
+_tv_snap: dict | None = None
+
+
+def _tv_snapshot() -> dict:
+    """Last-known TV dates baked into the deploy (tv_snapshot.json), used only
+    when TVmaze is too slow to answer."""
+    global _tv_snap
+    if _tv_snap is None:
+        try:
+            import json as _j
+            _tv_snap = _j.loads((Path(__file__).parent / "tv_snapshot.json").read_text())
+        except Exception:  # noqa: BLE001
+            _tv_snap = {}
+    return _tv_snap
+
+
 def _tv_status_one(name: str) -> dict:
     import time as _time
 
@@ -503,6 +519,8 @@ def _tv_status_one(name: str) -> dict:
             highlight=highlight,
             label=label,
             nextAirdate=airdate,
+            rawNext=nxt,
+            rawPrev=prv,
             image=img,
             imdb=f"https://www.imdb.com/title/{imdb}" if imdb else None,
             source=source,
@@ -512,6 +530,12 @@ def _tv_status_one(name: str) -> dict:
         logger.warning("tvmaze status failed %s: %s", name, exc)
         if cached:  # serve the last good answer rather than blank fields
             return cached["data"]
+        snap = _tv_snapshot().get(key)
+        if snap:  # baked last-known dates: recompute the label for today
+            hl, lb, ad = _label_for(snap.get("rawNext"), snap.get("rawPrev"), snap.get("status"))
+            data.update(snap)
+            data.update(highlight=hl, label=lb, nextAirdate=ad, source="snapshot")
+            return data
         data["failed"] = True
     return data
 

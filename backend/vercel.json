@@ -7,7 +7,7 @@
   "functions": {
     "server.py": {
       "maxDuration": 30,
-      "includeFiles": "public/fw/**"
+      "includeFiles": "{public/fw/**,tv_snapshot.json}"
     }
   }
 }

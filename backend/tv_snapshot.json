@@ -1,0 +1,86 @@
+{
+ "shrinking": {
+  "name": "Shrinking",
+  "id": 58323,
+  "matchedName": "Shrinking",
+  "status": "Running",
+  "rawNext": null,
+  "rawPrev": "2026-04-08",
+  "usNetwork": null,
+  "usAirtime": null,
+  "image": "https://static.tvmaze.com/uploads/images/medium_portrait/610/1527402.jpg",
+  "imdb": "https://www.imdb.com/title/tt15677150"
+ },
+ "emily in paris": {
+  "name": "Emily in Paris",
+  "id": 41632,
+  "matchedName": "Emily in Paris",
+  "status": "Running",
+  "rawNext": "2026-12-24",
+  "rawPrev": "2025-12-18",
+  "usNetwork": null,
+  "usAirtime": null,
+  "image": "https://static.tvmaze.com/uploads/images/medium_portrait/604/1510920.jpg",
+  "imdb": "https://www.imdb.com/title/tt8962124"
+ },
+ "nobody wants this": {
+  "name": "Nobody Wants This",
+  "id": 77060,
+  "matchedName": "Nobody Wants This",
+  "status": "Running",
+  "rawNext": "2026-10-22",
+  "rawPrev": "2025-10-23",
+  "usNetwork": null,
+  "usAirtime": null,
+  "image": "https://static.tvmaze.com/uploads/images/medium_portrait/646/1615448.jpg",
+  "imdb": "https://www.imdb.com/title/tt26933824"
+ },
+ "all creatures great and small": {
+  "name": "All Creatures Great and Small",
+  "id": 42836,
+  "matchedName": "All Creatures Great and Small",
+  "status": "Running",
+  "rawNext": "2027-01-17",
+  "rawPrev": null,
+  "usNetwork": "PBS",
+  "usAirtime": "21:00",
+  "image": "https://static.tvmaze.com/uploads/images/medium_portrait/593/1483974.jpg",
+  "imdb": "https://www.imdb.com/title/tt10590066"
+ },
+ "the madison": {
+  "name": "The Madison",
+  "id": 73127,
+  "matchedName": "The Madison",
+  "status": "Running",
+  "rawNext": null,
+  "rawPrev": "2026-03-21",
+  "usNetwork": null,
+  "usAirtime": null,
+  "image": "https://static.tvmaze.com/uploads/images/medium_portrait/617/1544046.jpg",
+  "imdb": "https://www.imdb.com/title/tt33204276"
+ },
+ "the pitt": {
+  "name": "The Pitt",
+  "id": 75632,
+  "matchedName": "The Pitt",
+  "status": "Running",
+  "rawNext": null,
+  "rawPrev": "2026-04-16",
+  "usNetwork": null,
+  "usAirtime": null,
+  "image": "https://static.tvmaze.com/uploads/images/medium_portrait/606/1516776.jpg",
+  "imdb": "https://www.imdb.com/title/tt31938062"
+ },
+ "severance": {
+  "name": "Severance",
+  "id": 44933,
+  "matchedName": "Severance",
+  "status": "Running",
+  "rawNext": null,
+  "rawPrev": "2025-03-21",
+  "usNetwork": null,
+  "usAirtime": null,
+  "image": "https://static.tvmaze.com/uploads/images/medium_portrait/548/1371406.jpg",
+  "imdb": "https://www.imdb.com/title/tt11280740"
+ }
+}
