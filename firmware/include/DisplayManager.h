@@ -210,7 +210,7 @@ class DisplayManager {
       if (page < 0 || page >= pages) page = 0;
       int seen = 0, onPage = 0;
       for (int i = 0; i < 8 && onPage < SHOWS_PER_PAGE; i++) {
-        if (!g_settings.shows[i].length()) continue;
+        if (!showVisible(i)) continue;
         if (seen++ < page * SHOWS_PER_PAGE) continue;
         onPage++;
         if (textW(g_settings.shows[i]) > width_) return true;
@@ -701,9 +701,21 @@ class DisplayManager {
            g_settings.msgLine3.length();
   }
   bool anyTeam()  { for (int i=0;i<8;i++) if (g_settings.teams[i].length())  return true; return false; }
-  bool anyShow()  { for (int i=0;i<8;i++) if (g_settings.shows[i].length())  return true; return false; }
+  // A show appears on the wall only when it has a real return/air date.
+  // "Between seasons", ended shows and not-yet-known labels stay hidden (the
+  // app keeps the full list).
+  bool showVisible(int i) {
+    if (!g_settings.shows[i].length()) return false;
+    const String &l = g_settings.showLabel[i];
+    if (!l.length() || l == "--") return false;
+    if (l.startsWith("Between") || l.startsWith("Series ended") || l.startsWith("Ended") ||
+        l.startsWith("Cancel") || l.startsWith("No ") || l.startsWith("Unknown"))
+      return false;
+    return true;
+  }
+  bool anyShow()  { for (int i=0;i<8;i++) if (showVisible(i)) return true; return false; }
   int  teamCount(){ int n=0; for (int i=0;i<8;i++) if (g_settings.teams[i].length()) n++; return n; }
-  int  showCount(){ int n=0; for (int i=0;i<8;i++) if (g_settings.shows[i].length()) n++; return n; }
+  int  showCount(){ int n=0; for (int i=0;i<8;i++) if (showVisible(i)) n++; return n; }
   // Weekend rule (US Eastern; the RTC is set via NTP/HTTP/phone with the
   // Eastern TZ). Unknown clock => false, so nothing is hidden by mistake.
   bool marketsClosedNow() {
@@ -1148,7 +1160,7 @@ class DisplayManager {
     if (page < 0 || page >= pages) page = 0;
     int idxs[SHOWS_PER_PAGE], cnt = 0, seen = 0;
     for (int i = 0; i < 8 && cnt < SHOWS_PER_PAGE; i++) {
-      if (!g_settings.shows[i].length()) continue;
+      if (!showVisible(i)) continue;
       if (seen++ < page * SHOWS_PER_PAGE) continue;
       idxs[cnt++] = i;
     }
