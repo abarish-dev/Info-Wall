@@ -1835,6 +1835,13 @@ def device_planes(lat: float, lon: float, radius: float = 25):
 # tiny intraday sparkline, from Yahoo's keyless chart API (60s cache).
 # ---------------------------------------------------------------------------
 _MARKETS = [("^GSPC", "S&P 500"), ("^DJI", "Dow"), ("^IXIC", "Nasdaq")]
+# Pre-market (4:00-9:30 ET weekdays) the cash indexes still show the prior
+# close, so show the index futures instead (vs. their prior settle).
+_FUTURES = [("ES=F", "S&P fut"), ("YM=F", "Dow fut"), ("NQ=F", "Nsdq fut")]
+
+
+def _is_premarket(et) -> bool:
+    return et.weekday() < 5 and (4 <= et.hour < 9 or (et.hour == 9 and et.minute < 30))
 _markets_cache: dict = {}
 _SPARK_W = 34   # sparkline columns on the panel
 _SPARK_H = 14   # sparkline height in pixels (values 0..H-1, 0 = bottom)
@@ -1909,25 +1916,27 @@ def device_markets():
     cached = _markets_cache.get("d")
     if cached and now - cached["ts"] < 60:
         return cached["data"]
+    from datetime import datetime as _dt
+    from zoneinfo import ZoneInfo
+
+    et = _dt.now(ZoneInfo("America/New_York"))
+    pre = _is_premarket(et)
+    syms = _FUTURES if pre else _MARKETS
     out, reg = [], (None, None)
     with ThreadPoolExecutor(max_workers=3) as ex:
-        futs = [ex.submit(_market_one, s, n) for s, n in _MARKETS]
-        for (sym, name), f in zip(_MARKETS, futs):
+        futs = [ex.submit(_market_one, s, n) for s, n in syms]
+        for (sym, name), f in zip(syms, futs):
             try:
                 m = f.result()
                 reg = m.pop("_reg") or reg
                 out.append(m)
             except Exception as exc:  # noqa: BLE001
                 logger.warning("markets %s failed: %s", sym, exc)
-    from datetime import datetime as _dt
-    from zoneinfo import ZoneInfo
-
-    et = _dt.now(ZoneInfo("America/New_York"))
     start, end = reg
-    if start and end and start <= now < end:
-        st = "Open"
-    elif et.weekday() < 5 and 4 <= et.hour < 9 or (et.weekday() < 5 and et.hour == 9 and et.minute < 30):
+    if pre:
         st = "Pre-mkt"
+    elif start and end and start <= now < end:
+        st = "Open"
     elif et.weekday() < 5 and 16 <= et.hour < 20:
         st = "After hrs"
     else:
