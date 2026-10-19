@@ -2070,8 +2070,8 @@ def _plausible_leg(legs, lat, lon, trk):
             if diff > 50:
                 continue
         if best is None or ratio < best[0]:
-            best = (ratio, fr, to)
-    return (best[1], best[2]) if best else (None, None)
+            best = (ratio, fr, to, tlat, tlon)
+    return best[1:] if best else (None, None, None, None)
 
 
 def _flight_aeroapi(ident: str):
@@ -2108,9 +2108,18 @@ def device_flight(ident: str):
                 out["gs"] = round(live["gs"] * 1.15078)
             lat, lon = live["lat"], live["lon"]
             out["mi"] = round(_gc_mi(_LKN[0], _LKN[1], lat, lon))
-            fr, to = _plausible_leg(meta.get("legs") or [], lat, lon, live.get("track"))
+            fr, to, tlat, tlon = _plausible_leg(meta.get("legs") or [], lat, lon, live.get("track"))
             if fr and to:
                 out["fr"], out["to"] = fr, to
+                dmi = _gc_mi(lat, lon, tlat, tlon)
+                out["dmi"] = round(dmi)
+                gs_mph = out.get("gs") or 0
+                if gs_mph > 115:  # gs > 100 kt
+                    from datetime import datetime, timedelta
+                    from zoneinfo import ZoneInfo
+                    # +10 min for descent/approach slowdown (rough).
+                    t = datetime.now(ZoneInfo("America/New_York")) + timedelta(hours=dmi / gs_mph, minutes=10)
+                    out["eta"] = f"{t.hour % 12 or 12}:{t.minute:02d}"
     return out
 
 

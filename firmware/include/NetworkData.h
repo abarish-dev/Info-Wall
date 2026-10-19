@@ -515,6 +515,9 @@ class NetworkData {
     const char *fr = doc["fr"] | "";
     const char *to = doc["to"] | "";
     g_settings.flightRoute = (*fr && *to) ? String(fr) + " > " + to : String("");
+    g_settings.flightTo = to;
+    g_settings.flightDmi = doc["dmi"] | -1L;
+    g_settings.flightEta = (const char *)(doc["eta"] | "");
     return true;
   }
 

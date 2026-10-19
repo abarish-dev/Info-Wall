@@ -839,7 +839,15 @@ class DisplayManager {
   void drawFlight() {
     String fn = g_settings.flightOk == 1 && g_settings.flightNo.length() ? g_settings.flightNo : g_settings.flightIdent;
     fn.toUpperCase();
-    centerText("FLIGHT", 2, dim());
+    bool eta = g_settings.flightOk == 1 && g_settings.flightAir && g_settings.flightDmi >= 0;
+    char altb[24];
+    {
+      long a = g_settings.flightAlt;
+      if (a >= 1000) snprintf(altb, sizeof(altb), "%ld,%03ld ft", a / 1000, a % 1000);
+      else snprintf(altb, sizeof(altb), "%ld ft", a);
+    }
+    // With an ETA, altitude moves up to the header line.
+    centerText(eta ? String(altb) : String("FLIGHT"), 2, dim());
     if (g_settings.flightOk == 1) {
       String al = g_settings.flightAl;
       if (al.length() > 10) al = al.substring(0, 10);
@@ -852,12 +860,12 @@ class DisplayManager {
       dma_->drawLine(cx + 2, 21, cx + 6, 17, g); dma_->drawLine(cx + 2, 22, cx + 6, 18, g);
       textAt(al, cx + 10, 16, cyan());
       if (g_settings.flightRoute.length()) centerText(g_settings.flightRoute, 30, amber(), 1);
-      if (g_settings.flightAir) {
-        char b[24];
-        long a = g_settings.flightAlt;
-        if (a >= 1000) snprintf(b, sizeof(b), "In flight %ld,%03ld ft", a / 1000, a % 1000);
-        else snprintf(b, sizeof(b), "In flight %ld ft", a);
-        centerText(b, 46, green());
+      if (eta) {
+        String l = String(g_settings.flightDmi) + "mi to " + g_settings.flightTo;
+        if (g_settings.flightEta.length()) l += " " + g_settings.flightEta;  // <= 18 chars
+        centerText(l, 46, green());
+      } else if (g_settings.flightAir) {
+        centerText(String("In flight ") + altb, 46, green());
       } else {
         centerText("Not airborne yet", 46, white());
       }

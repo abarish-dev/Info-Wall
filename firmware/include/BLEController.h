@@ -117,6 +117,9 @@ struct MatrixSettings {
   String flightRoute = "";      // "MCO > CLT" or "" when unknown
   bool flightAir = false;
   long flightAlt = 0;
+  long flightDmi = -1;          // miles to destination, -1 unknown
+  String flightEta = "";        // ET arrival "9:41"
+  String flightTo = "";
   String showLabel[8];          // per-show schedule label (next ep / season start)
   MarketInfo markets[3];        // /api/device/markets
   int    marketCount = 0;
