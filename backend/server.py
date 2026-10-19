@@ -1949,6 +1949,171 @@ def device_markets():
     return data
 
 
+# ---------------------------------------------------------------------------
+# Pinned flight verification (/device/flight)
+# Keyless sources:
+#   - adsbdb.com: is the flight number real? airline name, IATA<->ICAO.
+#     Its stored route is ONE route per flight number and is often wrong for
+#     the day, so it is only a *candidate* leg.
+#   - vrs-standing-data.adsb.lol: multi-leg route list for the callsign (more
+#     candidate legs, with airport coordinates).
+#   - api.adsb.lol/v2/callsign: live ADS-B position.
+# A route is shown only when the plane is airborne AND its position + track fit
+# a candidate leg (near the great-circle path, heading toward the destination).
+# (adsb.lol /api/0/routeset was tested 2026-10-19: returns 201 with an empty
+# body, so it is not used.)
+# Hook: FlightAware AeroAPI (env FLIGHTAWARE_API_KEY) could later supply the
+# day's real origin/dest, scheduled/estimated times and delays. Not used yet
+# (the account currently returns 500 on every call); see _flight_aeroapi().
+# ---------------------------------------------------------------------------
+_flight_live_cache: dict = {}
+_flight_meta_cache: dict = {}
+_FLIGHT_LIVE_TTL = 60
+_FLIGHT_META_TTL = 6 * 3600
+_LKN = (35.55, -80.95)  # Lake Norman
+
+
+def _gc_mi(a_lat, a_lon, b_lat, b_lon):
+    import math
+    p1, p2 = math.radians(a_lat), math.radians(b_lat)
+    dp, dl = p2 - p1, math.radians(b_lon - a_lon)
+    h = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+    return 3958.8 * 2 * math.asin(min(1.0, math.sqrt(h)))
+
+
+def _bearing(a_lat, a_lon, b_lat, b_lon):
+    import math
+    p1, p2 = math.radians(a_lat), math.radians(b_lat)
+    dl = math.radians(b_lon - a_lon)
+    y = math.sin(dl) * math.cos(p2)
+    x = math.cos(p1) * math.sin(p2) - math.sin(p1) * math.cos(p2) * math.cos(dl)
+    return (math.degrees(math.atan2(y, x)) + 360) % 360
+
+
+def _flight_meta(ident: str) -> dict:
+    """{ok, fn, cs, al, legs:[(fr,frlat,frlon,to,tolat,tolon)]} cached 6h."""
+    import time as _time
+    hit = _flight_meta_cache.get(ident)
+    if hit and _time.time() - hit["ts"] < hit["ttl"]:
+        return hit["data"]
+    out: dict = {"ok": None}
+    ttl = 300
+    try:
+        r = requests.get(f"https://api.adsbdb.com/v0/callsign/{ident}", timeout=3,
+                         headers={"User-Agent": "InfoWall/1.0"})
+        if r.status_code == 404 or (r.status_code == 200 and not isinstance(
+                ((r.json() or {}).get("response") or {}).get("flightroute"), dict)):
+            out, ttl = {"ok": False}, _FLIGHT_META_TTL
+        elif r.status_code == 200:
+            fr = r.json()["response"]["flightroute"]
+            al = fr.get("airline") or {}
+            o, d = fr.get("origin") or {}, fr.get("destination") or {}
+            out = {"ok": True, "fn": fr.get("callsign_iata") or ident,
+                   "cs": fr.get("callsign_icao") or ident,
+                   "al": al.get("name"), "ia": al.get("icao"), "legs": []}
+            if o.get("latitude") is not None and d.get("latitude") is not None:
+                out["legs"].append((o.get("iata_code"), o["latitude"], o["longitude"],
+                                    d.get("iata_code"), d["latitude"], d["longitude"]))
+            ttl = _FLIGHT_META_TTL
+    except Exception as exc:  # noqa: BLE001
+        logger.info("adsbdb flight lookup failed %s: %s", ident, exc)
+    if out.get("ok"):
+        try:
+            cs = out["cs"]
+            r = requests.get(f"https://vrs-standing-data.adsb.lol/routes/{cs[:2]}/{cs}.json",
+                             timeout=3, headers={"User-Agent": "InfoWall/1.0"})
+            if r.status_code == 200:
+                aps = [a for a in (r.json().get("_airports") or []) if a.get("lat") is not None]
+                for a, b in zip(aps, aps[1:]):
+                    leg = (a.get("iata"), a["lat"], a["lon"], b.get("iata"), b["lat"], b["lon"])
+                    if leg not in out["legs"]:
+                        out["legs"].append(leg)
+        except Exception as exc:  # noqa: BLE001
+            logger.info("vrs route lookup failed %s: %s", out.get("cs"), exc)
+    _flight_meta_cache[ident] = {"ts": _time.time(), "data": out, "ttl": ttl}
+    return out
+
+
+def _flight_live(cs: str):
+    """Best live ADS-B hit for an ICAO callsign (cached 60s). None = lookup error."""
+    import time as _time
+    hit = _flight_live_cache.get(cs)
+    if hit and _time.time() - hit["ts"] < _FLIGHT_LIVE_TTL:
+        return hit["data"]
+    try:
+        r = requests.get(f"https://api.adsb.lol/v2/callsign/{cs}", timeout=4,
+                         headers={"User-Agent": "InfoWall/1.0"})
+        r.raise_for_status()
+        acs = [a for a in (r.json().get("ac") or []) if a.get("lat") is not None]
+        acs.sort(key=lambda a: a.get("seen_pos", 99))
+        data = acs[0] if acs else {}
+    except Exception as exc:  # noqa: BLE001
+        logger.info("adsb.lol callsign lookup failed %s: %s", cs, exc)
+        return None
+    _flight_live_cache[cs] = {"ts": _time.time(), "data": data}
+    return data
+
+
+def _plausible_leg(legs, lat, lon, trk):
+    best = None
+    for leg in legs:
+        fr, flat, flon, to, tlat, tlon = leg
+        total = _gc_mi(flat, flon, tlat, tlon)
+        if total < 30:
+            continue
+        via = _gc_mi(flat, flon, lat, lon) + _gc_mi(lat, lon, tlat, tlon)
+        ratio = via / total
+        if ratio > 1.15:
+            continue
+        if isinstance(trk, (int, float)) and _gc_mi(lat, lon, tlat, tlon) > 40:
+            diff = abs((_bearing(lat, lon, tlat, tlon) - trk + 540) % 360 - 180)
+            if diff > 50:
+                continue
+        if best is None or ratio < best[0]:
+            best = (ratio, fr, to)
+    return (best[1], best[2]) if best else (None, None)
+
+
+def _flight_aeroapi(ident: str):
+    """Optional FlightAware AeroAPI hook (env FLIGHTAWARE_API_KEY). Intentionally
+    a no-op for now: the account returns HTTP 500 on every request. When it
+    works: GET https://aeroapi.flightaware.com/aeroapi/flights/{ident} with
+    header x-apikey, pick today's leg, return fr/to/status/times."""
+    return None
+
+
+@api_router.get("/device/flight")
+def device_flight(ident: str):
+    """Verify a pinned flight number and report live status.
+    {ok, fn, al, air, alt, gs, fr, to, mi} or {ok:false, msg}."""
+    import re as _re
+    q = _re.sub(r"[^A-Z0-9]", "", (ident or "").upper())
+    if not _re.match(r"^[A-Z0-9]{2,3}\d{1,4}[A-Z]?$", q):
+        return {"ok": False, "msg": "Bad flight number"}
+    meta = _flight_meta(q)
+    cs = meta.get("cs") or q
+    live = _flight_live(cs)
+    if meta.get("ok") is False and not live:
+        return {"ok": False, "msg": "Flight not found"}
+    out = {"ok": True, "fn": meta.get("fn") or q, "al": meta.get("al"), "air": False}
+    if meta.get("ok") is None:
+        out["unv"] = True  # adsbdb unreachable: not verified yet
+    if live:
+        ab = live.get("alt_baro")
+        air = isinstance(ab, (int, float)) and ab > 0
+        out["air"] = air
+        if air:
+            out["alt"] = int(round(ab, -2))
+            if isinstance(live.get("gs"), (int, float)):
+                out["gs"] = round(live["gs"] * 1.15078)
+            lat, lon = live["lat"], live["lon"]
+            out["mi"] = round(_gc_mi(_LKN[0], _LKN[1], lat, lon))
+            fr, to = _plausible_leg(meta.get("legs") or [], lat, lon, live.get("track"))
+            if fr and to:
+                out["fr"], out["to"] = fr, to
+    return out
+
+
 @api_router.get("/device/tv")
 def device_tv(names: str):
     def _ascii(s):

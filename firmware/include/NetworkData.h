@@ -11,6 +11,7 @@
 //   - weather : every 900s  -> /api/weather/current
 //   - planes  : every 30s   -> /api/device/planes
 //   - tv      : every 3600s -> /api/device/tv
+//   - flight  : every 60s   -> /api/device/flight (only when a flight is pinned)
 //
 // HTTPS via WiFiClientSecure (setInsecure — no cert pinning). Uses ArduinoJson
 // with small documents since the /device/* payloads are compact.
@@ -33,9 +34,9 @@ extern DisplayManager g_display;
 
 // Endpoints the panel fetches, for retry bookkeeping and the BLE "diag" reply.
 enum Endpoint { EP_TIME, EP_SCORES, EP_PLANES, EP_QUOTES, EP_MARKETS, EP_WEATHER,
-                EP_FOLLY, EP_LAKE, EP_TV, EP_COUNT };
+                EP_FOLLY, EP_LAKE, EP_TV, EP_FLIGHT, EP_COUNT };
 static const char *const kEpNames[EP_COUNT] = {"time", "sc", "pl", "qt", "mk",
-                                               "wx", "fo", "lk", "tv"};
+                                               "wx", "fo", "lk", "tv", "fl"};
 // Result codes besides HTTP status: -1 connection/TLS error, -2 skipped (low
 // internal heap), -3 JSON parse error, 0 never attempted.
 struct EpStat {
@@ -101,6 +102,10 @@ class NetworkData {
     if (due(now, tFolly_, 1800000))  { settle(now, tFolly_, 1800000, fetchFolly());     tLastFetch_ = now; return; }
     if (due(now, tLake_, 3600000))   { settle(now, tLake_, 3600000, fetchLake());       tLastFetch_ = now; return; }
     if (due(now, tTv_, 3600000))     { settle(now, tTv_, 3600000, fetchTv());           tLastFetch_ = now; return; }
+    if (g_settings.trackFlight && g_settings.flightIdent.length()) {
+      if (g_settings.flightIdent != flightFor_) { flightFor_ = g_settings.flightIdent; tFlight_ = 0; g_settings.flightOk = -1; }
+      if (due(now, tFlight_, 60000)) { settle(now, tFlight_, 60000, fetchFlight()); tLastFetch_ = now; return; }
+    }
   }
 
   // Compact status for the app's diagnostics (BLE "diag"). Per endpoint:
@@ -145,6 +150,8 @@ class NetworkData {
     if (last == 0) last = 1;
   }
   unsigned long tScores_ = 0, tQuotes_ = 0, tWeather_ = 0, tPlanes_ = 0, tTv_ = 0;
+  unsigned long tFlight_ = 0;
+  String flightFor_;
   unsigned long tFolly_ = 0, tLake_ = 0, tMarkets_ = 0;
   unsigned long tLastFetch_ = 0;
   bool clockSynced_ = false;   // NTP started once Wi-Fi is up (any path)
@@ -487,6 +494,27 @@ class NetworkData {
       }
     }
     g_settings.lakeWater = doc["w"] | 0;
+    return true;
+  }
+
+  bool fetchFlight() {
+    PSRAM_JSON(doc);
+    if (!getJson("/api/device/flight?ident=" + enc(g_settings.flightIdent), doc, EP_FLIGHT)) return false;
+    if (!(doc["ok"] | false)) {
+      g_settings.flightOk = 0;
+      g_settings.flightAl = ""; g_settings.flightRoute = ""; g_settings.flightAir = false;
+      return true;
+    }
+    g_settings.flightOk = 1;
+    g_settings.flightNo = (const char *)(doc["fn"] | g_settings.flightIdent.c_str());
+    String al = (const char *)(doc["al"] | "");
+    al.replace(" Airlines", ""); al.replace(" Air Lines", ""); al.replace(" Airways", "");
+    g_settings.flightAl = al;
+    g_settings.flightAir = doc["air"] | false;
+    g_settings.flightAlt = doc["alt"] | 0L;
+    const char *fr = doc["fr"] | "";
+    const char *to = doc["to"] | "";
+    g_settings.flightRoute = (*fr && *to) ? String(fr) + " > " + to : String("");
     return true;
   }
 

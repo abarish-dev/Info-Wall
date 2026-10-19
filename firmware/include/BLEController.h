@@ -110,6 +110,13 @@ struct MatrixSettings {
   String teamRecord[8];         // "12-5" win-loss, aligned to teams[]
   String teamLabel[8];          // per-team next-game / live / final label
   String teamHL[8];             // per-team highlight: live|recent|today|soon|...
+  // Pinned flight status from /api/device/flight (not persisted).
+  int8_t flightOk = -1;         // -1 unknown/not fetched, 0 not found, 1 verified
+  String flightNo = "";         // normalized IATA flight number
+  String flightAl = "";         // airline short name
+  String flightRoute = "";      // "MCO > CLT" or "" when unknown
+  bool flightAir = false;
+  long flightAlt = 0;
   String showLabel[8];          // per-show schedule label (next ep / season start)
   MarketInfo markets[3];        // /api/device/markets
   int    marketCount = 0;

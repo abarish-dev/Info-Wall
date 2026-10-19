@@ -834,9 +834,40 @@ class DisplayManager {
     centerText(g_settings.msgLine3, 44, amber());
   }
 
+  // Pinned flight: line1 ident + green check + airline, line2 route,
+  // line3 live status. Verified via /api/device/flight.
   void drawFlight() {
-    centerText("FLIGHT", 14, cyan());
-    centerText(g_settings.flightIdent, 34, white(), 2);
+    String fn = g_settings.flightOk == 1 && g_settings.flightNo.length() ? g_settings.flightNo : g_settings.flightIdent;
+    fn.toUpperCase();
+    centerText("FLIGHT", 2, dim());
+    if (g_settings.flightOk == 1) {
+      String al = g_settings.flightAl;
+      if (al.length() > 10) al = al.substring(0, 10);
+      int w = textW(fn) + 3 + 7 + 3 + textW(al);
+      int x = (128 - w) / 2;
+      textAt(fn, x, 16, white());
+      int cx = x + textW(fn) + 3;
+      uint16_t g = green();
+      dma_->drawLine(cx, 19, cx + 2, 21, g);  dma_->drawLine(cx, 20, cx + 2, 22, g);
+      dma_->drawLine(cx + 2, 21, cx + 6, 17, g); dma_->drawLine(cx + 2, 22, cx + 6, 18, g);
+      textAt(al, cx + 10, 16, cyan());
+      if (g_settings.flightRoute.length()) centerText(g_settings.flightRoute, 30, amber(), 1);
+      if (g_settings.flightAir) {
+        char b[24];
+        long a = g_settings.flightAlt;
+        if (a >= 1000) snprintf(b, sizeof(b), "In flight %ld,%03ld ft", a / 1000, a % 1000);
+        else snprintf(b, sizeof(b), "In flight %ld ft", a);
+        centerText(b, 46, green());
+      } else {
+        centerText("Not airborne yet", 46, white());
+      }
+    } else if (g_settings.flightOk == 0) {
+      centerText(fn, 16, white());
+      centerText("Flight not found", 46, red());
+    } else {
+      centerText(fn, 16, white());
+      centerText("Checking...", 46, dim());
+    }
   }
 
   // ---- text helpers --------------------------------------------------------
