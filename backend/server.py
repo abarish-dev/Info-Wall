@@ -1734,8 +1734,9 @@ def _rpa_partner(frm, to):
 # Pricing: GET /flights/{ident} = $0.005 per result set (15 records); we always
 # send max_pages=1, so every call costs exactly $0.005. Personal tier: $5/month
 # free, 10 result sets/minute. A local limiter keeps us at <= 8 calls/min so
-# the panel never trips FlightAware's 429; anything over budget falls back to
-# the free sources (adsbdb / adsb.lol) for that request.
+# the panel never trips FlightAware's 429, plus a 300/day cap per instance;
+# anything over budget falls back to the free sources. Used ONLY for the
+# pinned flight (/device/flight); overhead planes stay on free adsbdb.
 # ---------------------------------------------------------------------------
 AEROAPI_BASE = "https://aeroapi.flightaware.com/aeroapi"
 _AERO_PER_MIN = 8
@@ -1744,15 +1745,27 @@ _aero_cache: dict = {}          # ident -> {ts, ttl, data}
 _aero_lock = __import__("threading").Lock()
 
 
+_AERO_PER_DAY = 300            # daily safety cap per instance (~$1.50)
+_aero_day = {"d": None, "n": 0}
+
+
 def _aero_budget_ok() -> bool:
     import time as _time
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
     now = _time.time()
+    today = datetime.now(ZoneInfo("America/New_York")).date()
     with _aero_lock:
+        if _aero_day["d"] != today:
+            _aero_day["d"], _aero_day["n"] = today, 0
+        if _aero_day["n"] >= _AERO_PER_DAY:
+            return False
         while _aero_calls and now - _aero_calls[0] > 60:
             _aero_calls.pop(0)
         if len(_aero_calls) >= _AERO_PER_MIN:
             return False
         _aero_calls.append(now)
+        _aero_day["n"] += 1
         return True
 
 
@@ -1856,38 +1869,19 @@ def _ap(a):
     return a.get("code_iata") or a.get("code_lid") or a.get("code_icao") or a.get("code")
 
 
-def _aero_route(callsign: str):
-    """{fn, fr, to, frc, toc} for an overhead callsign from AeroAPI, {} when
-    FlightAware doesn't know it, None on error/over budget (caller falls back)."""
-    fl = _aero_flights(callsign)
-    if fl is None:
-        return None
-    leg = _aero_pick_leg(fl)
-    if not leg:
-        return {}
-    o, d = leg.get("origin") or {}, leg.get("destination") or {}
-    return {"fn": leg.get("ident_iata") or leg.get("ident"),
-            "fr": _ap(o), "to": _ap(d), "frc": o.get("city"), "toc": d.get("city"),
-            "src": "fa"}
-
-
 _route_cache: dict = {}
 _ROUTE_TTL = 6 * 3600
 
 
 def _route_for(callsign: str) -> dict:
-    """Origin/destination + IATA flight number for a callsign. FlightAware
-    AeroAPI first (today's actual leg); on error/over budget, the free
-    keyless adsbdb.com API (one fixed route per callsign, often stale). Cached (hits and misses) for 6h; short timeout so a
+    """Origin/destination + IATA flight number for a callsign via the free,
+    keyless adsbdb.com API (no AeroAPI: overhead planes stay free). Cached (hits and misses) for 6h; short timeout so a
     slow lookup can never hold up the panel's 12s request budget."""
     import time as _time
 
     cs = (callsign or "").strip().upper()
     if not cs:
         return {}
-    fa = _aero_route(cs)
-    if fa is not None:  # FlightAware answered (even "unknown"): trust it
-        return fa
     hit = _route_cache.get(cs)
     if hit and _time.time() - hit["ts"] < hit.get("ttl", _ROUTE_TTL):
         return hit["data"]
