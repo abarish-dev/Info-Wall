@@ -1904,11 +1904,35 @@ def _route_for(callsign: str) -> dict:
                     "to": (fr.get("destination") or {}).get("iata_code"),
                     "frc": (fr.get("origin") or {}).get("municipality"),
                     "toc": (fr.get("destination") or {}).get("municipality"),
+                    "_ll": ((fr.get("origin") or {}).get("latitude"),
+                            (fr.get("origin") or {}).get("longitude"),
+                            (fr.get("destination") or {}).get("latitude"),
+                            (fr.get("destination") or {}).get("longitude")),
                 }
     except Exception as exc:  # noqa: BLE001
         logger.info("adsbdb route lookup failed %s: %s", cs, exc)
     _route_cache[cs] = {"ts": _time.time(), "data": out, "ttl": ttl}
     return out
+
+
+def _route_fits(rt: dict, f: dict) -> bool:
+    """Free position-fit check for an overhead plane's adsbdb route (same idea
+    as the pinned fallback's _plausible_leg). Low (<10k ft or on the ground)
+    and within 40 mi of either airport: fits. Otherwise the position must be
+    near the great-circle path (detour <= 15%) and, when > 40 mi from the
+    destination, the track within 50 deg of the bearing to it."""
+    ll = rt.get("_ll") or (None,) * 4
+    lat, lon = f.get("lat"), f.get("lon")
+    if None in ll or lat is None or lon is None or not (rt.get("fr") and rt.get("to")):
+        return False
+    flat, flon, tlat, tlon = ll
+    alt = f.get("altitude")
+    if (alt is None or alt < 10000) and min(_gc_mi(lat, lon, flat, flon),
+                                            _gc_mi(lat, lon, tlat, tlon)) <= 40:
+        return True
+    fr, to, _, _ = _plausible_leg([(rt["fr"], flat, flon, rt["to"], tlat, tlon)],
+                                  lat, lon, f.get("track"))
+    return bool(fr)
 
 
 @api_router.get("/device/planes")
@@ -1959,6 +1983,8 @@ def device_planes(lat: float, lon: float, radius: float = 25):
         }
         if ia:
             rt = routes.get(f["callsign"]) or {}
+            if rt and not _route_fits(rt, f):
+                rt = {"fn": rt.get("fn")}  # stale adsbdb route: keep fn only
             for k in ("fn", "fr", "to"):
                 if rt.get(k):
                     row[k] = rt[k]
