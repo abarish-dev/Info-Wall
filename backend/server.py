@@ -1918,7 +1918,7 @@ def _route_for(callsign: str) -> dict:
 def _route_fits(rt: dict, f: dict) -> bool:
     """Free position-fit check for an overhead plane's adsbdb route (same idea
     as the pinned fallback's _plausible_leg). Low (<10k ft or on the ground)
-    and within 40 mi of either airport: fits. Otherwise the position must be
+    must be within 40 mi of either airport. Otherwise the position must be
     near the great-circle path (detour <= 15%) and, when > 40 mi from the
     destination, the track within 50 deg of the bearing to it."""
     ll = rt.get("_ll") or (None,) * 4
@@ -1927,9 +1927,8 @@ def _route_fits(rt: dict, f: dict) -> bool:
         return False
     flat, flon, tlat, tlon = ll
     alt = f.get("altitude")
-    if (alt is None or alt < 10000) and min(_gc_mi(lat, lon, flat, flon),
-                                            _gc_mi(lat, lon, tlat, tlon)) <= 40:
-        return True
+    if alt is None or alt < 10000:  # low: must be near one end, path alone isn't enough
+        return min(_gc_mi(lat, lon, flat, flon), _gc_mi(lat, lon, tlat, tlon)) <= 40
     fr, to, _, _ = _plausible_leg([(rt["fr"], flat, flon, rt["to"], tlat, tlon)],
                                   lat, lon, f.get("track"))
     return bool(fr)
