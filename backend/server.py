@@ -1729,19 +1729,165 @@ def _rpa_partner(frm, to):
     return None
 
 
+# ---------------------------------------------------------------------------
+# FlightAware AeroAPI (env FLIGHTAWARE_API_KEY, Personal tier).
+# Pricing: GET /flights/{ident} = $0.005 per result set (15 records); we always
+# send max_pages=1, so every call costs exactly $0.005. Personal tier: $5/month
+# free, 10 result sets/minute. A local limiter keeps us at <= 8 calls/min so
+# the panel never trips FlightAware's 429; anything over budget falls back to
+# the free sources (adsbdb / adsb.lol) for that request.
+# ---------------------------------------------------------------------------
+AEROAPI_BASE = "https://aeroapi.flightaware.com/aeroapi"
+_AERO_PER_MIN = 8
+_aero_calls: list = []          # timestamps of recent calls (rate limiter)
+_aero_cache: dict = {}          # ident -> {ts, ttl, data}
+_aero_lock = __import__("threading").Lock()
+
+
+def _aero_budget_ok() -> bool:
+    import time as _time
+    now = _time.time()
+    with _aero_lock:
+        while _aero_calls and now - _aero_calls[0] > 60:
+            _aero_calls.pop(0)
+        if len(_aero_calls) >= _AERO_PER_MIN:
+            return False
+        _aero_calls.append(now)
+        return True
+
+
+def _aero_ts(v):
+    from datetime import datetime
+    if not v:
+        return None
+    try:
+        return datetime.fromisoformat(v.replace("Z", "+00:00")).timestamp()
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _et_clock(ts):
+    if ts is None:
+        return None
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    t = datetime.fromtimestamp(ts, ZoneInfo("America/New_York"))
+    return f"{t.hour % 12 or 12}:{t.minute:02d}"
+
+
+def _aero_flights(ident: str):
+    """Raw AeroAPI flights list for an ident (ICAO or IATA). Returns
+    list (possibly empty = unknown ident) or None on error/no key/over budget.
+    Cached: hits until the chosen leg should have landed (2-12h), misses 6h,
+    errors 5 min."""
+    import os
+    import time as _time
+    key = os.environ.get("FLIGHTAWARE_API_KEY")
+    if not key:
+        return None
+    hit = _aero_cache.get(ident)
+    if hit and _time.time() - hit["ts"] < hit["ttl"]:
+        return hit["data"]
+    if not _aero_budget_ok():
+        return hit["data"] if hit else None  # stale beats nothing
+    data, ttl = None, 300
+    try:
+        r = requests.get(f"{AEROAPI_BASE}/flights/{ident}", params={"max_pages": 1},
+                         headers={"x-apikey": key}, timeout=4)
+        if r.status_code == 200:
+            data = r.json().get("flights") or []
+            ttl = 6 * 3600 if not data else _aero_ttl(data)
+        elif r.status_code in (400, 404):
+            data, ttl = [], 6 * 3600
+        else:
+            logger.info("aeroapi %s -> HTTP %s", ident, r.status_code)
+    except Exception as exc:  # noqa: BLE001
+        logger.info("aeroapi %s failed: %s", ident, exc)
+    if data is None and hit:
+        return hit["data"]
+    ent = {"ts": _time.time(), "ttl": ttl, "data": data}
+    _aero_cache[ident] = ent
+    for f in (data or [])[:1]:  # share between AA3293 / AAL3293
+        for alt in (f.get("ident_icao"), f.get("ident_iata")):
+            if alt and alt != ident:
+                _aero_cache[alt] = ent
+    return data
+
+
+def _aero_ttl(flights) -> int:
+    """Keep a callsign's answer until its current leg should be on the ground
+    (+20 min), clamped to 2..12h. Overhead planes are almost always mid-leg."""
+    import time as _time
+    leg = _aero_pick_leg(flights)
+    end = None
+    if leg:
+        end = _aero_ts(leg.get("estimated_on") or leg.get("scheduled_on")
+                       or leg.get("estimated_in") or leg.get("scheduled_in"))
+    if end is None:
+        return 6 * 3600
+    return int(max(2 * 3600, min(12 * 3600, end - _time.time() + 1200)))
+
+
+def _aero_pick_leg(flights):
+    """The leg that matters now: airborne > next departure (within 18h) >
+    most recently landed (within 3h)."""
+    import time as _time
+    now = _time.time()
+    live = [f for f in flights if f.get("actual_off") and not f.get("actual_on")
+            and not f.get("cancelled")]
+    if live:
+        return max(live, key=lambda f: _aero_ts(f["actual_off"]) or 0)
+    nxt = [f for f in flights if not f.get("actual_off") and not f.get("cancelled")
+           and (_aero_ts(f.get("estimated_out") or f.get("scheduled_out")) or 0) > now - 3 * 3600
+           and (_aero_ts(f.get("scheduled_out")) or 0) < now + 18 * 3600]
+    if nxt:
+        return min(nxt, key=lambda f: _aero_ts(f.get("estimated_out") or f.get("scheduled_out")) or 0)
+    done = [f for f in flights if f.get("actual_on")
+            and now - (_aero_ts(f["actual_on"]) or 0) < 3 * 3600]
+    if done:
+        return max(done, key=lambda f: _aero_ts(f["actual_on"]) or 0)
+    canc = [f for f in flights if f.get("cancelled")
+            and abs((_aero_ts(f.get("scheduled_out")) or 0) - now) < 12 * 3600]
+    return canc[0] if canc else None
+
+
+def _ap(a):
+    a = a or {}
+    return a.get("code_iata") or a.get("code_lid") or a.get("code_icao") or a.get("code")
+
+
+def _aero_route(callsign: str):
+    """{fn, fr, to, frc, toc} for an overhead callsign from AeroAPI, {} when
+    FlightAware doesn't know it, None on error/over budget (caller falls back)."""
+    fl = _aero_flights(callsign)
+    if fl is None:
+        return None
+    leg = _aero_pick_leg(fl)
+    if not leg:
+        return {}
+    o, d = leg.get("origin") or {}, leg.get("destination") or {}
+    return {"fn": leg.get("ident_iata") or leg.get("ident"),
+            "fr": _ap(o), "to": _ap(d), "frc": o.get("city"), "toc": d.get("city"),
+            "src": "fa"}
+
+
 _route_cache: dict = {}
 _ROUTE_TTL = 6 * 3600
 
 
 def _route_for(callsign: str) -> dict:
-    """Origin/destination + IATA flight number for a callsign via the free,
-    keyless adsbdb.com API. Cached (hits and misses) for 6h; short timeout so a
+    """Origin/destination + IATA flight number for a callsign. FlightAware
+    AeroAPI first (today's actual leg); on error/over budget, the free
+    keyless adsbdb.com API (one fixed route per callsign, often stale). Cached (hits and misses) for 6h; short timeout so a
     slow lookup can never hold up the panel's 12s request budget."""
     import time as _time
 
     cs = (callsign or "").strip().upper()
     if not cs:
         return {}
+    fa = _aero_route(cs)
+    if fa is not None:  # FlightAware answered (even "unknown"): trust it
+        return fa
     hit = _route_cache.get(cs)
     if hit and _time.time() - hit["ts"] < hit.get("ttl", _ROUTE_TTL):
         return hit["data"]
@@ -2075,11 +2221,104 @@ def _plausible_leg(legs, lat, lon, trk):
 
 
 def _flight_aeroapi(ident: str):
-    """Optional FlightAware AeroAPI hook (env FLIGHTAWARE_API_KEY). Intentionally
-    a no-op for now: the account returns HTTP 500 on every request. When it
-    works: GET https://aeroapi.flightaware.com/aeroapi/flights/{ident} with
-    header x-apikey, pick today's leg, return fr/to/status/times."""
-    return None
+    """Pinned flight from FlightAware: {ok, fn, al, fr, to, frc, toc, cs, st,
+    so, eo, ao, si, ei, ai, ddl, adl, cx, status} (times = ET clock strings,
+    delays = whole minutes), {"ok": False} for unknown idents, None on error."""
+    fl = _aero_flights(ident)
+    if fl is None:
+        return None
+    if not fl:
+        return {"ok": False}
+    leg = _aero_pick_leg(fl)
+    if not leg:  # real flight number, nothing today
+        f0 = fl[0]
+        return {"ok": True, "fn": f0.get("ident_iata") or ident,
+                "cs": f0.get("ident_icao") or ident, "none": True}
+    o, d = leg.get("origin") or {}, leg.get("destination") or {}
+    out = {"ok": True, "fn": leg.get("ident_iata") or leg.get("ident") or ident,
+           "cs": leg.get("ident_icao") or leg.get("ident") or ident,
+           "op": leg.get("operator_icao") or leg.get("operator"),
+           "fr": _ap(o), "to": _ap(d), "frc": o.get("city"), "toc": d.get("city"),
+           "status": leg.get("status"), "cx": bool(leg.get("cancelled")),
+           "dv": bool(leg.get("diverted"))}
+    for k, f in (("so", "scheduled_out"), ("eo", "estimated_out"), ("ao", "actual_out"),
+                 ("si", "scheduled_in"), ("ei", "estimated_in"), ("ai", "actual_in")):
+        v = _et_clock(_aero_ts(leg.get(f)))
+        if v:
+            out[k] = v
+    for k, f in (("ddl", "departure_delay"), ("adl", "arrival_delay")):
+        if isinstance(leg.get(f), (int, float)):
+            out[k] = round(leg[f] / 60)
+    return out
+
+
+def _device_flight_fa(q: str, fa: dict) -> dict:
+    """/device/flight payload from FlightAware's leg + adsb.lol live position.
+    Same fields firmware 1.1.14 reads (ok fn al air alt gs mi fr to dmi eta),
+    plus so/eo/si/ei/ao/ai (ET), ddl/adl (delay min), st (status), cx/dv."""
+    if not fa.get("ok"):
+        return {"ok": False, "msg": "Flight not found"}
+    cs = fa.get("cs") or q
+    info = resolve_airline(cs) or {}
+    al = info.get("name")
+    if not al:
+        al = (_flight_meta(q) or {}).get("al")
+    out = {"ok": True, "fn": fa.get("fn") or q, "al": al, "air": False, "src": "fa"}
+    for k in ("fr", "to", "so", "eo", "ao", "si", "ei", "ai", "ddl", "adl"):
+        if fa.get(k) is not None:
+            out[k] = fa[k]
+    if fa.get("status"):
+        out["st"] = fa["status"]
+    if fa.get("cx"):
+        out["cx"] = True
+    if fa.get("dv"):
+        out["dv"] = True
+    live = _flight_live(cs)
+    if live:
+        ab = live.get("alt_baro")
+        if isinstance(ab, (int, float)) and ab > 0:
+            out["air"] = True
+            out["alt"] = int(round(ab, -2))
+            if isinstance(live.get("gs"), (int, float)):
+                out["gs"] = round(live["gs"] * 1.15078)
+            lat, lon = live["lat"], live["lon"]
+            out["mi"] = round(_gc_mi(_LKN[0], _LKN[1], lat, lon))
+            ap = _airport_ll(fa.get("to"))
+            if ap:
+                out["dmi"] = round(_gc_mi(lat, lon, ap[0], ap[1]))
+    # ETA: FlightAware's estimated arrival (gate) when airborne; firmware
+    # 1.1.14 only draws it with dmi, so it appears exactly when it did before.
+    if out["air"] and fa.get("ei"):
+        out["eta"] = fa["ei"]
+    return out
+
+
+_airport_ll_cache: dict = {}
+
+
+def _airport_ll(iata):
+    """(lat, lon) for an airport via AeroAPI /airports/{id} ($0.015, cached
+    for the life of the instance; a pinned flight touches 1-2 airports)."""
+    import os
+    if not iata:
+        return None
+    if iata in _airport_ll_cache:
+        return _airport_ll_cache[iata]
+    key = os.environ.get("FLIGHTAWARE_API_KEY")
+    if not key or not _aero_budget_ok():
+        return None
+    ll = None
+    try:
+        r = requests.get(f"{AEROAPI_BASE}/airports/{iata}", headers={"x-apikey": key}, timeout=4)
+        if r.status_code == 200:
+            a = r.json()
+            if a.get("latitude") is not None:
+                ll = (a["latitude"], a["longitude"])
+    except Exception as exc:  # noqa: BLE001
+        logger.info("airport lookup failed %s: %s", iata, exc)
+    if ll:
+        _airport_ll_cache[iata] = ll
+    return ll
 
 
 @api_router.get("/device/flight")
@@ -2090,6 +2329,9 @@ def device_flight(ident: str):
     q = _re.sub(r"[^A-Z0-9]", "", (ident or "").upper())
     if not _re.match(r"^[A-Z0-9]{2,3}\d{1,4}[A-Z]?$", q):
         return {"ok": False, "msg": "Bad flight number"}
+    fa = _flight_aeroapi(q)
+    if fa is not None:
+        return _device_flight_fa(q, fa)
     meta = _flight_meta(q)
     cs = meta.get("cs") or q
     live = _flight_live(cs)
