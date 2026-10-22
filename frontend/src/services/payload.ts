@@ -32,6 +32,8 @@ export type BlePayload = {
   tv6: string;
   tv7: string;
   tv8: string;
+  tv9: string;
+  tv10: string;
   stock1: string;
   stock2: string;
   stock3: string;
@@ -98,6 +100,8 @@ export function buildBlePayload(
     tv6: shows[5] ?? "",
     tv7: shows[6] ?? "",
     tv8: shows[7] ?? "",
+    tv9: shows[8] ?? "",
+    tv10: shows[9] ?? "",
     stock1: stocks[0] ?? "",
     stock2: stocks[1] ?? "",
     stock3: stocks[2] ?? "",

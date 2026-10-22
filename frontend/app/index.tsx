@@ -90,6 +90,8 @@ import {
   HERO_IMAGE,
   DEFAULTS,
   MAX_ROWS,
+  MAX_SHOWS,
+  MAX_SHOWS_BYTES,
   STATUS_META,
   formatSyncTime,
   type SectionKey,
@@ -98,6 +100,15 @@ import {
   DOG_FREQ,
 } from "@/src/constants/controlPanel";
 import { makeStyles } from "@/src/styles/controlPanel";
+
+// UTF-8 size of the BLE "shows" command for a list of names.
+function showsBytes(list: string[]): number {
+  const json = JSON.stringify({
+    command: "shows",
+    shows: list.map((x) => x.trim()).filter(Boolean),
+  });
+  return unescape(encodeURIComponent(json)).length;
+}
 
 export default function ControlPanel() {
   const styles = useThemedStyles(makeStyles);
@@ -1616,6 +1627,34 @@ export default function ControlPanel() {
   const zipComplete = zipTrimmed.length === 5;
   const previewPayload = buildBlePayload(settings, geo);
   const flightMissing = settings.trackFlight && !settings.flightIdent.trim();
+  // Pinned-flight check mark: verify the ident with our backend (debounced,
+  // one lookup per ident) so the user sees "✓ Delta Air Lines" or "not found".
+  const [flightCheck, setFlightCheck] = useState<
+    Record<string, { ok: boolean; al?: string; fr?: string; to?: string } | null>
+  >({});
+  useEffect(() => {
+    const id = settings.flightIdent.trim().toUpperCase();
+    if (!settings.trackFlight || id.length < 3 || id in flightCheck) return;
+    const t = setTimeout(async () => {
+      try {
+        const r = await fetch(
+          `${process.env.EXPO_PUBLIC_BACKEND_URL ?? ""}/api/device/flight?ident=${encodeURIComponent(id)}`,
+        );
+        if (!r.ok) return;
+        const j = await r.json();
+        setFlightCheck((m) => ({
+          ...m,
+          [id]: { ok: !!j.ok, al: j.al ?? undefined, fr: j.fr ?? undefined, to: j.to ?? undefined },
+        }));
+      } catch {
+        /* offline: show nothing */
+      }
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [settings.trackFlight, settings.flightIdent, flightCheck]);
+  const flightInfo = settings.trackFlight
+    ? flightCheck[settings.flightIdent.trim().toUpperCase()]
+    : undefined;
   const mapSize = Math.min(winW - spacing.lg * 4, 360);
   const polyMode = settings.trackingMode === "polygon";
   const activeColor =
@@ -2023,6 +2062,29 @@ export default function ControlPanel() {
               </Text>
             </View>
           )}
+          {!flightMissing && flightInfo && (
+            <View style={styles.zipNoteRow} testID="flight-check">
+              <Ionicons
+                name={flightInfo.ok ? "checkmark-circle" : "close-circle"}
+                size={14}
+                color={flightInfo.ok ? colors.success : colors.error}
+              />
+              <Text
+                style={[
+                  styles.zipNoteText,
+                  { color: flightInfo.ok ? colors.success : colors.error },
+                ]}
+              >
+                {flightInfo.ok
+                  ? `${flightInfo.al ?? "Flight found"}${
+                      flightInfo.fr && flightInfo.to
+                        ? ` · ${flightInfo.fr} → ${flightInfo.to}`
+                        : ""
+                    }`
+                  : "Flight not found"}
+              </Text>
+            </View>
+          )}
         </Section>
 
         {/* Weather */}
@@ -2299,19 +2361,25 @@ export default function ControlPanel() {
         >
           <ShowRows
             shows={settings.shows}
-            max={MAX_ROWS}
+            max={MAX_SHOWS}
             statuses={showStatuses}
             reminderKeys={reminderKeys}
             onToggleReminder={toggleReminder}
             onRemove={(i) => removeRow("shows", i)}
-            onAdd={(name) =>
+            onAdd={(name) => {
+              if (
+                showsBytes([...settings.shows, name]) > MAX_SHOWS_BYTES
+              ) {
+                toast.show("Show names are too long to fit on the wall", "error");
+                return;
+              }
               setSettings((s) =>
                 s.shows.some((n) => n.toLowerCase() === name.toLowerCase()) ||
-                s.shows.length >= MAX_ROWS
+                s.shows.length >= MAX_SHOWS
                   ? s
                   : { ...s, shows: [...s.shows, name] },
-              )
-            }
+              );
+            }}
           />
         </Section>
 

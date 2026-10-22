@@ -136,6 +136,10 @@ export type Settings = {
 };
 
 export const MAX_ROWS = 8;
+// TV shows only (firmware 1.1.16+ stores 10; older firmware keeps the first 8).
+export const MAX_SHOWS = 10;
+// Keep one BLE "shows" write under the ESP32's 512-byte attribute limit.
+export const MAX_SHOWS_BYTES = 480;
 
 export const STATUS_META: Record<
   BleStatus,
