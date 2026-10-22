@@ -523,7 +523,7 @@ class NetworkData {
 
   bool fetchTv() {
     String names;
-    for (int i = 0; i < 8; i++)
+    for (int i = 0; i < MAX_SHOWS; i++)
       if (g_settings.shows[i].length()) {
         if (names.length()) names += "|";
         names += g_settings.shows[i];
@@ -539,7 +539,7 @@ class NetworkData {
     for (JsonVariant v : doc["v"].as<JsonArray>()) {
       const char *nm = v["n"] | "";
       const char *lbl = v["l"] | "";
-      for (int i = 0; i < 8; i++)
+      for (int i = 0; i < MAX_SHOWS; i++)
         if (g_settings.shows[i] == nm) g_settings.showLabel[i] = lbl;
     }
     return true;

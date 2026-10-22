@@ -60,10 +60,14 @@ inline void serializeSettings(JsonDocument &d) {
   d["lakeTgt"] = g_settings.lakeTgt;
   d["lakeTgtD"] = g_settings.lakeTgtDiff;
   d["lakeW"] = g_settings.lakeWater;
+  // Older saves hold 8 shows; missing slots load as "".
+  for (int i = 0; i < MAX_SHOWS; i++) {
+    d["show"][i] = g_settings.shows[i];
+    d["slbl"][i] = g_settings.showLabel[i];
+  }
   for (int i = 0; i < 8; i++) {
     d["team"][i] = g_settings.teams[i];
     d["tc"][i] = g_settings.teamColor[i];
-    d["show"][i] = g_settings.shows[i];
     d["stk"][i] = g_settings.stocks[i];
     d["pr"][i] = g_settings.stockPrice[i];
     d["chg"][i] = g_settings.stockChg[i];
@@ -79,7 +83,6 @@ inline void serializeSettings(JsonDocument &d) {
     d["tha"][i] = g_settings.teamHome[i];
     d["tsc"][i] = g_settings.teamScore[i];
     d["tos"][i] = g_settings.teamOppScore[i];
-    d["slbl"][i] = g_settings.showLabel[i];
   }
   for (int i = 0; i < 4; i++) {
     d["sc"][i] = g_settings.scores[i];
@@ -130,10 +133,13 @@ inline void applySettings(JsonDocument &d) {
   g_settings.lakeTgt = (const char *)(d["lakeTgt"] | "");
   g_settings.lakeTgtDiff = (const char *)(d["lakeTgtD"] | "");
   g_settings.lakeWater = d["lakeW"] | 0;
+  for (int i = 0; i < MAX_SHOWS; i++) {
+    g_settings.shows[i] = (const char *)(d["show"][i] | "");
+    g_settings.showLabel[i] = (const char *)(d["slbl"][i] | "");
+  }
   for (int i = 0; i < 8; i++) {
     g_settings.teams[i] = (const char *)(d["team"][i] | "");
     g_settings.teamColor[i] = (const char *)(d["tc"][i] | "");
-    g_settings.shows[i] = (const char *)(d["show"][i] | "");
     g_settings.stocks[i] = (const char *)(d["stk"][i] | "");
     g_settings.stockPrice[i] = d["pr"][i] | 0.0f;
     g_settings.stockChg[i] = d["chg"][i] | 0.0f;
@@ -149,7 +155,6 @@ inline void applySettings(JsonDocument &d) {
     g_settings.teamHome[i] = d["tha"][i] | (int8_t)-1;
     g_settings.teamScore[i] = d["tsc"][i] | (int16_t)-1;
     g_settings.teamOppScore[i] = d["tos"][i] | (int16_t)-1;
-    g_settings.showLabel[i] = (const char *)(d["slbl"][i] | "");
   }
   for (int i = 0; i < 4; i++) {
     g_settings.scores[i] = (const char *)(d["sc"][i] | "");

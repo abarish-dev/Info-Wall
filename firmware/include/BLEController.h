@@ -99,7 +99,7 @@ struct MatrixSettings {
   String teams[8];
   String teamColor[8];          // "#RRGGBB" per team (for on-device score flash)
   float  prevScore[8] = {-1,-1,-1,-1,-1,-1,-1,-1};    // last seen live score (score-flash detection)
-  String shows[8];
+  String shows[MAX_SHOWS];
   String stocks[8];
   float  stockPrice[8] = {0};
   float  stockChg[8]   = {0};   // daily % change
@@ -120,7 +120,7 @@ struct MatrixSettings {
   long flightDmi = -1;          // miles to destination, -1 unknown
   String flightEta = "";        // ET arrival "9:41"
   String flightTo = "";
-  String showLabel[8];          // per-show schedule label (next ep / season start)
+  String showLabel[MAX_SHOWS];          // per-show schedule label (next ep / season start)
   MarketInfo markets[3];        // /api/device/markets
   int    marketCount = 0;
   String marketStatus = "";     // "Open" | "Pre-mkt" | "After hrs" | "Closed"
@@ -403,10 +403,10 @@ inline void BLEController::handleJson(const String &raw) {
     g_settings.apiBase = (const char *)(doc["url"] | "");
 
   } else if (strcmp(cmd, "shows") == 0) {
-    for (int i = 0; i < 8; i++) g_settings.shows[i] = "";
+    for (int i = 0; i < MAX_SHOWS; i++) g_settings.shows[i] = "";
     JsonArray arr = doc["shows"].as<JsonArray>();
     int i = 0;
-    for (JsonVariant v : arr) { if (i < 8) g_settings.shows[i++] = v.as<const char *>(); }
+    for (JsonVariant v : arr) { if (i < MAX_SHOWS) g_settings.shows[i++] = v.as<const char *>(); }
 
   } else if (strcmp(cmd, "stocks") == 0) {
     for (int i = 0; i < 8; i++) {
@@ -488,7 +488,7 @@ inline void BLEController::handleJson(const String &raw) {
 
   } else if (strcmp(cmd, "showdetails") == 0) {
     // Per-show schedule label pushed by the phone (fallback to Wi-Fi fetch).
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < MAX_SHOWS; i++) {
       char lk[8];
       snprintf(lk, sizeof(lk), "lbl%d", i + 1);
       g_settings.showLabel[i] = (const char *)(doc[lk] | "");
@@ -666,8 +666,12 @@ inline void BLEController::handleJson(const String &raw) {
       snprintf(vk, sizeof(vk), "tv%d", i + 1);
       snprintf(sk, sizeof(sk), "stock%d", i + 1);
       g_settings.teams[i]  = (const char *)(doc[tk] | "");
-      g_settings.shows[i]  = (const char *)(doc[vk] | "");
       g_settings.stocks[i] = (const char *)(doc[sk] | "");
+    }
+    for (int i = 0; i < MAX_SHOWS; i++) {
+      char vk[8];
+      snprintf(vk, sizeof(vk), "tv%d", i + 1);
+      g_settings.shows[i] = (const char *)(doc[vk] | "");
     }
     // Optional read-back so the app shows "confirmed": echo the same JSON.
     store(raw);

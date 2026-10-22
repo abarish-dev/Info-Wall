@@ -209,7 +209,7 @@ class DisplayManager {
       int page = cur_.idx;
       if (page < 0 || page >= pages) page = 0;
       int seen = 0, onPage = 0;
-      for (int i = 0; i < 8 && onPage < SHOWS_PER_PAGE; i++) {
+      for (int i = 0; i < MAX_SHOWS && onPage < SHOWS_PER_PAGE; i++) {
         if (!showVisible(i)) continue;
         if (seen++ < page * SHOWS_PER_PAGE) continue;
         onPage++;
@@ -298,7 +298,7 @@ class DisplayManager {
         break;
       case M_TV: {
         int i = cur_.idx;
-        if (i >= 0 && i < 8) {
+        if (i >= 0 && i < MAX_SHOWS) {
           h = mixStr(h, g_settings.shows[i]);
           h = mixStr(h, g_settings.showLabel[i]);
         }
@@ -713,9 +713,9 @@ class DisplayManager {
       return false;
     return true;
   }
-  bool anyShow()  { for (int i=0;i<8;i++) if (showVisible(i)) return true; return false; }
+  bool anyShow()  { for (int i=0;i<MAX_SHOWS;i++) if (showVisible(i)) return true; return false; }
   int  teamCount(){ int n=0; for (int i=0;i<8;i++) if (g_settings.teams[i].length()) n++; return n; }
-  int  showCount(){ int n=0; for (int i=0;i<8;i++) if (showVisible(i)) n++; return n; }
+  int  showCount(){ int n=0; for (int i=0;i<MAX_SHOWS;i++) if (showVisible(i)) n++; return n; }
   // Weekend rule (US Eastern; the RTC is set via NTP/HTTP/phone with the
   // Eastern TZ). Unknown clock => false, so nothing is hidden by mistake.
   bool marketsClosedNow() {
@@ -1198,7 +1198,7 @@ class DisplayManager {
     int page = cur_.idx;
     if (page < 0 || page >= pages) page = 0;
     int idxs[SHOWS_PER_PAGE], cnt = 0, seen = 0;
-    for (int i = 0; i < 8 && cnt < SHOWS_PER_PAGE; i++) {
+    for (int i = 0; i < MAX_SHOWS && cnt < SHOWS_PER_PAGE; i++) {
       if (!showVisible(i)) continue;
       if (seen++ < page * SHOWS_PER_PAGE) continue;
       idxs[cnt++] = i;
