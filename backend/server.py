@@ -89,6 +89,7 @@ def flights_nearby(lat: float, lon: float, radius: float = 25):
                 "distance": a.get("dst"),
                 "direction": a.get("dir"),
                 "track": a.get("track"),
+                "vrate": a.get("baro_rate") if a.get("baro_rate") is not None else a.get("geom_rate"),
                 "airline": info["name"] if info else None,
                 "iata": iata,
                 "logo": (
@@ -1934,6 +1935,88 @@ def _route_fits(rt: dict, f: dict) -> bool:
     return bool(fr)
 
 
+# Overhead routes via adsb.im's batch routeset (tar1090's route service; free,
+# keyless, community-run). One POST per refresh for all uncached callsigns;
+# per-callsign cache 8h (misses too). adsbdb (_route_for) stays as fallback
+# and as the source of the IATA flight number.
+_ADSBIM_TTL = 8 * 3600
+_adsbim_cache: dict = {}
+_ADSBIM_UA = "Info-Wall/1.0 (personal LED wall; github.com/abarish-dev/Info-Wall)"
+
+
+def _adsbim_routes(flights: list) -> dict:
+    """callsign -> list of airport dicts (iata, lat, lon, city), [] if unknown.
+    Callsigns missing from the result (request failed) are simply absent."""
+    import time as _time
+
+    now = _time.time()
+    out, ask = {}, []
+    for f in flights:
+        cs = (f.get("callsign") or "").strip().upper()
+        if not cs or f.get("lat") is None:
+            continue
+        hit = _adsbim_cache.get(cs)
+        if hit and now - hit["ts"] < hit["ttl"]:
+            out[cs] = hit["aps"]
+        else:
+            ask.append({"callsign": cs, "lat": f["lat"], "lng": f["lon"]})
+    if ask:
+        try:
+            r = requests.post("https://adsb.im/api/0/routeset", json={"planes": ask},
+                              timeout=4, headers={"User-Agent": _ADSBIM_UA})
+            r.raise_for_status()
+            for x in r.json() or []:
+                cs = (x.get("callsign") or "").upper()
+                aps = [{"iata": a.get("iata") or a.get("icao"), "lat": a.get("lat"),
+                        "lon": a.get("lon"), "city": a.get("location")}
+                       for a in (x.get("_airports") or []) if a.get("lat") is not None]
+                _adsbim_cache[cs] = {"ts": now, "aps": aps, "ttl": _ADSBIM_TTL}
+                out[cs] = aps
+        except Exception as exc:  # noqa: BLE001
+            logger.info("adsb.im routeset failed: %s", exc)
+    return out
+
+
+def _pick_leg(aps: list, f: dict) -> dict:
+    """Choose the leg of a (possibly multi-leg, e.g. CLT-TYS-CLT) route that
+    fits the plane. Low planes: the airport within 40 mi is the origin if
+    climbing / heading away, else the destination. Otherwise _plausible_leg
+    over all consecutive legs (heading + path)."""
+    if len(aps) < 2:
+        return {}
+    legs = [(a["iata"], a["lat"], a["lon"], b["iata"], b["lat"], b["lon"], a, b)
+            for a, b in zip(aps, aps[1:])]
+    lat, lon, trk = f.get("lat"), f.get("lon"), f.get("track")
+    alt, vr = f.get("altitude"), f.get("vrate")
+    mk = lambda a, b: {"fr": a["iata"], "to": b["iata"], "frc": a.get("city"),
+                       "toc": b.get("city"), "_ll": (a["lat"], a["lon"], b["lat"], b["lon"])}
+    if lat is None or lon is None:
+        return {}
+    if alt is None or alt < 10000:
+        near = [(i, a) for i, a in enumerate(aps) if _gc_mi(lat, lon, a["lat"], a["lon"]) <= 40]
+        if not near:
+            return {}
+        i, a = near[0]
+        if vr is not None and abs(vr) > 300:
+            outbound = vr > 0
+        elif trk is not None:
+            import math
+            br = math.degrees(math.atan2(a["lon"] - lon, a["lat"] - lat)) % 360
+            outbound = abs((trk - br + 180) % 360 - 180) > 90
+        else:
+            outbound = False
+        if outbound and i + 1 < len(aps):
+            return mk(a, aps[i + 1])
+        if not outbound and i > 0:
+            return mk(aps[i - 1], a)
+        return mk(a, aps[i + 1]) if i + 1 < len(aps) else mk(aps[i - 1], a)
+    fr, to, _, _ = _plausible_leg([l[:6] for l in legs], lat, lon, trk)
+    for l in legs:
+        if l[0] == fr and l[3] == to:
+            return mk(l[6], l[7])
+    return {}
+
+
 @api_router.get("/device/planes")
 def device_planes(lat: float, lon: float, radius: float = 25):
     """Compact nearby-aircraft list for the panel.
@@ -1966,6 +2049,14 @@ def device_planes(lat: float, lon: float, radius: float = 25):
         with ThreadPoolExecutor(max_workers=min(6, len(want))) as ex:
             for cs, rt in zip(want, ex.map(_route_for, want)):
                 routes[cs] = rt
+    im = _adsbim_routes([f for f in flights if _iata(f["callsign"])])
+    for f in flights:
+        cs = f["callsign"]
+        aps = im.get((cs or "").strip().upper())
+        if aps is None:
+            continue  # adsb.im failed: keep adsbdb route (fallback)
+        leg = _pick_leg(aps, f)
+        routes[cs] = {"fn": (routes.get(cs) or {}).get("fn"), **leg}
     out = []
     for f in flights:
         ia = _iata(f["callsign"])
@@ -1983,7 +2074,7 @@ def device_planes(lat: float, lon: float, radius: float = 25):
         if ia:
             rt = routes.get(f["callsign"]) or {}
             if rt and not _route_fits(rt, f):
-                rt = {"fn": rt.get("fn")}  # stale adsbdb route: keep fn only
+                rt = {"fn": rt.get("fn")}  # implausible route: keep fn only
             for k in ("fn", "fr", "to"):
                 if rt.get(k):
                     row[k] = rt[k]
