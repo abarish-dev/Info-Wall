@@ -78,6 +78,7 @@ export type DisplayPatch = {
   scheduleStart?: string;
   scheduleEnd?: string;
   scheduleBrightness?: number;
+  showMap?: boolean;
 };
 
 function addMinutes(hhmm: string, delta: number): string {
@@ -169,6 +170,8 @@ export function SettingsSheet({
   dogFreq,
   onDogChange,
   onDogNow,
+  showMap,
+  mapSupported,
 }: {
   visible: boolean;
   onClose: () => void;
@@ -213,6 +216,8 @@ export function SettingsSheet({
   dogFreq?: DogFreq;
   onDogChange?: (p: { dogEnabled?: boolean; dogFreq?: DogFreq }) => void;
   onDogNow?: () => void;
+  showMap?: boolean;
+  mapSupported?: boolean;
 }) {
   const styles = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
@@ -506,6 +511,30 @@ export function SettingsSheet({
               <Ionicons name="paw" size={18} color={colors.onBrand} />
               <Text style={styles.wifiBtnText}>WALK NOW</Text>
             </Pressable>
+          </View>
+
+          {/* Day/night world map page (firmware 1.1.17+) */}
+          <View style={styles.card}>
+            <View style={styles.rowBetween}>
+              <View style={{ flex: 1, paddingRight: spacing.md }}>
+                <Text style={styles.sectionTitle}>WORLD DAY/NIGHT MAP</Text>
+                <Text style={styles.hint}>
+                  {mapSupported === false
+                    ? "Needs wall firmware 1.1.17"
+                    : "World map with live night shading and a dot for home"}
+                </Text>
+              </View>
+              <Pressable
+                testID="map-toggle"
+                onPress={() => {
+                  Haptics.selectionAsync().catch(() => {});
+                  onChange({ showMap: !(showMap ?? true) });
+                }}
+                style={[styles.switchTrack, (showMap ?? true) && styles.switchTrackOn]}
+              >
+                <View style={[styles.switchThumb, (showMap ?? true) && styles.switchThumbOn]} />
+              </Pressable>
+            </View>
           </View>
 
           {/* Display schedule */}

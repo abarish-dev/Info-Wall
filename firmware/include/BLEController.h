@@ -59,6 +59,18 @@ struct MarketInfo {
   int    base = -1;       // previous-close level on the same scale (-1 = n/a)
 };
 
+// A VIP aircraft near the wall (/api/device/vip): Air Force One, a VC-25A,
+// Special Air Mission (SAM) jets. Shown only as an interrupt card.
+struct VipInfo {
+  String key;     // AF1 | AF2 | VC25 | SAM | EXEC | VENUS
+  String label;   // "AIR FORCE ONE"
+  String cs, hex, type, reg, dir;
+  float  dist = -1;
+  long   alt = 0;
+  int8_t vr = 0;  // 1 climbing, -1 descending
+  int    hdg = 0, spd = 0;
+};
+
 // --- Global settings the rest of your firmware reads ----------------------
 struct MatrixSettings {
   // Flight / weather / zone
@@ -67,6 +79,7 @@ struct MatrixSettings {
   String flightIdent    = "";
   bool  showWeather     = true;
   bool  showForecast    = false;  // 3-day forecast page (app toggle, default off)
+  bool  showMoon        = true;   // moon phase + sunrise/sunset page (Weather section)
   float lat             = 0.0f;
   float lon             = 0.0f;
   String trackingMode   = "radius";   // "radius" | "polygon"
@@ -135,6 +148,29 @@ struct MatrixSettings {
   int8_t teamHome[8]     = {-1, -1, -1, -1, -1, -1, -1, -1};  // 1 home, 0 away, -1 unknown
   int16_t teamScore[8]   = {-1, -1, -1, -1, -1, -1, -1, -1};
   int16_t teamOppScore[8] = {-1, -1, -1, -1, -1, -1, -1, -1};
+
+  // Sky pages (1.1.17): ISS + VIP alerts (Flights section), day/night map
+  // (Display section). Defaults ON; older saved settings without the keys
+  // keep these defaults.
+  bool showIss  = true;
+  bool showMap  = true;
+  bool vipAlert = true;
+  // /api/device/sky (not persisted)
+  int8_t moonIl = -1;           // illumination % (-1 = not fetched)
+  bool   moonWax = true;
+  String moonPh, sunRise, sunSet, moonRise;
+  bool   moonRiseTmw = false;
+  bool   issOk = false;
+  int    issMi = 0;             // height now, miles
+  uint32_t issNvR = 0;          // next VISIBLE pass: rise epoch
+  String issNvDay, issNvTime, issNvFr, issNvTo;
+  int    issNvEl = 0, issNvMin = 0;
+  uint32_t issPR = 0, issPE = 0;  // next pass of any kind (rise/set epoch)
+  int    issPEl = 0;
+  String issPFr, issPTo;
+  // /api/device/vip (not persisted)
+  VipInfo vip[2];
+  int    vipN = 0;
 
   // Dog walk-by (a sprite of Adam's dachshund crosses the bottom of the panel)
   bool dogEnabled = true;
@@ -566,8 +602,16 @@ inline void BLEController::handleJson(const String &raw) {
     if (!doc["lo"].isNull()) g_settings.wxLo = doc["lo"].as<int>();
     if (!doc["text"].isNull()) g_settings.wxText = (const char *)(doc["text"] | "");
     g_settings.showForecast = doc["showForecast"] | g_settings.showForecast;
+    g_settings.showMoon = doc["showMoon"] | g_settings.showMoon;
     // Optional phone-pushed forecast: "fc": [{"d":"Mon","i":"sun","h":81,"l":57}, ...]
     if (doc["fc"].is<JsonArrayConst>()) applyForecast(doc["fc"].as<JsonArrayConst>());
+
+  } else if (strcmp(cmd, "sky") == 0) {
+    // App 1.4.1+: { showMoon, showIss, showMap, vipAlert } (any subset).
+    g_settings.showMoon = doc["showMoon"] | g_settings.showMoon;
+    g_settings.showIss  = doc["showIss"]  | g_settings.showIss;
+    g_settings.showMap  = doc["showMap"]  | g_settings.showMap;
+    g_settings.vipAlert = doc["vipAlert"] | g_settings.vipAlert;
 
   } else if (strcmp(cmd, "zone") == 0) {
     g_settings.trackingMode = (const char *)(doc["trackingMode"] | g_settings.trackingMode.c_str());
@@ -652,6 +696,10 @@ inline void BLEController::handleJson(const String &raw) {
     g_settings.flightIdent     = (const char *)(doc["flightIdent"] | g_settings.flightIdent.c_str());
     g_settings.showWeather     = doc["showWeather"]     | g_settings.showWeather;
     g_settings.showForecast    = doc["showForecast"]    | g_settings.showForecast;
+    g_settings.showMoon        = doc["showMoon"]        | g_settings.showMoon;
+    g_settings.showIss         = doc["showIss"]         | g_settings.showIss;
+    g_settings.showMap         = doc["showMap"]         | g_settings.showMap;
+    g_settings.vipAlert        = doc["vipAlert"]        | g_settings.vipAlert;
     g_settings.lat             = doc["lat"]             | g_settings.lat;
     g_settings.lon             = doc["lon"]             | g_settings.lon;
     g_settings.trackingMode    = (const char *)(doc["trackingMode"] | g_settings.trackingMode.c_str());

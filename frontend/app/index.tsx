@@ -1040,6 +1040,21 @@ export default function ControlPanel() {
   }, [teamStatuses]);
 
 
+  // Sky pages (firmware 1.1.17+): moon/sun, ISS, VIP alert, world map.
+  const skyCmd = () => ({
+    command: "sky",
+    showMoon: settings.showMoon ?? true,
+    showIss: settings.showIss ?? true,
+    showMap: settings.showMap ?? true,
+    vipAlert: settings.vipAlert ?? true,
+  });
+  useEffect(() => {
+    if (status !== "connected" || !fwAtLeast("1.1.17")) return;
+    const t = setTimeout(() => writeLive(skyCmd()).catch(() => {}), 600);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings.showMoon, settings.showIss, settings.showMap, settings.vipAlert, status, fwVersion]);
+
   // Live push of display transitions + travel countdown (debounced).
   useEffect(() => {
     if (status !== "connected") return;
@@ -1566,6 +1581,7 @@ export default function ControlPanel() {
           countdownDate: settings.countdownDate,
         },
         ...(fwAtLeast("1.1.2") ? [dogCmd()] : []),
+        ...(fwAtLeast("1.1.17") ? [skyCmd()] : []),
       ];
 
       let sent = 0;
@@ -2013,6 +2029,38 @@ export default function ControlPanel() {
             <Text style={styles.scaleText}>1 mi</Text>
             <Text style={styles.scaleText}>50 mi</Text>
           </View>
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleTextWrap}>
+              <Text style={styles.fieldLabel}>Space Station</Text>
+              <Text style={styles.toggleHint}>
+                {fwVersion && !fwAtLeast("1.1.17") ? "Needs wall firmware 1.1.17" : "Next visible ISS pass, and an alert when it's overhead"}
+              </Text>
+            </View>
+            <Switch
+              testID="iss-toggle"
+              value={settings.showIss ?? true}
+              onValueChange={(v) => setSettings((s) => ({ ...s, showIss: v }))}
+              trackColor={{ false: colors.surfaceTertiary, true: colors.brand }}
+              thumbColor={colors.onSurface}
+              ios_backgroundColor={colors.surfaceTertiary}
+            />
+          </View>
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleTextWrap}>
+              <Text style={styles.fieldLabel}>Air Force One Alert</Text>
+              <Text style={styles.toggleHint}>
+                {fwVersion && !fwAtLeast("1.1.17") ? "Needs wall firmware 1.1.17" : "Alert when Air Force One or a VIP jet is within 60 mi"}
+              </Text>
+            </View>
+            <Switch
+              testID="vip-toggle"
+              value={settings.vipAlert ?? true}
+              onValueChange={(v) => setSettings((s) => ({ ...s, vipAlert: v }))}
+              trackColor={{ false: colors.surfaceTertiary, true: colors.brand }}
+              thumbColor={colors.onSurface}
+              ios_backgroundColor={colors.surfaceTertiary}
+            />
+          </View>
         </Section>
 
         {/* Pinned Flight */}
@@ -2226,6 +2274,23 @@ export default function ControlPanel() {
               value={!!settings.showForecast}
               disabled={!settings.showWeather}
               onValueChange={(v) => setSettings((s) => ({ ...s, showForecast: v }))}
+              trackColor={{ false: colors.surfaceTertiary, true: colors.brand }}
+              thumbColor={colors.onSurface}
+              ios_backgroundColor={colors.surfaceTertiary}
+            />
+          </View>
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleTextWrap}>
+              <Text style={styles.fieldLabel}>Moon & Sun</Text>
+              <Text style={styles.toggleHint}>
+                {fwVersion && !fwAtLeast("1.1.17") ? "Needs wall firmware 1.1.17" : "Moon phase with sunrise and sunset"}
+              </Text>
+            </View>
+            <Switch
+              testID="moon-toggle"
+              value={settings.showMoon ?? true}
+              disabled={!settings.showWeather}
+              onValueChange={(v) => setSettings((s) => ({ ...s, showMoon: v }))}
               trackColor={{ false: colors.surfaceTertiary, true: colors.brand }}
               thumbColor={colors.onSurface}
               ios_backgroundColor={colors.surfaceTertiary}
@@ -2834,6 +2899,8 @@ export default function ControlPanel() {
         diag={diag}
         onRunDiag={runDiag}
         dogSupported={fwAtLeast("1.1.2")}
+        showMap={settings.showMap ?? true}
+        mapSupported={fwVersion ? fwAtLeast("1.1.17") : undefined}
         dogEnabled={settings.dogEnabled ?? true}
         dogFreq={settings.dogFreq ?? "some"}
         onDogChange={(p) => patchSettings(p)}

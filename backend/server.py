@@ -2747,6 +2747,21 @@ def firmware_latest(current: str = ""):
     }
 
 
+
+# ---- Sky (moon/sun, ISS) + VIP aircraft alerts (firmware 1.1.17+) ----------
+import sky as _sky
+
+
+@api_router.get("/device/sky")
+def device_sky(lat: float = 35.58, lon: float = -80.81):
+    return _sky.device_sky(lat, lon)
+
+
+@api_router.get("/device/vip")
+def device_vip(lat: float = 35.58, lon: float = -80.81, r: float = 60):
+    return _sky.device_vip(lat, lon, max(5.0, min(150.0, r)))
+
+
 # Include the router in the main app
 app.include_router(api_router)
 

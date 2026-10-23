@@ -34,9 +34,10 @@ extern DisplayManager g_display;
 
 // Endpoints the panel fetches, for retry bookkeeping and the BLE "diag" reply.
 enum Endpoint { EP_TIME, EP_SCORES, EP_PLANES, EP_QUOTES, EP_MARKETS, EP_WEATHER,
-                EP_FOLLY, EP_LAKE, EP_TV, EP_FLIGHT, EP_COUNT };
+                EP_FOLLY, EP_LAKE, EP_TV, EP_FLIGHT, EP_SKY, EP_VIP, EP_COUNT };
 static const char *const kEpNames[EP_COUNT] = {"time", "sc", "pl", "qt", "mk",
-                                               "wx", "fo", "lk", "tv", "fl"};
+                                               "wx", "fo", "lk", "tv", "fl",
+                                               "sky", "vip"};
 // Result codes besides HTTP status: -1 connection/TLS error, -2 skipped (low
 // internal heap), -3 JSON parse error, 0 never attempted.
 struct EpStat {
@@ -95,12 +96,15 @@ class NetworkData {
     // failure it is retried in ~30s instead of waiting its full interval
     // (an hour for lake/TV), which is what left the lake page blank.
     if (due(now, tScores_, 30000))   { settle(now, tScores_, 30000, fetchScores());     tLastFetch_ = now; return; }
+    // VIP alert (interrupt-only): light 60 s poll, server caches adsb.lol 30 s.
+    if (g_settings.vipAlert && due(now, tVip_, 60000)) { settle(now, tVip_, 60000, fetchVip()); tLastFetch_ = now; return; }
     if (due(now, tPlanes_, 30000))   { settle(now, tPlanes_, 30000, fetchPlanes());     tLastFetch_ = now; return; }
     if (due(now, tQuotes_, 120000))  { settle(now, tQuotes_, 120000, fetchQuotes());    tLastFetch_ = now; return; }
     if (g_settings.showMarkets && due(now, tMarkets_, 60000)) { settle(now, tMarkets_, 60000, fetchMarkets()); tLastFetch_ = now; return; }
     if (due(now, tWeather_, 900000)) { settle(now, tWeather_, 900000, fetchWeather());  tLastFetch_ = now; return; }
     if (due(now, tFolly_, 1800000))  { settle(now, tFolly_, 1800000, fetchFolly());     tLastFetch_ = now; return; }
     if (due(now, tLake_, 3600000))   { settle(now, tLake_, 3600000, fetchLake());       tLastFetch_ = now; return; }
+    if ((g_settings.showMoon || g_settings.showIss) && due(now, tSky_, 900000)) { settle(now, tSky_, 900000, fetchSky()); tLastFetch_ = now; return; }
     if (due(now, tTv_, 3600000))     { settle(now, tTv_, 3600000, fetchTv());           tLastFetch_ = now; return; }
     if (g_settings.trackFlight && g_settings.flightIdent.length()) {
       if (g_settings.flightIdent != flightFor_) { flightFor_ = g_settings.flightIdent; tFlight_ = 0; g_settings.flightOk = -1; }
@@ -150,7 +154,7 @@ class NetworkData {
     if (last == 0) last = 1;
   }
   unsigned long tScores_ = 0, tQuotes_ = 0, tWeather_ = 0, tPlanes_ = 0, tTv_ = 0;
-  unsigned long tFlight_ = 0;
+  unsigned long tFlight_ = 0, tSky_ = 0, tVip_ = 0;
   String flightFor_;
   unsigned long tFolly_ = 0, tLake_ = 0, tMarkets_ = 0;
   unsigned long tLastFetch_ = 0;
@@ -518,6 +522,70 @@ class NetworkData {
     g_settings.flightTo = to;
     g_settings.flightDmi = doc["dmi"] | -1L;
     g_settings.flightEta = (const char *)(doc["eta"] | "");
+    return true;
+  }
+
+  bool fetchSky() {
+    char path[72];
+    snprintf(path, sizeof(path), "/api/device/sky?lat=%.4f&lon=%.4f", g_settings.lat, g_settings.lon);
+    PSRAM_JSON(doc);
+    if (!getJson(path, doc, EP_SKY)) return false;
+    JsonObjectConst m = doc["moon"];
+    if (!m.isNull() && !m["il"].isNull()) {
+      g_settings.moonIl   = (int8_t)m["il"].as<int>();
+      g_settings.moonWax  = (m["wx"] | 1) != 0;
+      g_settings.moonPh   = (const char *)(m["ph"] | "");
+      g_settings.sunRise  = (const char *)(m["sr"] | "");
+      g_settings.sunSet   = (const char *)(m["ss"] | "");
+      g_settings.moonRise = (const char *)(m["mr"] | "");
+      g_settings.moonRiseTmw = strcmp(m["mrd"] | "", "tmw") == 0;
+    }
+    JsonObjectConst s = doc["iss"];
+    if (!s.isNull() && !s["mi"].isNull()) {
+      g_settings.issOk = true;
+      g_settings.issMi = s["mi"] | 0;
+      JsonObjectConst v = s["nv"];
+      g_settings.issNvR    = v["r"] | 0UL;
+      g_settings.issNvDay  = (const char *)(v["d"] | "");
+      g_settings.issNvTime = (const char *)(v["t"] | "");
+      g_settings.issNvFr   = (const char *)(v["fr"] | "");
+      g_settings.issNvTo   = (const char *)(v["to"] | "");
+      g_settings.issNvEl   = v["el"] | 0;
+      g_settings.issNvMin  = v["m"] | 0;
+      JsonObjectConst p = s["np"];
+      g_settings.issPR  = p["r"] | 0UL;
+      g_settings.issPE  = p["e"] | 0UL;
+      g_settings.issPEl = p["el"] | 0;
+      g_settings.issPFr = (const char *)(p["fr"] | "");
+      g_settings.issPTo = (const char *)(p["to"] | "");
+    }
+    return true;
+  }
+
+  bool fetchVip() {
+    char path[72];
+    snprintf(path, sizeof(path), "/api/device/vip?lat=%.4f&lon=%.4f&r=60", g_settings.lat, g_settings.lon);
+    PSRAM_JSON(doc);
+    if (!getJson(path, doc, EP_VIP)) return false;
+    int n = 0;
+    for (JsonObjectConst a : doc["a"].as<JsonArrayConst>()) {
+      if (n >= 2) break;
+      VipInfo &v = g_settings.vip[n++];
+      v.key = (const char *)(a["k"] | "");
+      v.label = (const char *)(a["l"] | "");
+      v.cs = (const char *)(a["cs"] | "");
+      v.hex = (const char *)(a["hex"] | "");
+      v.type = (const char *)(a["t"] | "");
+      v.reg = (const char *)(a["reg"] | "");
+      v.dir = (const char *)(a["b"] | "");
+      v.dist = a["d"] | -1.0f;
+      v.alt = a["alt"] | 0L;
+      v.vr = (int8_t)(a["vr"] | 0);
+      v.hdg = a["hdg"] | 0;
+      v.spd = a["spd"] | 0;
+    }
+    g_settings.vipN = n;
+    g_display.noteVip();
     return true;
   }
 

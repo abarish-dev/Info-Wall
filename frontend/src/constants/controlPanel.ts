@@ -90,6 +90,12 @@ export const DEFAULTS = {
   countdownDate: "",
   dogEnabled: true,
   dogFreq: "some" as DogFreq,
+  // Sky pages (firmware 1.1.17+). Saved profiles from older app versions
+  // don't have these keys and pick up these defaults via {...DEFAULTS, ...saved}.
+  showMoon: true, // moon phase + sunrise/sunset (Weather)
+  showIss: true, // ISS next pass / overhead now (Flight tracking)
+  vipAlert: true, // Air Force One / VIP jet alert within 60 mi (Flight tracking)
+  showMap: true, // day/night world map (Display settings)
 };
 
 // Dog walk-by frequency presets -> random interval range (minutes).
@@ -133,6 +139,10 @@ export type Settings = {
   countdownDate: string;
   dogEnabled?: boolean;
   dogFreq?: DogFreq;
+  showMoon?: boolean;
+  showIss?: boolean;
+  vipAlert?: boolean;
+  showMap?: boolean;
 };
 
 export const MAX_ROWS = 8;

@@ -23,6 +23,10 @@ inline void serializeSettings(JsonDocument &d) {
   d["flightIdent"] = g_settings.flightIdent;
   d["showWeather"] = g_settings.showWeather;
   d["showForecast"] = g_settings.showForecast;
+  d["sMoon"] = g_settings.showMoon;
+  d["sIss"] = g_settings.showIss;
+  d["sMap"] = g_settings.showMap;
+  d["sVip"] = g_settings.vipAlert;
   d["lat"] = g_settings.lat;
   d["lon"] = g_settings.lon;
   d["trackingMode"] = g_settings.trackingMode;
@@ -96,6 +100,11 @@ inline void applySettings(JsonDocument &d) {
   g_settings.flightIdent = (const char *)(d["flightIdent"] | "");
   g_settings.showWeather = d["showWeather"] | g_settings.showWeather;
   g_settings.showForecast = d["showForecast"] | g_settings.showForecast;
+  // 1.1.17 keys: absent in older saves -> keep the struct defaults (ON).
+  g_settings.showMoon = d["sMoon"] | g_settings.showMoon;
+  g_settings.showIss  = d["sIss"]  | g_settings.showIss;
+  g_settings.showMap  = d["sMap"]  | g_settings.showMap;
+  g_settings.vipAlert = d["sVip"]  | g_settings.vipAlert;
   g_settings.lat = d["lat"] | g_settings.lat;
   g_settings.lon = d["lon"] | g_settings.lon;
   g_settings.trackingMode = (const char *)(d["trackingMode"] | "radius");

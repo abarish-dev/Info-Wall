@@ -22,6 +22,7 @@
 #include "MarketHours.h"
 #include "Logos.h"
 #include "DogSprite.h"
+#include "SkyDraw.h"
 #include <Fonts/FreeMono9pt7b.h>
 #include <esp_system.h>
 
@@ -119,7 +120,8 @@ class DisplayManager {
       }
     }
 
-    bool cutIn = !dogActive_ && queueLen_ > 0 && !g_settings.isPinned &&
+    checkIssPass();
+    bool cutIn = !dogActive_ && (queueLen_ > 0 || vipPending_ || issPending_) && !g_settings.isPinned &&
                  (!cur_.interrupt || now - lastSwitch_ >= (unsigned long)hold);
     if (!fading_ && !dogActive_ && (cutIn || (!g_settings.isPinned &&
                                now - lastSwitch_ >= (unsigned long)hold))) {
@@ -304,6 +306,27 @@ class DisplayManager {
         }
         break;
       }
+      case M_MOON:
+        h = mix(h, (uint32_t)g_settings.moonIl);
+        h = mixStr(h, g_settings.sunRise);
+        h = mixStr(h, g_settings.sunSet);
+        h = mixStr(h, g_settings.moonRise);
+        break;
+      case M_ISS:
+        h = mix(h, issOverhead() ? 1u : 0u);
+        h = mix(h, g_settings.issNvR);
+        h = mix(h, (uint32_t)g_settings.issMi);
+        break;
+      case M_MAP:
+        h = mix(h, (uint32_t)(time(nullptr) / 60));   // terminator + clock move each minute
+        break;
+      case M_VIP:
+        if (g_settings.vipN > 0) {
+          h = mixStr(h, g_settings.vip[0].hex);
+          h = mix(h, (uint32_t)(g_settings.vip[0].dist * 10));
+          h = mix(h, (uint32_t)g_settings.vip[0].alt);
+        }
+        break;
       default:
         break;
     }
@@ -328,6 +351,26 @@ class DisplayManager {
     for (int i = 0; i < n; i++) g_settings.planes[i] = list[i];
     g_settings.planeCount = n;
     planesSeeded_ = true;
+  }
+
+  // New /api/device/vip result: alert for an aircraft not alerted in the
+  // last 5 minutes (so one still in range re-alerts every 5 min).
+  void noteVip() {
+    if (cur_.m == M_VIP) bufferValid_ = false;
+    if (!g_settings.vipAlert) return;
+    unsigned long now = millis();
+    for (int i = 0; i < g_settings.vipN; i++) {
+      const String &hx = g_settings.vip[i].hex;
+      int slot = -1, oldest = 0;
+      for (int j = 0; j < 4; j++) {
+        if (vipHex_[j] == hx) slot = j;
+        if (vipAt_[j] < vipAt_[oldest]) oldest = j;
+      }
+      if (slot >= 0 && now - vipAt_[slot] < 300000UL) continue;
+      if (slot < 0) slot = oldest;
+      vipHex_[slot] = hx; vipAt_[slot] = now | 1;
+      vipPending_ = true;
+    }
   }
 
   // A quick RGB sweep so the user can confirm the BLE link is live.
@@ -375,7 +418,8 @@ class DisplayManager {
  private:
   static const uint32_t kTeamLabelStaleSec = 3 * 3600;  // saved team label max age
   enum Module { M_MARKETS, M_MESSAGE, M_FLIGHT, M_PLANES, M_WEATHER, M_SPORTS, M_SCORES,
-                M_TV, M_STOCKS, M_COUNTDOWN, M_REMINDERS, M_LKN, M_FOLLY, M_FORECAST };
+                M_TV, M_STOCKS, M_COUNTDOWN, M_REMINDERS, M_LKN, M_FOLLY, M_FORECAST,
+                M_MOON, M_ISS, M_MAP, M_VIP };
 
   MatrixPanel_I2S_DMA *dma_ = nullptr;
   int width_ = 128, height_ = 64;
@@ -429,6 +473,9 @@ class DisplayManager {
     if (anyReminder()) out[n++] = M_REMINDERS;
     if (g_settings.showLKN)   out[n++] = M_LKN;
     if (g_settings.showFolly) out[n++] = M_FOLLY;
+    if (g_settings.showWeather && g_settings.showMoon && g_settings.moonIl >= 0) out[n++] = M_MOON;
+    if (g_settings.showIss && g_settings.issOk) out[n++] = M_ISS;
+    if (g_settings.showMap && time(nullptr) > 1600000000) out[n++] = M_MAP;
     return n;
   }
   int liveCount() {
@@ -440,7 +487,7 @@ class DisplayManager {
   int teamPages() { return (teamCount() + TEAMS_PER_PAGE - 1) / TEAMS_PER_PAGE; }
   int showPages() { return (showCount() + SHOWS_PER_PAGE - 1) / SHOWS_PER_PAGE; }
   int catCount(Cat c) {
-    Module tmp[14];
+    Module tmp[20];
     switch (c) {
       case C_INFO:   return infoModules(tmp);
       case C_TEAMS:  { int l = liveCount(); return l ? l : teamCount(); }  // live only while any is live
@@ -451,7 +498,7 @@ class DisplayManager {
   }
   Page pageFor(Cat c, int k) {
     Page p;
-    if (c == C_INFO) { Module tmp[14]; infoModules(tmp); p.m = tmp[k]; }
+    if (c == C_INFO) { Module tmp[20]; infoModules(tmp); p.m = tmp[k]; }
     else if (c == C_TEAMS) {
       p.m = M_SPORTS; p.idx = k;   // k-th team in display order (teamSlotAt)
     }
@@ -465,13 +512,14 @@ class DisplayManager {
     return -1;
   }
   bool pageValid(const Page &p) {
-    Module tmp[14];
+    Module tmp[20];
     int n;
     switch (p.m) {
       case M_PLANES: return planeSlot(p.plane) >= 0;
       case M_SPORTS: return p.idx < teamCount();
       case M_SCORES: return anyScore();
       case M_TV:     return p.idx < showPages();
+      case M_VIP:    return g_settings.vipAlert && g_settings.vipN > 0;
       default:
         n = infoModules(tmp);
         for (int i = 0; i < n; i++) if (tmp[i] == p.m) return true;
@@ -480,6 +528,20 @@ class DisplayManager {
   }
   // Pick the next page: a queued new plane first, else the next category turn.
   bool advance() {
+    // VIP aircraft (Air Force One etc.) and a visible ISS pass starting cut in
+    // ahead of everything; they never join the normal rotation.
+    if (!g_settings.isPinned && vipPending_) {
+      vipPending_ = false;
+      if (g_settings.vipAlert && g_settings.vipN > 0) {
+        cur_ = Page(); cur_.m = M_VIP; cur_.interrupt = true; return true;
+      }
+    }
+    if (!g_settings.isPinned && issPending_) {
+      issPending_ = false;
+      if (g_settings.showIss && issOverhead()) {
+        cur_ = Page(); cur_.m = M_ISS; cur_.interrupt = true; return true;
+      }
+    }
     while (queueLen_ > 0 && !g_settings.isPinned) {
       String cs = queue_[0];
       for (int i = 1; i < queueLen_; i++) queue_[i - 1] = queue_[i];
@@ -545,6 +607,69 @@ class DisplayManager {
   uint16_t softGreen() { return dma_->color565(80, 190, 115); }
   uint16_t softRed()   { return dma_->color565(215, 70, 60); }
   uint16_t routeBlue() { return dma_->color565(120, 175, 215); }
+
+  // ---- Sky pages (1.1.17) ------------------------------------------------------
+  bool vipPending_ = false, issPending_ = false;
+  String vipHex_[4];
+  unsigned long vipAt_[4] = {0, 0, 0, 0};
+  uint32_t issAlerted_ = 0;   // rise epoch of the last pass that cut in
+  bool issOverhead() {
+    uint32_t t = (uint32_t)time(nullptr);
+    return t > 1600000000 && g_settings.issPR && t >= g_settings.issPR && t <= g_settings.issPE;
+  }
+  // A VISIBLE pass (dark sky, sunlit station) just started: cut in once.
+  void checkIssPass() {
+    if (!g_settings.showIss || !issOverhead()) return;
+    if (g_settings.issPR != g_settings.issNvR || issAlerted_ == g_settings.issPR) return;
+    issAlerted_ = g_settings.issPR;
+    issPending_ = true;
+  }
+  struct GfxAdapter {
+    MatrixPanel_I2S_DMA *d;
+    void px(int x, int y, uint8_t r, uint8_t g, uint8_t b) { d->drawPixel(x, y, d->color565(r, g, b)); }
+    void text(const char *s, int x, int y, uint8_t r, uint8_t g, uint8_t b) {
+      d->setFont(nullptr); d->setTextSize(1); d->setTextColor(d->color565(r, g, b));
+      d->setCursor(x, y); d->print(s);
+    }
+  };
+  void drawMoon() {
+    GfxAdapter a{dma_};
+    String mr = g_settings.moonRise;
+    if (mr.length() && g_settings.moonRiseTmw) mr = "";   // only tonight's moonrise
+    SkyMoon m{g_settings.moonIl, g_settings.moonWax, g_settings.moonPh.c_str(),
+              g_settings.sunRise.c_str(), g_settings.sunSet.c_str(), mr.c_str()};
+    skyDrawMoon(a, m);
+  }
+  void drawIss() {
+    GfxAdapter a{dma_};
+    SkyIss s{issOverhead(), g_settings.issMi, g_settings.issNvDay.c_str(), g_settings.issNvTime.c_str(),
+             g_settings.issNvFr.c_str(), g_settings.issNvTo.c_str(), g_settings.issNvEl, g_settings.issNvMin,
+             g_settings.issPFr.c_str(), g_settings.issPTo.c_str(), g_settings.issPEl};
+    skyDrawIss(a, s);
+  }
+  void drawVip() {
+    if (g_settings.vipN <= 0) return;
+    GfxAdapter a{dma_};
+    const VipInfo &v = g_settings.vip[0];
+    String l2 = (v.key == "SAM" || v.key == "EXEC" || v.key == "VENUS") ? v.cs + " " + v.type
+                                                                       : v.type + " " + v.reg;
+    l2.trim();
+    bool red = v.key == "AF1" || v.key == "AF2" || v.key == "VC25";
+    SkyVip s{v.label.c_str(), l2.c_str(), v.dir.c_str(), v.dist, v.alt, v.vr, v.hdg, v.spd, red};
+    skyDrawVip(a, s);
+  }
+  void drawMap() {
+    GfxAdapter a{dma_};
+    char clk[10] = "";
+    struct tm t;
+    if (getLocalTime(&t, 0)) {
+      int h = t.tm_hour % 12; if (!h) h = 12;
+      snprintf(clk, sizeof(clk), "%d:%02d%s", h, t.tm_min, t.tm_hour < 12 ? "AM" : "PM");
+    }
+    float la = g_settings.lat, lo = g_settings.lon;
+    if (la == 0 && lo == 0) { la = 35.58f; lo = -80.81f; }   // Mooresville until set
+    skyDrawMap(a, time(nullptr), la, lo, clk);
+  }
 
   // ---- Redraw gating (single DMA buffer) ------------------------------------
   bool bufferValid_ = false;
@@ -760,6 +885,10 @@ class DisplayManager {
       case M_LKN:       drawLake();  break;
       case M_FOLLY:     drawFolly(); break;
       case M_MARKETS:   drawMarkets(); break;
+      case M_MOON:      drawMoon();    break;
+      case M_ISS:       drawIss();     break;
+      case M_MAP:       drawMap();     break;
+      case M_VIP:       drawVip();     break;
     }
   }
 
