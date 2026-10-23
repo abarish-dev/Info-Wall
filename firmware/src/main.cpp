@@ -8,6 +8,7 @@
 // ===========================================================================
 #include <Arduino.h>
 #include <WiFi.h>
+#include <utility>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <HTTPUpdate.h>
@@ -180,12 +181,88 @@ void setup() {
   g_wifi.begin();       // rejoin the saved network (no phone needed)
 }
 
+// ---- Wi-Fi scan for the app's network picker (BLE "wifiScan") --------------
+// Async so the display keeps animating. Results are deduped by SSID (strongest
+// kept), sorted strongest first, capped at 15, and sent ONE network per notify
+// ({"ws":[i,n,"ssid",rssi,secure]}) so each frame stays small, then
+// {"wsDone":n}. Works while connected (STA): the radio hops channels briefly.
+static bool     g_scanRunning = false;
+static uint32_t g_scanStart   = 0;
+
+static void startWifiScan() {
+  if (g_scanRunning) return;
+  if (WiFi.getMode() == WIFI_OFF) WiFi.mode(WIFI_STA);
+  WiFi.scanDelete();
+  int16_t r = WiFi.scanNetworks(true /*async*/, false /*hidden*/);
+  if (r == WIFI_SCAN_FAILED) { g_ble.notify("{\"wsDone\":-1}"); return; }
+  g_scanRunning = true;
+  g_scanStart = millis();
+  Serial.println("[WiFi] scan started");
+}
+
+static String jsonEsc(const String &in) {
+  String o;
+  for (size_t i = 0; i < in.length(); i++) {
+    char c = in[i];
+    if (c == '"' || c == '\\') { o += '\\'; o += c; }
+    else if ((uint8_t)c < 0x20) o += ' ';
+    else o += c;
+  }
+  return o;
+}
+
+static void pollWifiScan() {
+  if (!g_scanRunning) return;
+  int16_t n = WiFi.scanComplete();
+  if (n == WIFI_SCAN_RUNNING) {
+    if (millis() - g_scanStart < 15000) return;
+    n = WIFI_SCAN_FAILED;  // give up
+  }
+  g_scanRunning = false;
+  if (n < 0) { WiFi.scanDelete(); g_ble.notify("{\"wsDone\":-1}"); return; }
+
+  const int MAXN = 15;
+  String ss[MAXN]; int32_t rs[MAXN]; bool sec[MAXN]; int cnt = 0;
+  for (int i = 0; i < n; i++) {
+    String s = WiFi.SSID(i);
+    if (s.length() == 0) continue;           // hidden network
+    int32_t r = WiFi.RSSI(i);
+    bool lock = WiFi.encryptionType(i) != WIFI_AUTH_OPEN;
+    int dup = -1;
+    for (int k = 0; k < cnt; k++) if (ss[k] == s) { dup = k; break; }
+    if (dup >= 0) { if (r > rs[dup]) { rs[dup] = r; sec[dup] = lock; } continue; }
+    if (cnt < MAXN) { ss[cnt] = s; rs[cnt] = r; sec[cnt] = lock; cnt++; }
+    else {                                    // replace the weakest if stronger
+      int w = 0; for (int k = 1; k < cnt; k++) if (rs[k] < rs[w]) w = k;
+      if (r > rs[w]) { ss[w] = s; rs[w] = r; sec[w] = lock; }
+    }
+  }
+  WiFi.scanDelete();
+  for (int a = 0; a < cnt; a++)               // sort strongest first
+    for (int b = a + 1; b < cnt; b++)
+      if (rs[b] > rs[a]) { std::swap(ss[a], ss[b]); std::swap(rs[a], rs[b]); std::swap(sec[a], sec[b]); }
+  for (int i = 0; i < cnt; i++) {
+    g_ble.notify(String("{\"ws\":[") + i + "," + cnt + ",\"" + jsonEsc(ss[i]) + "\"," +
+                 rs[i] + "," + (sec[i] ? 1 : 0) + "]}");
+    delay(15);  // let each notify drain
+  }
+  g_ble.notify(String("{\"wsDone\":") + cnt + "}");
+  Serial.printf("[WiFi] scan done: %d networks (%d unique)\n", n, cnt);
+}
+
 void loop() {
   // Handle a Wi-Fi request that arrived over BLE (run outside the callback).
   if (g_ble.wifiRequested) {
     g_ble.wifiRequested = false;
     tryJoinWifi(g_ble.pendingSsid, g_ble.pendingPass);
   }
+
+  // Wi-Fi picker scan (BLE "wifiScan").
+  if (g_ble.wifiScanRequested) {
+    g_ble.wifiScanRequested = false;
+    startWifiScan();
+  }
+  pollWifiScan();
 
   // Flash test pattern requested from the app.
   if (g_ble.flashRequested) {

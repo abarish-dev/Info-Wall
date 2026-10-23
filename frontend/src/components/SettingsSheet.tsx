@@ -156,6 +156,9 @@ export function SettingsSheet({
   onLiveBrightness,
   onLiveSchedule,
   onSaveWifi,
+  onScanWifi,
+  wifiNets,
+  wifiScanning,
   initialSsid,
   initialPassword,
   liveEnabled,
@@ -199,6 +202,9 @@ export function SettingsSheet({
     scheduleBrightness: number;
   }) => void;
   onSaveWifi?: (ssid: string, password: string) => void;
+  onScanWifi?: () => void;
+  wifiNets?: { ssid: string; rssi: number; secure: boolean }[];
+  wifiScanning?: boolean;
   initialSsid?: string;
   initialPassword?: string;
   liveEnabled?: boolean;
@@ -714,6 +720,45 @@ export function SettingsSheet({
             <Text style={styles.hint}>
               Provision the matrix onto your network over Bluetooth.
             </Text>
+            <Pressable
+              testID="wifi-scan-button"
+              onPress={() => onScanWifi?.()}
+              disabled={!liveEnabled || wifiScanning}
+              style={({ pressed }) => [styles.wifiBtn, { opacity: !liveEnabled ? 0.5 : 1 }, pressed && styles.pressed]}
+            >
+              <Ionicons name="refresh" size={18} color={colors.onBrand} />
+              <Text style={styles.wifiBtnText}>
+                {wifiScanning ? "SCANNING…" : wifiNets?.length ? "SCAN AGAIN" : "FIND NETWORKS"}
+              </Text>
+            </Pressable>
+            {(wifiNets ?? []).map((n) => {
+              const bars = n.rssi >= -55 ? 4 : n.rssi >= -67 ? 3 : n.rssi >= -78 ? 2 : 1;
+              const sel = n.ssid === wifiSsid;
+              return (
+                <Pressable
+                  key={n.ssid}
+                  testID={`wifi-net-${n.ssid}`}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setWifiSsid(n.ssid);
+                    if (!n.secure) setWifiPassword("");
+                  }}
+                  style={[styles.nameInput, { flexDirection: "row", alignItems: "center", gap: 8, borderColor: sel ? colors.success : undefined }]}
+                >
+                  <Ionicons
+                    name={bars >= 3 ? "wifi" : "wifi-outline"}
+                    size={18}
+                    color={bars >= 2 ? colors.success : colors.info}
+                  />
+                  <Text style={[styles.hint, { flex: 1, marginTop: 0 }]} numberOfLines={1}>
+                    {n.ssid}
+                  </Text>
+                  <Text style={styles.hint}>{"▂▄▆█".slice(0, bars)}</Text>
+                  {n.secure ? <Ionicons name="lock-closed" size={14} color={colors.info} /> : null}
+                </Pressable>
+              );
+            })}
+            <Text style={styles.hint}>Or type the network name (for hidden networks):</Text>
             <TextInput
               testID="wifi-ssid-input"
               style={styles.nameInput}

@@ -106,3 +106,9 @@ Panel poll intervals (NetworkData.h): scores 30s, quotes 120s, weather 900s,
 planes 30s, tv 3600s. Endpoints: /api/device/scores, /api/device/quotes,
 /api/weather/current, /api/device/planes, /api/device/tv. On a live team's
 score increase the panel runs the SCORE flash on its own.
+
+### Wi-Fi scan (fw 1.1.19+)
+App writes `{"command":"wifiScan"}`. The wall runs an async scan (display keeps
+running) and notifies one network per frame, strongest first, deduped, max 15:
+`{"ws":[index,count,"SSID",rssi,secure]}` then `{"wsDone":count}` (`-1` = scan failed).
+Hidden networks are skipped; the app keeps a manual SSID field for them.

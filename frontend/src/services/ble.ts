@@ -326,7 +326,7 @@ export async function connectToKnownDevice(
     throw new BleError("BLUETOOTH_OFF", "Bluetooth is off.");
   }
   onStatus("connecting");
-  const d = await bleManager.connectToDevice(deviceId);
+  const d = await bleManager.connectToDevice(deviceId, { requestMTU: 185 });
   await d.discoverAllServicesAndCharacteristics();
   connectedDevice = d;
   d.onDisconnected(() => {

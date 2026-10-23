@@ -239,6 +239,7 @@ class BLEController {
   // Set by the characteristic callback; call in loop() to run Wi-Fi joins
   // outside the BLE callback context.
   volatile bool wifiRequested = false;
+  volatile bool wifiScanRequested = false; // BLE "wifiScan": loop() scans + notifies
   volatile bool flashRequested = false;
   volatile bool scoreFlashRequested = false;
   volatile bool otaRequested = false;   // BLE "ota": check + install update
@@ -675,6 +676,11 @@ inline void BLEController::handleJson(const String &raw) {
     // App's "Install update" button. Runs in loop() (HTTPS + flash write must
     // not happen inside the BLE callback).
     otaRequested = true;
+    return;
+
+  } else if (strcmp(cmd, "wifiScan") == 0) {
+    // App's Wi-Fi picker. Async scan started + reported from loop().
+    wifiScanRequested = true;
     return;
 
   } else if (strcmp(cmd, "wifi") == 0) {

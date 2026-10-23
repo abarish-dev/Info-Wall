@@ -223,6 +223,12 @@ export default function ControlPanel() {
   }>({ state: "idle" });
   // Cancels an in-flight Wi-Fi result poll when a new join starts / status set.
   const wifiPollRef = useRef(0);
+  // Wi-Fi picker: networks the wall can see (BLE "wifiScan", fw 1.1.19+).
+  type WifiNet = { ssid: string; rssi: number; secure: boolean };
+  const [wifiNets, setWifiNets] = useState<WifiNet[]>([]);
+  const [wifiScanning, setWifiScanning] = useState(false);
+  const scanBufRef = useRef<WifiNet[]>([]);
+  const scanTimerRef = useRef<any>(null);
   // Live Folly tides + Lake Norman readouts shown in the Weather section.
   const [follyData, setFollyData] = useState<{
     e?: { y: string; t: string; v: number }[];
@@ -943,6 +949,16 @@ export default function ControlPanel() {
           );
         }
       }
+      if (Array.isArray(obj?.ws)) {
+        const [i, , ssid, rssi, sec] = obj.ws;
+        scanBufRef.current[i] = { ssid: String(ssid), rssi: Number(rssi), secure: !!sec };
+      }
+      if (typeof obj?.wsDone === "number") {
+        if (scanTimerRef.current) clearTimeout(scanTimerRef.current);
+        setWifiScanning(false);
+        if (obj.wsDone < 0) toast.show("The wall couldn't scan. Try again.", "error");
+        else setWifiNets(scanBufRef.current.filter(Boolean));
+      }
       const ws = obj?.wifiStatus ?? obj?.wifi_status;
       if (ws === "connected" || ws === true) {
         wifiPollRef.current++; // cancel any in-flight poll
@@ -1119,6 +1135,28 @@ export default function ControlPanel() {
         toast.show("No diagnostics reply (wall firmware 1.1.2+ needed)", "info");
         return d;
       });
+  };
+
+  const handleScanWifi = async () => {
+    if (status !== "connected") {
+      toast.show("Connect to the wall first", "error");
+      return;
+    }
+    scanBufRef.current = [];
+    setWifiScanning(true);
+    try {
+      await writeLive({ command: "wifiScan" });
+      if (scanTimerRef.current) clearTimeout(scanTimerRef.current);
+      scanTimerRef.current = setTimeout(() => {
+        setWifiScanning(false);
+        const got = scanBufRef.current.filter(Boolean);
+        if (got.length) setWifiNets(got);
+        else toast.show("No networks found. Update the wall or type the name.", "error");
+      }, 20000);
+    } catch {
+      setWifiScanning(false);
+      toast.show("Couldn't ask the wall to scan", "error");
+    }
   };
 
   const handleSaveWifi = async (ssid: string, password: string) => {
@@ -2889,6 +2927,9 @@ export default function ControlPanel() {
         onLiveBrightness={handleLiveBrightness}
         onLiveSchedule={handleLiveSchedule}
         onSaveWifi={handleSaveWifi}
+        onScanWifi={handleScanWifi}
+        wifiNets={wifiNets}
+        wifiScanning={wifiScanning}
         initialSsid={lastSsid}
         initialPassword={lastPass}
         liveEnabled={isConnected}
