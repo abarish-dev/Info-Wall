@@ -31,6 +31,7 @@ import {
   type TeamStatus,
 } from "@/src/services/catalog";
 import { findTeam, teamLogoUrl, type League } from "@/src/data/teams";
+import { CLOCK_COLORS } from "@/src/constants/controlPanel";
 
 const STORAGE_KEY = "matrix_settings_v2";
 const REMINDERS_KEY = "episode_reminders_v1";
@@ -470,6 +471,38 @@ export default function MatrixPreview() {
           <View style={styles.rowCenter}>
             <Ionicons name="lock-closed" size={22} color={AMBER} />
             <Glow text="  HELD ON THIS FRAME" color={AMBER} size={15} />
+          </View>
+        ),
+      });
+    }
+
+    if (s.showBigClock ?? true) {
+      const col = (CLOCK_COLORS[s.clockColor ?? 0] ?? CLOCK_COLORS[0]).hex;
+      const now = new Date();
+      const tz = "America/New_York";
+      const hm = now.toLocaleTimeString("en-US", {
+        timeZone: tz,
+        hour: s.clock24 ? "2-digit" : "numeric",
+        minute: "2-digit",
+        hour12: !s.clock24,
+      });
+      const [time, ap] = hm.split(" ");
+      const date = now
+        .toLocaleDateString("en-US", { timeZone: tz, weekday: "short", month: "short", day: "numeric" })
+        .replace(",", "")
+        .toUpperCase();
+      f.push({
+        key: "bigclock",
+        label: "Big clock",
+        node: (
+          <View style={{ alignItems: "center", gap: 4 }}>
+            <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
+              <Glow text={time} color={col} size={44} />
+              {!!ap && <Glow text={" " + ap} color={col} size={12} />}
+            </View>
+            <View style={{ opacity: 0.45 }}>
+              <Glow text={date} color={col} size={14} />
+            </View>
           </View>
         ),
       });

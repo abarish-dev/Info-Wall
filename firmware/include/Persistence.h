@@ -26,6 +26,9 @@ inline void serializeSettings(JsonDocument &d) {
   d["sMoon"] = g_settings.showMoon;
   d["sIss"] = g_settings.showIss;
   d["sMap"] = g_settings.showMap;
+  d["sClk"] = g_settings.showBigClock;
+  d["cClr"] = g_settings.clockColor;
+  d["c24"]  = g_settings.clock24;
   d["sVip"] = g_settings.vipAlert;
   d["lat"] = g_settings.lat;
   d["lon"] = g_settings.lon;
@@ -104,6 +107,9 @@ inline void applySettings(JsonDocument &d) {
   g_settings.showMoon = d["sMoon"] | g_settings.showMoon;
   g_settings.showIss  = d["sIss"]  | g_settings.showIss;
   g_settings.showMap  = d["sMap"]  | g_settings.showMap;
+  g_settings.showBigClock = d["sClk"] | g_settings.showBigClock;
+  g_settings.clockColor   = constrain((int)(d["cClr"] | (int)g_settings.clockColor), 0, 9);
+  g_settings.clock24      = d["c24"]  | g_settings.clock24;
   g_settings.vipAlert = d["sVip"]  | g_settings.vipAlert;
   g_settings.lat = d["lat"] | g_settings.lat;
   g_settings.lon = d["lon"] | g_settings.lon;

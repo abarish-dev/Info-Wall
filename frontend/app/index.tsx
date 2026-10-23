@@ -1071,6 +1071,23 @@ export default function ControlPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings.showMoon, settings.showIss, settings.showMap, settings.vipAlert, status, fwVersion]);
 
+  // Big clock page (firmware 1.1.20+).
+  useEffect(() => {
+    if (status !== "connected" || !fwAtLeast("1.1.20")) return;
+    const t = setTimeout(
+      () =>
+        writeLive({
+          command: "clock",
+          showBigClock: settings.showBigClock ?? true,
+          clockColor: settings.clockColor ?? 0,
+          clock24: settings.clock24 ?? false,
+        }).catch(() => {}),
+      600,
+    );
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings.showBigClock, settings.clockColor, settings.clock24, status, fwVersion]);
+
   // Live push of display transitions + travel countdown (debounced).
   useEffect(() => {
     if (status !== "connected") return;
@@ -2942,6 +2959,10 @@ export default function ControlPanel() {
         dogSupported={fwAtLeast("1.1.2")}
         showMap={settings.showMap ?? true}
         mapSupported={fwVersion ? fwAtLeast("1.1.17") : undefined}
+        showBigClock={settings.showBigClock ?? true}
+        clockColor={settings.clockColor ?? 0}
+        clock24={settings.clock24 ?? false}
+        clockSupported={fwVersion ? fwAtLeast("1.1.20") : undefined}
         dogEnabled={settings.dogEnabled ?? true}
         dogFreq={settings.dogFreq ?? "some"}
         onDogChange={(p) => patchSettings(p)}
