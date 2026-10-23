@@ -15,6 +15,7 @@
 // ===========================================================================
 #pragma once
 
+#include <math.h>
 #include <Arduino.h>
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
 #include <time.h>
@@ -1470,10 +1471,17 @@ class DisplayManager {
     tt.tm_year = iso.substring(0, 4).toInt() - 1900;
     tt.tm_mon  = iso.substring(5, 7).toInt() - 1;
     tt.tm_mday = iso.substring(8, 10).toInt();
-    time_t target = mktime(&tt);
+    tt.tm_isdst = -1;
     time_t now = time(nullptr);
     if (now < 100000) return -1; // clock not set yet (needs NTP)
-    return (int)((target - now) / 86400L);
+    time_t target = mktime(&tt);
+    // Count calendar days from local midnight today (matches the app).
+    struct tm today;
+    localtime_r(&now, &today);
+    today.tm_hour = 0; today.tm_min = 0; today.tm_sec = 0;
+    today.tm_isdst = -1;
+    time_t todayMid = mktime(&today);
+    return (int)lround(difftime(target, todayMid) / 86400.0);
   }
 
   // Apply the evening schedule: outside hours use full brightness, inside the
