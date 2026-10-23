@@ -951,7 +951,7 @@ export default function ControlPanel() {
       }
       if (Array.isArray(obj?.ws)) {
         const [i, , ssid, rssi, sec] = obj.ws;
-        scanBufRef.current[i] = { ssid: String(ssid), rssi: Number(rssi), secure: !!sec };
+        if (Number.isInteger(i) && i >= 0 && i < 50) scanBufRef.current[i] = { ssid: String(ssid), rssi: Number(rssi), secure: !!sec };
       }
       if (typeof obj?.wsDone === "number") {
         if (scanTimerRef.current) clearTimeout(scanTimerRef.current);

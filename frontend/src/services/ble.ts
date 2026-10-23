@@ -326,8 +326,27 @@ export async function connectToKnownDevice(
     throw new BleError("BLUETOOTH_OFF", "Bluetooth is off.");
   }
   onStatus("connecting");
-  const d = await bleManager.connectToDevice(deviceId, { requestMTU: 185 });
+  // Plain connect (as in 1.4.1). Asking for a bigger MTU inside connect makes
+  // some phones fail the whole connection, so it's requested afterward and
+  // any refusal/timeout is ignored (default MTU still works, just smaller frames).
+  let d;
+  try {
+    d = await bleManager.connectToDevice(deviceId);
+  } catch (e) {
+    // Clear a half-open link left by a failed attempt, then retry once.
+    try { await bleManager.cancelDeviceConnection(deviceId); } catch {}
+    d = await bleManager.connectToDevice(deviceId);
+  }
   await d.discoverAllServicesAndCharacteristics();
+  try {
+    const mtuDev = await Promise.race([
+      d.requestMTU(185),
+      new Promise<null>((r) => setTimeout(() => r(null), 2500)),
+    ]);
+    if (mtuDev) d = mtuDev;
+  } catch {
+    // ignore: keep default MTU
+  }
   connectedDevice = d;
   d.onDisconnected(() => {
     connectedDevice = null;
