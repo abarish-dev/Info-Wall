@@ -155,6 +155,10 @@ struct MatrixSettings {
   bool showIss  = true;
   bool showMap  = true;
   bool vipAlert = true;
+  // Big clock page (1.1.20, Display section). clockColor indexes BIGCLK_COLORS.
+  bool    showBigClock = true;
+  uint8_t clockColor   = 0;
+  bool    clock24      = false;
   // /api/device/sky (not persisted)
   int8_t moonIl = -1;           // illumination % (-1 = not fetched)
   bool   moonWax = true;
@@ -613,6 +617,12 @@ inline void BLEController::handleJson(const String &raw) {
     g_settings.showMap  = doc["showMap"]  | g_settings.showMap;
     g_settings.vipAlert = doc["vipAlert"] | g_settings.vipAlert;
 
+  } else if (strcmp(cmd, "clock") == 0) {
+    // App 1.4.3+: { showBigClock, clockColor, clock24 } (any subset).
+    g_settings.showBigClock = doc["showBigClock"] | g_settings.showBigClock;
+    g_settings.clockColor   = constrain((int)(doc["clockColor"] | (int)g_settings.clockColor), 0, 9);
+    g_settings.clock24      = doc["clock24"]      | g_settings.clock24;
+
   } else if (strcmp(cmd, "zone") == 0) {
     g_settings.trackingMode = (const char *)(doc["trackingMode"] | g_settings.trackingMode.c_str());
     // doc["polygon"] is an array of [lat,lon] pairs — parse if you use it.
@@ -700,6 +710,9 @@ inline void BLEController::handleJson(const String &raw) {
     g_settings.showIss         = doc["showIss"]         | g_settings.showIss;
     g_settings.showMap         = doc["showMap"]         | g_settings.showMap;
     g_settings.vipAlert        = doc["vipAlert"]        | g_settings.vipAlert;
+    g_settings.showBigClock    = doc["showBigClock"]    | g_settings.showBigClock;
+    g_settings.clockColor      = constrain((int)(doc["clockColor"] | (int)g_settings.clockColor), 0, 9);
+    g_settings.clock24         = doc["clock24"]         | g_settings.clock24;
     g_settings.lat             = doc["lat"]             | g_settings.lat;
     g_settings.lon             = doc["lon"]             | g_settings.lon;
     g_settings.trackingMode    = (const char *)(doc["trackingMode"] | g_settings.trackingMode.c_str());

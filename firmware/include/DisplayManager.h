@@ -24,6 +24,7 @@
 #include "Logos.h"
 #include "DogSprite.h"
 #include "SkyDraw.h"
+#include "BigClockFont.h"
 #include <Fonts/FreeMono9pt7b.h>
 #include <esp_system.h>
 
@@ -321,6 +322,11 @@ class DisplayManager {
       case M_MAP:
         h = mix(h, (uint32_t)(time(nullptr) / 60));   // terminator + clock move each minute
         break;
+      case M_CLOCK:
+        h = mix(h, (uint32_t)(time(nullptr) / 60));   // digits change each minute
+        h = mix(h, (uint32_t)g_settings.clockColor);
+        h = mix(h, g_settings.clock24 ? 1u : 0u);
+        break;
       case M_VIP:
         if (g_settings.vipN > 0) {
           h = mixStr(h, g_settings.vip[0].hex);
@@ -420,7 +426,7 @@ class DisplayManager {
   static const uint32_t kTeamLabelStaleSec = 3 * 3600;  // saved team label max age
   enum Module { M_MARKETS, M_MESSAGE, M_FLIGHT, M_PLANES, M_WEATHER, M_SPORTS, M_SCORES,
                 M_TV, M_STOCKS, M_COUNTDOWN, M_REMINDERS, M_LKN, M_FOLLY, M_FORECAST,
-                M_MOON, M_ISS, M_MAP, M_VIP };
+                M_MOON, M_ISS, M_MAP, M_VIP, M_CLOCK };
 
   MatrixPanel_I2S_DMA *dma_ = nullptr;
   int width_ = 128, height_ = 64;
@@ -477,6 +483,7 @@ class DisplayManager {
     if (g_settings.showWeather && g_settings.showMoon && g_settings.moonIl >= 0) out[n++] = M_MOON;
     if (g_settings.showIss && g_settings.issOk) out[n++] = M_ISS;
     if (g_settings.showMap && time(nullptr) > 1600000000) out[n++] = M_MAP;
+    if (g_settings.showBigClock && time(nullptr) > 1600000000) out[n++] = M_CLOCK;
     return n;
   }
   int liveCount() {
@@ -659,6 +666,55 @@ class DisplayManager {
     SkyVip s{v.label.c_str(), l2.c_str(), v.dir.c_str(), v.dist, v.alt, v.vr, v.hdg, v.spd, red};
     skyDrawVip(a, s);
   }
+  // Big clock (1.1.20): 20x34 digits from BigClockFont.h, small AM/PM top-right,
+  // date ("FRI OCT 23") underneath in a dimmer shade. Layout mirrors
+  // /workspace/bigclock/font.py so the preview PNG is pixel-exact.
+  void drawBigClock() {
+    struct tm t;
+    if (!getLocalTime(&t, 0)) return;
+    const uint8_t *c = BIGCLK_COLORS[g_settings.clockColor % BIGCLK_NCOLORS];
+    uint16_t fg = dma_->color565(c[0], c[1], c[2]);
+    uint16_t dim = dma_->color565(c[0] * 42 / 100, c[1] * 42 / 100, c[2] * 42 / 100);
+    char txt[8], ap[3] = "";
+    if (g_settings.clock24) snprintf(txt, sizeof(txt), "%02d:%02d", t.tm_hour, t.tm_min);
+    else {
+      int h = t.tm_hour % 12; if (!h) h = 12;
+      snprintf(txt, sizeof(txt), "%d:%02d", h, t.tm_min);
+      strcpy(ap, t.tm_hour < 12 ? "AM" : "PM");
+    }
+    const int GAP = 3, COLW = 4, TOP = 5, DATE_Y = 47;
+    int n = strlen(txt), w = GAP * (n - 1);
+    for (int i = 0; i < n; i++) w += txt[i] == ':' ? COLW : BIGCLK_W;
+    int total = w + (ap[0] ? GAP + 11 : 0);
+    int x = (width_ - total) / 2;
+    for (int i = 0; i < n; i++) {
+      if (txt[i] == ':') {
+        dma_->fillRect(x, TOP + 9, COLW, 4, fg);
+        dma_->fillRect(x, TOP + 21, COLW, 4, fg);
+        x += COLW + GAP;
+        continue;
+      }
+      const uint32_t *g = BIGCLK_FONT[txt[i] - '0'];
+      for (int y = 0; y < BIGCLK_H; y++) {
+        uint32_t row = pgm_read_dword(&g[y]);
+        for (int b = 0; b < BIGCLK_W; b++)
+          if (row & (1UL << (BIGCLK_W - 1 - b))) dma_->drawPixel(x + b, TOP + y, fg);
+      }
+      x += BIGCLK_W + GAP;
+    }
+    if (ap[0]) {
+      dma_->setTextSize(1);
+      dma_->setTextColor(fg);
+      dma_->setCursor(x, TOP);
+      dma_->print(ap);
+    }
+    static const char *WD[] = {"SUN","MON","TUE","WED","THU","FRI","SAT"};
+    static const char *MO[] = {"JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"};
+    char date[16];
+    snprintf(date, sizeof(date), "%s %s %d", WD[t.tm_wday], MO[t.tm_mon], t.tm_mday);
+    centerText(date, DATE_Y, dim);
+  }
+
   void drawMap() {
     GfxAdapter a{dma_};
     char clk[10] = "";
@@ -890,6 +946,7 @@ class DisplayManager {
       case M_ISS:       drawIss();     break;
       case M_MAP:       drawMap();     break;
       case M_VIP:       drawVip();     break;
+      case M_CLOCK:     drawBigClock(); break;
     }
   }
 

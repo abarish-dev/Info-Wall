@@ -23,7 +23,7 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import * as Haptics from "expo-haptics";
 import { colors, spacing, radius, fonts, fontSize } from "@/src/theme";
 import { ACCENTS, type AccentId } from "@/src/theme";
-import { DOG_FREQ, type DogFreq } from "@/src/constants/controlPanel";
+import { CLOCK_COLORS, DOG_FREQ, type DogFreq } from "@/src/constants/controlPanel";
 import { useThemedStyles } from "@/src/hooks/useThemedStyles";
 
 // Reply to the firmware's BLE "diag" command (v1.1.2+).
@@ -79,6 +79,9 @@ export type DisplayPatch = {
   scheduleEnd?: string;
   scheduleBrightness?: number;
   showMap?: boolean;
+  showBigClock?: boolean;
+  clockColor?: number;
+  clock24?: boolean;
 };
 
 function addMinutes(hhmm: string, delta: number): string {
@@ -172,6 +175,10 @@ export function SettingsSheet({
   onDogNow,
   showMap,
   mapSupported,
+  showBigClock,
+  clockColor,
+  clock24,
+  clockSupported,
 }: {
   visible: boolean;
   onClose: () => void;
@@ -218,6 +225,10 @@ export function SettingsSheet({
   onDogNow?: () => void;
   showMap?: boolean;
   mapSupported?: boolean;
+  showBigClock?: boolean;
+  clockColor?: number;
+  clock24?: boolean;
+  clockSupported?: boolean;
 }) {
   const styles = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
@@ -535,6 +546,65 @@ export function SettingsSheet({
                 <View style={[styles.switchThumb, (showMap ?? true) && styles.switchThumbOn]} />
               </Pressable>
             </View>
+          </View>
+
+          {/* Big clock page (firmware 1.1.20+) */}
+          <View style={styles.card}>
+            <View style={styles.rowBetween}>
+              <View style={{ flex: 1, paddingRight: spacing.md }}>
+                <Text style={styles.sectionTitle}>BIG CLOCK</Text>
+                <Text style={styles.hint}>
+                  {clockSupported === false
+                    ? "Needs wall firmware 1.1.20"
+                    : "Large time with the date underneath"}
+                </Text>
+              </View>
+              <Pressable
+                testID="bigclock-toggle"
+                onPress={() => {
+                  Haptics.selectionAsync().catch(() => {});
+                  onChange({ showBigClock: !(showBigClock ?? true) });
+                }}
+                style={[styles.switchTrack, (showBigClock ?? true) && styles.switchTrackOn]}
+              >
+                <View style={[styles.switchThumb, (showBigClock ?? true) && styles.switchThumbOn]} />
+              </Pressable>
+            </View>
+            {(showBigClock ?? true) && (
+              <>
+                <View style={[styles.swatchRow, { flexWrap: "wrap", marginTop: spacing.sm }]}>
+                  {CLOCK_COLORS.map((c, i) => (
+                    <Pressable
+                      key={c.hex}
+                      testID={`clock-color-${i}`}
+                      accessibilityLabel={c.name}
+                      onPress={() => {
+                        Haptics.selectionAsync().catch(() => {});
+                        onChange({ clockColor: i });
+                      }}
+                      style={[
+                        styles.swatch,
+                        { backgroundColor: c.hex },
+                        (clockColor ?? 0) === i && styles.swatchActive,
+                      ]}
+                    />
+                  ))}
+                </View>
+                <View style={[styles.rowBetween, { marginTop: spacing.sm }]}>
+                  <Text style={styles.hint}>24-hour time</Text>
+                  <Pressable
+                    testID="clock24-toggle"
+                    onPress={() => {
+                      Haptics.selectionAsync().catch(() => {});
+                      onChange({ clock24: !(clock24 ?? false) });
+                    }}
+                    style={[styles.switchTrack, (clock24 ?? false) && styles.switchTrackOn]}
+                  >
+                    <View style={[styles.switchThumb, (clock24 ?? false) && styles.switchThumbOn]} />
+                  </Pressable>
+                </View>
+              </>
+            )}
           </View>
 
           {/* Display schedule */}

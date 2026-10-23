@@ -96,6 +96,10 @@ export const DEFAULTS = {
   showIss: true, // ISS next pass / overhead now (Flight tracking)
   vipAlert: true, // Air Force One / VIP jet alert within 60 mi (Flight tracking)
   showMap: true, // day/night world map (Display settings)
+  // Big clock page (firmware 1.1.20+, Display settings). clockColor indexes CLOCK_COLORS.
+  showBigClock: true,
+  clockColor: 0,
+  clock24: false,
 };
 
 // Dog walk-by frequency presets -> random interval range (minutes).
@@ -143,7 +147,24 @@ export type Settings = {
   showIss?: boolean;
   vipAlert?: boolean;
   showMap?: boolean;
+  showBigClock?: boolean;
+  clockColor?: number;
+  clock24?: boolean;
 };
+
+// Must match firmware BIGCLK_COLORS (firmware/include/BigClockFont.h).
+export const CLOCK_COLORS: { name: string; hex: string }[] = [
+  { name: "White", hex: "#FFFFFF" },
+  { name: "Warm white", hex: "#FFC882" },
+  { name: "Red", hex: "#FF1E14" },
+  { name: "Orange", hex: "#FF6E00" },
+  { name: "Amber", hex: "#FFB000" },
+  { name: "Green", hex: "#28FF50" },
+  { name: "Cyan", hex: "#00E6FF" },
+  { name: "Blue", hex: "#285AFF" },
+  { name: "Purple", hex: "#AA3CFF" },
+  { name: "Pink", hex: "#FF46AA" },
+];
 
 export const MAX_ROWS = 8;
 // TV shows only (firmware 1.1.16+ stores 10; older firmware keeps the first 8).
