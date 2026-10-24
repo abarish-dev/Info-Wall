@@ -869,7 +869,7 @@ class DisplayManager {
     }
     float la = g_settings.lat, lo = g_settings.lon;
     if (la == 0 && lo == 0) { la = 35.58f; lo = -80.81f; }   // Mooresville until set
-    skyDrawMap(a, time(nullptr), la, lo, clk);
+    skyDrawMap(a, time(nullptr), la, lo, clk, g_settings.simpleMode);
   }
 
   // ---- Redraw gating (single DMA buffer) ------------------------------------

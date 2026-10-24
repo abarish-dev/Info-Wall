@@ -42,5 +42,6 @@ int main(int argc, char **argv) {
   { Canvas c; SkyVip v{"AIR FORCE ONE", "VC-25A 82-8000", "SW", 12.3f, 23000, 1, 45, 410, true}; skyDrawVip(c, v); c.save(dir, "vip.rgb"); }
   { Canvas c; SkyVip v{"SPECIAL AIR MSN", "SAM44 C32", "NE", 38.0f, 9500, -1, 210, 320, false}; skyDrawVip(c, v); c.save(dir, "vip_sam.rgb"); }
   { Canvas c; skyDrawMap(c, time(nullptr), 35.58f, -80.81f, getenv("CLK") ?: ""); c.save(dir, "map.rgb"); }
+  { time_t t = getenv("T") ? atol(getenv("T")) : time(nullptr); Canvas a, b; skyDrawMap(a, t, 35.58f, -80.81f, "1:10PM"); a.save(dir, "map_before.rgb"); skyDrawMap(b, t, 35.58f, -80.81f, "1:10PM", true); b.save(dir, "map_mom.rgb"); }
   return 0;
 }

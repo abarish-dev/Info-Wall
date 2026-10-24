@@ -144,7 +144,7 @@ inline void skySubsolar(time_t utc, float &lat, float &lon) {
   double sl = fmod(ra - gmst + 540.0, 360.0) - 180.0;
   lat = (float)(dec * 180 / M_PI); lon = (float)sl;
 }
-template <class G> void skyDrawMap(G &g, time_t utc, float homeLat, float homeLon, const char *clock) {
+template <class G> void skyDrawMap(G &g, time_t utc, float homeLat, float homeLon, const char *clock, bool mom = false) {
   float slat, slon;
   skySubsolar(utc, slat, slon);
   float sd = sinf(slat * (float)M_PI / 180), cd = cosf(slat * (float)M_PI / 180);
@@ -169,5 +169,13 @@ template <class G> void skyDrawMap(G &g, time_t utc, float homeLat, float homeLo
   for (auto &p : cross) skPx(g, sx + p[0], sy + p[1], {255, 220, 0});
   int mx = (int)((homeLon + 180) / 360 * 128), my = (int)((90 - homeLat) / 180 * 64);
   for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++) skPx(g, mx + dx, my + dy, {255, 40, 40});
-  if (clock && *clock) skText(g, clock, 2, 56, SK_SOFT);
+  if (clock && *clock) {
+    if (mom) {
+      // 1.2.5 Mom Wall: white-on-map read as washed out. Dark backing plate +
+      // warm amber text, no bleed from the bright day-side behind it.
+      int w = (int)strlen(clock) * 6 + 3;
+      for (int y = 54; y < 64; y++) for (int x = 0; x < w; x++) skPx(g, x, y, SkyRGB{0, 0, 0});
+      skText(g, clock, 2, 56, SkyRGB{230, 150, 40});
+    } else skText(g, clock, 2, 56, SK_SOFT);
+  }
 }
