@@ -549,10 +549,10 @@ class DisplayManager {
     // 1.2.10: yellow (R+G) still showed red strokes with green only on the
     // right edge (big temp, lake TGT): this panel can't hold R and G together
     // cleanly. Single-channel red renders clean, so warm colours -> pure red.
-    if (c == 0xFFE0) return c;   // 1.2.12: deliberate full yellow (temp, suns) passes through
-    if (c == 0xFDE0) return c;   // 1.2.17: deliberate amber 255,190,0 (world-map clock) passes through
-    if (r >= 195 && b < 100 && g >= 90) return kWarm565;   // amber/gold/orange -> soft red
-    if (r >= 195 && b < 100 && g < 90)  return kWarm565;  // warm red -> soft red
+    // 1.2.18: snapping disabled. The red/green offset was a bad panel (replaced);
+    // at ~130 Hz (1.2.14 timing) partial levels are steady, so warm colours
+    // render as asked. Intentional reds (kWarm565 lake TGT, home marker) unchanged.
+    (void)r; (void)g; (void)b;
     return c;
   }
   int width_ = 128, height_ = 64;
