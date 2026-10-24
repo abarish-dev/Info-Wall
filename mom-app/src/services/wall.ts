@@ -2,7 +2,7 @@
 // connected" call. Uses the same BLE code as the main Info Wall app.
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
-  connectToKnownDevice, connectToMatrix, monitorMatrix, writeLive, BleError,
+  connectToKnownDevice, connectToMatrix, monitorMatrix, readSettings, writeLive, BleError,
 } from "./ble";
 
 const BACKEND = process.env.EXPO_PUBLIC_BACKEND_URL || "https://info-wall-api.vercel.app";
@@ -75,4 +75,11 @@ export async function applyToggles(t: Toggles): Promise<void> {
   await send({ command: "sky", showMap: t.map, showIss: false, vipAlert: false });
   await send({ command: "clock", showBigClock: t.clock });
   await send({ command: "settime", epoch: Math.floor(Date.now() / 1000) });
+}
+
+/** Firmware version of the connected wall (e.g. "1.2.5"), or null. */
+export async function readWallVersion(): Promise<string | null> {
+  await ensureConnected();
+  const o: any = await readSettings();
+  return o && typeof o.fw === "string" ? o.fw : null;
 }

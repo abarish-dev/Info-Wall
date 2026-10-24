@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
-import { applyToggles, DEFAULT_TOGGLES, loadToggles, type Toggles } from "../src/services/wall";
+import { applyToggles, DEFAULT_TOGGLES, loadToggles, readWallVersion, type Toggles } from "../src/services/wall";
 import { C, F } from "../src/theme";
 
 const ROWS: [keyof Toggles, string][] = [
@@ -15,7 +15,9 @@ export default function Settings() {
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
   const queued = useRef<Toggles | null>(null);
-  useEffect(() => { loadToggles().then(setT); }, []);
+  const [fw, setFw] = useState<string | null>(null);
+  const refreshFw = () => readWallVersion().then(setFw).catch(() => {});
+  useEffect(() => { loadToggles().then(setT); refreshFw(); }, []);
 
   const push = async (next: Toggles) => {
     if (busy) { queued.current = next; return; }
@@ -24,6 +26,7 @@ export default function Settings() {
       let cur: Toggles | null = next;
       while (cur) { queued.current = null; await applyToggles(cur); cur = queued.current; }
       setStatus("Saved on the wall ✓");
+      refreshFw();
     } catch (e: any) {
       setStatus(e?.message ? `Couldn't reach the wall: ${e.message}` : "Couldn't reach the wall. Stand closer and try again.");
     } finally { setBusy(false); }
@@ -49,6 +52,7 @@ export default function Settings() {
       <Pressable onPress={() => push(t)} style={s.resend}>
         <Text style={s.resendText}>Send all to wall again</Text>
       </Pressable>
+      <Text style={s.fw}>{fw ? `Wall software v${fw}` : "Wall software: not connected"}</Text>
     </ScrollView>
   );
 }
@@ -60,6 +64,7 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: C.border, minHeight: 76 },
   label: { color: C.text, fontSize: F.body, fontWeight: "700", flexShrink: 1, marginRight: 12 },
   status: { flexDirection: "row", gap: 10, alignItems: "center", minHeight: 40, marginTop: 8 },
+  fw: { color: C.dim, fontSize: 14, textAlign: "center", marginTop: 12 },
   statusText: { color: C.dim, fontSize: F.label, flexShrink: 1 },
   resend: { borderWidth: 3, borderColor: C.blue, borderRadius: 14, padding: 16, alignItems: "center" },
   resendText: { color: C.blue, fontSize: F.body, fontWeight: "800" },
