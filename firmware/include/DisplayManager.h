@@ -1408,7 +1408,7 @@ class DisplayManager {
       int hw = strlen(hi) * 12;
       gfx_->setFont(nullptr);
       gfx_->setTextSize(2);
-      gfx_->setTextColor(amber());
+      gfx_->setTextColor(g_settings.simpleMode ? dma_->color565(0, 230, 0) : amber());   // 1.2.11 temps green
       int x0 = cx - (hw + 7) / 2;          // number + gap + 1x degree mark, centered
       gfx_->setCursor(x0, 31);
       gfx_->print(hi);
@@ -1443,7 +1443,7 @@ class DisplayManager {
       int base = 17;
       char t[16];
       snprintf(t, sizeof(t), "%d\xF7", g_settings.wxTemp);  // temp
-      centerText(t, base, amber(), 2);
+      centerText(t, base, g_settings.simpleMode ? dma_->color565(0, 230, 0) : amber(), 2);   // 1.2.11 green
       centerText(g_settings.wxText, base + 21, white());
       char hl[20];
       snprintf(hl, sizeof(hl), "H%d  L%d", g_settings.wxHi, g_settings.wxLo);

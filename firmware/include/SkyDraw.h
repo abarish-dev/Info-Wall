@@ -21,6 +21,7 @@ static const SkyRGB SK_FAINT = {38, 38, 38};
 static const SkyRGB SK_AMBER = {245, 158, 11};
 static const SkyRGB SK_SKY   = {56, 189, 248};
 static const SkyRGB SK_GREEN = {16, 185, 129};
+static const SkyRGB SK_PHASE = {0, 230, 0};   // 1.2.11: moon phase name green
 static const SkyRGB SK_RED   = {230, 40, 40};
 
 struct SkyMoon { int il; bool wax; const char *ph, *sr, *ss, *mr; };
@@ -60,8 +61,8 @@ template <class G> void skyDrawMoon(G &g, const SkyMoon &m) {
   if (sp) {
     char w1[16]; int n = (int)(sp - m.ph); if (n > 15) n = 15;
     memcpy(w1, m.ph, n); w1[n] = 0;
-    skText(g, w1, 38, 4, SK_AMBER); skText(g, sp + 1, 38, 13, SK_AMBER);
-  } else skText(g, m.ph, 38, 8, SK_AMBER);
+    skText(g, w1, 38, 4, SK_PHASE); skText(g, sp + 1, 38, 13, SK_PHASE);
+  } else skText(g, m.ph, 38, 8, SK_PHASE);
   skHLine(g, 38, 24, 86, SK_FAINT);
   auto sun = [&](int x, int y, SkyRGB c) {
     for (int dx = -2; dx <= 2; dx++) for (int dy = -2; dy <= 2; dy++) if (dx * dx + dy * dy <= 5) skPx(g, x + dx, y + dy, c);
