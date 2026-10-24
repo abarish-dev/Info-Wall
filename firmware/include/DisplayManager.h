@@ -64,7 +64,9 @@ class DisplayManager {
     // loop tick — see tick().
     mxconfig.double_buff = false;
     mxconfig.i2sspeed = HUB75_I2S_CFG::HZ_8M;
-    mxconfig.min_refresh_rate = 60;
+    // 1.2.8: 120 Hz (was 60 -> ~82 Hz actual at 8-bit/8 MHz). Mixed-level
+    // colours (amber/orange) blink on some panels at the lower rate.
+    mxconfig.min_refresh_rate = 120;
 
     dma_ = new MatrixPanel_I2S_DMA(mxconfig);
     dma_->begin();
@@ -506,10 +508,20 @@ class DisplayManager {
     for (int y = 0; y < height_; y++) {
       int sy = y - dy;
       const uint16_t *r = (sy >= 0 && sy < height_) ? b + sy * width_ : nullptr;
-      for (int x = 0; x < width_; x++) dma_->drawPixel(x, y, r ? r[x] : 0);
+      for (int x = 0; x < width_; x++) dma_->drawPixel(x, y, r ? steady565(r[x]) : 0);
     }
     if (isDaily(cur_.m) && dy)
       for (int x = 112; x < width_; x++) dma_->drawPixel(x, 62, b[62 * width_ + x]);
+  }
+  // 1.2.8 Mom Wall "steady colours": amber/orange/yellow and red text are
+  // snapped to fully-on channels (yellow 255,255,0 / red 255,0,0). A channel
+  // at 0 or 255 is never pulse-width modulated, so it cannot blink.
+  static uint16_t steady565(uint16_t c) {
+    if (!c) return c;
+    int r = ((c >> 11) & 31) * 255 / 31, g = ((c >> 5) & 63) * 255 / 63, b = (c & 31) * 255 / 31;
+    if (r >= 195 && b < 100 && g >= 90) return 0xFFE0;   // amber/gold/orange -> yellow
+    if (r >= 195 && b < 100 && g < 90)  return 0xF800;   // warm red -> pure red
+    return c;
   }
   int width_ = 128, height_ = 64;
   static const int SHOWS_PER_PAGE = 2;   // Shows module paginates in the carousel
