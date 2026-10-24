@@ -22,6 +22,7 @@ export type SectionKey =
   | "stocks"
   | "message"
   | "mom"
+  | "trivia"
   | "transitions"
   | "sync";
 
@@ -35,6 +36,7 @@ export const SECTION_DEFAULT_OPEN: Record<SectionKey, boolean> = {
   stocks: false,
   message: false,
   mom: false,
+  trivia: false,
   transitions: false,
   sync: false,
 };
@@ -98,6 +100,16 @@ export const DEFAULTS = {
   showIss: true, // ISS next pass / overhead now (Flight tracking)
   vipAlert: true, // Air Force One / VIP jet alert within 60 mi (Flight tracking)
   showMap: true, // day/night world map (Display settings)
+  // Trivia section (firmware 1.3.0+): Mom Wall daily slides on the main wall.
+  tvOn: true,
+  tvBorn: true,
+  tvComposer: true,
+  tvMusicDay: true,
+  tvWord: true,
+  tvOrigin: true,
+  tvCFact: true,
+  tvMath: false,
+  autoUpdate: true, // nightly self-update (firmware 1.3.0+)
   // Big clock page (firmware 1.1.20+, Display settings). clockColor indexes CLOCK_COLORS.
   showBigClock: true,
   clockColor: 0,
@@ -149,6 +161,15 @@ export type Settings = {
   showIss?: boolean;
   vipAlert?: boolean;
   showMap?: boolean;
+  tvOn?: boolean;
+  tvBorn?: boolean;
+  tvComposer?: boolean;
+  tvMusicDay?: boolean;
+  tvWord?: boolean;
+  tvOrigin?: boolean;
+  tvCFact?: boolean;
+  tvMath?: boolean;
+  autoUpdate?: boolean;
   showBigClock?: boolean;
   clockColor?: number;
   clock24?: boolean;

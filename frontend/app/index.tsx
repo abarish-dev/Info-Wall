@@ -1072,6 +1072,29 @@ export default function ControlPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings.showMoon, settings.showIss, settings.showMap, settings.vipAlert, status, fwVersion]);
 
+  // Trivia section + nightly auto-update (firmware 1.3.0+).
+  useEffect(() => {
+    if (status !== "connected" || !fwAtLeast("1.3.0")) return;
+    const t = setTimeout(() => {
+      writeLive({
+        command: "trivia",
+        tvOn: settings.tvOn ?? true,
+        born: settings.tvBorn ?? true,
+        composer: settings.tvComposer ?? true,
+        musicDay: settings.tvMusicDay ?? true,
+        word: settings.tvWord ?? true,
+        origin: settings.tvOrigin ?? true,
+        cfact: settings.tvCFact ?? true,
+        math: settings.tvMath ?? false,
+      })
+        .then(() => writeLive({ command: "autoupdate", nightly: settings.autoUpdate ?? true }))
+        .catch(() => {});
+    }, 700);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings.tvOn, settings.tvBorn, settings.tvComposer, settings.tvMusicDay, settings.tvWord,
+      settings.tvOrigin, settings.tvCFact, settings.tvMath, settings.autoUpdate, status, fwVersion]);
+
   // Big clock page (firmware 1.1.20+).
   useEffect(() => {
     if (status !== "connected" || !fwAtLeast("1.1.20")) return;
@@ -2583,6 +2606,134 @@ export default function ControlPanel() {
           />
         </Section>
 
+        <Section
+          icon="bulb"
+          title="TRIVIA"
+          subtitle="Daily facts from Mom's wall"
+          open={sectionOpen.trivia}
+          onToggle={() => toggleSection("trivia")}
+        >
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleTextWrap}>
+              <Text style={styles.fieldLabel}>Show Trivia</Text>
+              <Text style={styles.toggleHint}>{fwVersion && !fwAtLeast("1.3.0") ? "Needs wall firmware 1.3.0" : "Master switch for all trivia slides"}</Text>
+            </View>
+            <Switch
+              testID="trivia-toggle"
+              value={settings.tvOn ?? true}
+              onValueChange={(v) => setSettings((s) => ({ ...s, tvOn: v }))}
+              trackColor={{ false: colors.surfaceTertiary, true: colors.brand }}
+              thumbColor={colors.onSurface}
+              ios_backgroundColor={colors.surfaceTertiary}
+            />
+          </View>
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleTextWrap}>
+              <Text style={styles.fieldLabel}>Born Today</Text>
+              <Text style={styles.toggleHint}>Famous birthday of the day</Text>
+            </View>
+            <Switch
+              testID="trivia-born-toggle"
+              value={settings.tvBorn ?? true}
+              disabled={!(settings.tvOn ?? true)}
+              onValueChange={(v) => setSettings((s) => ({ ...s, tvBorn: v }))}
+              trackColor={{ false: colors.surfaceTertiary, true: colors.brand }}
+              thumbColor={colors.onSurface}
+              ios_backgroundColor={colors.surfaceTertiary}
+            />
+          </View>
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleTextWrap}>
+              <Text style={styles.fieldLabel}>Composer Birthday</Text>
+              <Text style={styles.toggleHint}>Composer born on this day</Text>
+            </View>
+            <Switch
+              testID="trivia-composer-toggle"
+              value={settings.tvComposer ?? true}
+              disabled={!(settings.tvOn ?? true)}
+              onValueChange={(v) => setSettings((s) => ({ ...s, tvComposer: v }))}
+              trackColor={{ false: colors.surfaceTertiary, true: colors.brand }}
+              thumbColor={colors.onSurface}
+              ios_backgroundColor={colors.surfaceTertiary}
+            />
+          </View>
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleTextWrap}>
+              <Text style={styles.fieldLabel}>Classical On This Day</Text>
+              <Text style={styles.toggleHint}>Classical music event on this day</Text>
+            </View>
+            <Switch
+              testID="trivia-musicday-toggle"
+              value={settings.tvMusicDay ?? true}
+              disabled={!(settings.tvOn ?? true)}
+              onValueChange={(v) => setSettings((s) => ({ ...s, tvMusicDay: v }))}
+              trackColor={{ false: colors.surfaceTertiary, true: colors.brand }}
+              thumbColor={colors.onSurface}
+              ios_backgroundColor={colors.surfaceTertiary}
+            />
+          </View>
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleTextWrap}>
+              <Text style={styles.fieldLabel}>Word of the Day</Text>
+              <Text style={styles.toggleHint}>Word, pronunciation and meaning</Text>
+            </View>
+            <Switch
+              testID="trivia-word-toggle"
+              value={settings.tvWord ?? true}
+              disabled={!(settings.tvOn ?? true)}
+              onValueChange={(v) => setSettings((s) => ({ ...s, tvWord: v }))}
+              trackColor={{ false: colors.surfaceTertiary, true: colors.brand }}
+              thumbColor={colors.onSurface}
+              ios_backgroundColor={colors.surfaceTertiary}
+            />
+          </View>
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleTextWrap}>
+              <Text style={styles.fieldLabel}>Word Origin</Text>
+              <Text style={styles.toggleHint}>Second page with where the word comes from</Text>
+            </View>
+            <Switch
+              testID="trivia-origin-toggle"
+              value={settings.tvOrigin ?? true}
+              disabled={!(settings.tvOn ?? true)}
+              onValueChange={(v) => setSettings((s) => ({ ...s, tvOrigin: v }))}
+              trackColor={{ false: colors.surfaceTertiary, true: colors.brand }}
+              thumbColor={colors.onSurface}
+              ios_backgroundColor={colors.surfaceTertiary}
+            />
+          </View>
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleTextWrap}>
+              <Text style={styles.fieldLabel}>Classical Fact</Text>
+              <Text style={styles.toggleHint}>A fact about classical music</Text>
+            </View>
+            <Switch
+              testID="trivia-cfact-toggle"
+              value={settings.tvCFact ?? true}
+              disabled={!(settings.tvOn ?? true)}
+              onValueChange={(v) => setSettings((s) => ({ ...s, tvCFact: v }))}
+              trackColor={{ false: colors.surfaceTertiary, true: colors.brand }}
+              thumbColor={colors.onSurface}
+              ios_backgroundColor={colors.surfaceTertiary}
+            />
+          </View>
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleTextWrap}>
+              <Text style={styles.fieldLabel}>Math</Text>
+              <Text style={styles.toggleHint}>Daily math curiosity</Text>
+            </View>
+            <Switch
+              testID="trivia-math-toggle"
+              value={settings.tvMath ?? false}
+              disabled={!(settings.tvOn ?? true)}
+              onValueChange={(v) => setSettings((s) => ({ ...s, tvMath: v }))}
+              trackColor={{ false: colors.surfaceTertiary, true: colors.brand }}
+              thumbColor={colors.onSurface}
+              ios_backgroundColor={colors.surfaceTertiary}
+            />
+          </View>
+        </Section>
+
         <MomMessageSection
           open={sectionOpen.mom}
           onToggle={() => toggleSection("mom")}
@@ -2607,6 +2758,20 @@ export default function ControlPanel() {
           open={sectionOpen.sync}
           onToggle={() => toggleSection("sync")}
         >
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleTextWrap}>
+              <Text style={styles.fieldLabel}>Nightly Auto-Update</Text>
+              <Text style={styles.toggleHint}>{fwVersion && !fwAtLeast("1.3.0") ? "Needs wall firmware 1.3.0" : "Install newer wall firmware around 3 AM"}</Text>
+            </View>
+            <Switch
+              testID="autoupdate-toggle"
+              value={settings.autoUpdate ?? true}
+              onValueChange={(v) => setSettings((s) => ({ ...s, autoUpdate: v }))}
+              trackColor={{ false: colors.surfaceTertiary, true: colors.brand }}
+              thumbColor={colors.onSurface}
+              ios_backgroundColor={colors.surfaceTertiary}
+            />
+          </View>
           {lastSync ? (
             <View style={styles.syncHistory} testID="sync-history">
               <View style={styles.syncTimeRow}>
