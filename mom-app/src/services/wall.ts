@@ -48,11 +48,11 @@ export function listen(cb: (o: any) => void): void { monitorMatrix(cb); }
 export type Toggles = {
   weather: boolean; moon: boolean; map: boolean; clock: boolean;
   planes: boolean; born: boolean; word: boolean;
-  cfact: boolean; ctoday: boolean; math: boolean; family: boolean;
+  cfact: boolean; ctoday: boolean; math: boolean; family: boolean; lake: boolean;
 };
 export const DEFAULT_TOGGLES: Toggles = {
   weather: true, moon: true, map: true, clock: true, planes: true,
-  born: true, word: true, cfact: true, ctoday: true, math: true, family: true,
+  born: true, word: true, cfact: true, ctoday: true, math: true, family: true, lake: true,
 };
 
 export async function loadToggles(): Promise<Toggles> {
@@ -70,7 +70,7 @@ export async function applyToggles(t: Toggles): Promise<void> {
   // wall fetches nothing (blank weather, no daily slides).
   await send({ command: "server", url: BACKEND });
   await send({ command: "simple", simpleMode: true, planes: t.planes, tv: false, born: t.born,
-    word: t.word, cfact: t.cfact, ctoday: t.ctoday, math: t.math, family: t.family });
+    word: t.word, cfact: t.cfact, ctoday: t.ctoday, math: t.math, family: t.family, lake: t.lake });
   await send({ command: "weather", lat: HOME.lat, lon: HOME.lon, showWeather: t.weather, showForecast: t.weather, showMoon: t.moon });
   await send({ command: "sky", showMap: t.map, showIss: false, vipAlert: false });
   await send({ command: "clock", showBigClock: t.clock });

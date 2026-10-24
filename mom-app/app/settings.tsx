@@ -7,7 +7,7 @@ const ROWS: [keyof Toggles, string][] = [
   ["weather", "Weather & forecast"], ["moon", "Moon"], ["map", "World clock & map"],
   ["clock", "Big clock"], ["planes", "Planes overhead"],
   ["born", "Born today"], ["word", "Word of the day"], ["cfact", "Classical music fact"],
-  ["ctoday", "Classical music on this day"], ["math", "Math of the day"], ["family", "Family message"],
+  ["ctoday", "Classical music on this day"], ["math", "Math of the day"], ["family", "Family message"], ["lake", "Lake Norman"],
 ];
 
 export default function Settings() {
