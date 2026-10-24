@@ -1,4 +1,4 @@
-# Mom Wall app
+# Mom's Wall app
 
 A simplified companion to the Info Wall app, for a wall in **simple mode** (firmware 1.2.0+).
 

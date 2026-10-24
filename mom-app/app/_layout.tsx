@@ -14,7 +14,7 @@ export default function Layout() {
           contentStyle: { backgroundColor: C.bg },
         }}
       >
-        <Stack.Screen name="index" options={{ title: "Mom Wall" }} />
+        <Stack.Screen name="index" options={{ title: "Mom's Wall" }} />
         <Stack.Screen name="today" options={{ title: "Today" }} />
         <Stack.Screen name="settings" options={{ title: "Wall Settings" }} />
         <Stack.Screen name="wifi" options={{ title: "Set Up Wi-Fi" }} />

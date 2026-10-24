@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Mom Wall",
+    "name": "Mom's Wall",
     "slug": "mom-wall",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "momwall",
@@ -21,7 +21,7 @@
         "backgroundColor": "#000000"
       },
       "package": "com.abarish.momwall",
-      "versionCode": 3,
+      "versionCode": 4,
       "permissions": [
         "android.permission.BLUETOOTH_SCAN",
         "android.permission.BLUETOOTH_CONNECT",
