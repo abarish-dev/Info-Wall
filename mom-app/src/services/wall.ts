@@ -35,11 +35,11 @@ export function listen(cb: (o: any) => void): void { monitorMatrix(cb); }
 
 export type Toggles = {
   weather: boolean; moon: boolean; map: boolean; clock: boolean;
-  planes: boolean; tv: boolean; born: boolean; word: boolean;
+  planes: boolean; born: boolean; word: boolean;
   cfact: boolean; ctoday: boolean; math: boolean; family: boolean;
 };
 export const DEFAULT_TOGGLES: Toggles = {
-  weather: true, moon: true, map: true, clock: true, planes: true, tv: true,
+  weather: true, moon: true, map: true, clock: true, planes: true,
   born: true, word: true, cfact: true, ctoday: true, math: true, family: true,
 };
 
@@ -53,7 +53,7 @@ export async function loadToggles(): Promise<Toggles> {
 /** Push every toggle (simple mode on) — small commands, each fits one BLE frame. */
 export async function applyToggles(t: Toggles): Promise<void> {
   await AsyncStorage.setItem(KEY_SET, JSON.stringify(t));
-  await send({ command: "simple", simpleMode: true, planes: t.planes, tv: t.tv, born: t.born,
+  await send({ command: "simple", simpleMode: true, planes: t.planes, tv: false, born: t.born,
     word: t.word, cfact: t.cfact, ctoday: t.ctoday, math: t.math, family: t.family });
   await send({ command: "weather", showWeather: t.weather, showForecast: t.weather, showMoon: t.moon });
   await send({ command: "sky", showMap: t.map, showIss: false, vipAlert: false });

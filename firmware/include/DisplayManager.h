@@ -534,7 +534,7 @@ class DisplayManager {
       case C_INFO:   return infoModules(tmp);
       case C_TEAMS:  { if (g_settings.simpleMode) return 0;
                        int l = liveCount(); return l ? l : teamCount(); }  // live only while any is live
-      case C_SHOWS:  return (g_settings.simpleMode && !g_settings.smTv) ? 0 : showPages();
+      case C_SHOWS:  return g_settings.simpleMode ? 0 : showPages();  // 1.2.1: no TV on Mom Wall
       case C_PLANES: return (g_settings.simpleMode && !g_settings.smPlanes) ? 0 : g_settings.planeCount;
       default:       return 0;
     }

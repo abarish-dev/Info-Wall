@@ -101,7 +101,7 @@ class NetworkData {
       if (due(now, tWeather_, 900000)) { settle(now, tWeather_, 900000, fetchWeather());  tLastFetch_ = now; return; }
       if (dailyDue(now)) { settle(now, tDaily_, 1800000, fetchDaily()); tLastFetch_ = now; return; }
       if (g_settings.showMoon && due(now, tSky_, 900000)) { settle(now, tSky_, 900000, fetchSky()); tLastFetch_ = now; return; }
-      if (g_settings.smTv && due(now, tTv_, 3600000)) { settle(now, tTv_, 3600000, fetchTv()); tLastFetch_ = now; return; }
+      // 1.2.1: Mom Wall shows no TV, so no TV fetch in simple mode.
       return;
     }
     // A fetch only counts as done when it SUCCEEDS. On a skip (low heap) or a
