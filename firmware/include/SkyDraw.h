@@ -21,7 +21,7 @@ static const SkyRGB SK_FAINT = {38, 38, 38};
 static const SkyRGB SK_AMBER = {245, 158, 11};
 static const SkyRGB SK_SKY   = {56, 189, 248};
 static const SkyRGB SK_GREEN = {16, 185, 129};
-static const SkyRGB SK_PHASE = {200, 160, 255};   // 1.2.15: moon phase name lavender (was green 1.2.11)
+static const SkyRGB SK_PHASE = {0, 230, 0};   // 1.2.16: moon phase name green again (1.2.15 lavender was interim)
 static const SkyRGB SK_RED   = {230, 40, 40};
 
 struct SkyMoon { int il; bool wax; const char *ph, *sr, *ss, *mr; };
