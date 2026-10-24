@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, Vie
 import { applyToggles, DEFAULT_TOGGLES, loadBrightness, loadToggles, readWallVersion, setBrightness, type Toggles } from "../src/services/wall";
 import { C, F } from "../src/theme";
 import BrightnessSlider from "../src/BrightnessSlider";
+import UpdateWall from "../src/UpdateWall";
 
 const ROWS: [keyof Toggles, string][] = [
   ["weather", "Weather & forecast"], ["moon", "Moon"], ["map", "World clock & map"],
@@ -58,6 +59,7 @@ export default function Settings() {
       <Pressable onPress={() => push(t)} style={s.resend}>
         <Text style={s.resendText}>Send all to wall again</Text>
       </Pressable>
+      <UpdateWall current={fw} />
       <Text style={s.fw}>{fw ? `Wall software v${fw}` : "Wall software: not connected"}</Text>
     </ScrollView>
   );

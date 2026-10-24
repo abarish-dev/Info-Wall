@@ -95,3 +95,10 @@ export async function readWallVersion(): Promise<string | null> {
   const o: any = await readSettings();
   return o && typeof o.fw === "string" ? o.fw : null;
 }
+
+/** Newest Mom Wall firmware on the separate "simple" OTA channel, or null. */
+export async function availableFirmware(): Promise<string | null> {
+  const r = await fetch(`${BACKEND}/api/firmware/latest?channel=simple`);
+  const j = await r.json();
+  return j && j.channel === "simple" && j.available && j.version ? String(j.version) : null;
+}
