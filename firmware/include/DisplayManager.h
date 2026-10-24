@@ -1460,7 +1460,7 @@ class DisplayManager {
       int base = 17;
       char t[16];
       snprintf(t, sizeof(t), "%d\xF7", g_settings.wxTemp);  // temp
-      centerText(t, base, g_settings.simpleMode ? dma_->color565(255, 255, 0) : amber(), 2);   // 1.2.12 full yellow
+      centerText(t, base, g_settings.simpleMode ? dma_->color565(255, 255, 255) : amber(), 2);   // 1.2.15 full white (yellow lost green on bad rows)
       centerText(g_settings.wxText, base + 21, white());
       char hl[20];
       snprintf(hl, sizeof(hl), "H%d  L%d", g_settings.wxHi, g_settings.wxLo);

@@ -27,7 +27,7 @@ struct DyRGB { uint8_t r, g, b; };
 static const DyRGB DY_SOFT  = {185, 185, 180};
 static const DyRGB DY_MUTED = {120, 120, 115};
 static const DyRGB DY_FAINT = {38, 38, 38};
-static const DyRGB DY_AMBER = {0, 230, 0};   // 1.2.11 Mom Wall: titles/years green (single LED)
+static const DyRGB DY_AMBER = {200, 160, 255};   // 1.2.15 Mom Wall: titles/years lavender (keeps R+B if green drops; was green 1.2.11)
 static const DyRGB DY_SKY   = {56, 189, 248};
 static const DyRGB DY_GREEN = {16, 185, 129};
 static const DyRGB DY_ROSE  = {244, 114, 182};
