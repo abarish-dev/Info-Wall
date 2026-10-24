@@ -102,9 +102,111 @@ static bool isNewerVersion(const String &server, const String &current) {
   return false;
 }
 
+// ---- 1.2.9: one install path for the Update button AND the nightly check --
+// Simple channel only. Streams the build into the spare OTA slot while
+// hashing it; marks it bootable only if size + SHA-256 match. Every failure
+// returns a step + code so the app can show why (BLE {"ota":"failed",...}).
+struct OtaResult { bool ok; bool upToDate; const char *step; int err; String msg; String ver; };
+
+static void otaFailNotify(const OtaResult &r) {
+  String m = r.msg; m.replace("\"", "'");
+  g_ble.notify(String("{\"ota\":\"failed\",\"step\":\"") + r.step + "\",\"err\":" + r.err +
+               ",\"msg\":\"" + m + "\"}");
+}
+
+static OtaResult simpleInstall(bool fromApp) {
+  OtaResult r{false, false, "check", 0, "", ""};
+  String base = g_settings.apiBase;
+  if (base.endsWith("/")) base.remove(base.length() - 1);
+  String path, sha;
+  long size = 0;
+  {
+    WiFiClientSecure c; c.setInsecure();
+    HTTPClient h; h.setTimeout(12000); h.setReuse(false);
+    if (!h.begin(c, base + "/api/firmware/latest?channel=simple&current=" INFOWALL_FW_VERSION)) { r.err = -1; r.msg = "begin"; return r; }
+    int code = h.GET();
+    PSRAM_JSON(doc);
+    DeserializationError je = code == 200 ? deserializeJson(doc, h.getStream()) : DeserializationError::Ok;
+    h.end();
+    if (code != 200) { r.err = code; r.msg = code < 0 ? HTTPClient::errorToString(code) : String("HTTP ") + code; return r; }
+    if (je) { r.err = -2; r.msg = String("json ") + je.c_str(); return r; }
+    if (String((const char *)(doc["channel"] | "")) != "simple") { r.ok = r.upToDate = true; return r; }
+    r.ver = (const char *)(doc["version"] | "");
+    path = (const char *)(doc["url"] | "");
+    sha = (const char *)(doc["sha256"] | "");
+    size = doc["size"] | 0;
+    if (!(doc["available"] | false) || !isNewerVersion(r.ver, INFOWALL_FW_VERSION)) { r.ok = r.upToDate = true; return r; }
+    if (sha.length() != 64 || size <= 0 || !path.length()) { r.step = "manifest"; r.err = -3; r.msg = "incomplete"; return r; }
+  }
+  sha.toLowerCase();
+  String url = path.startsWith("http") ? path : base + path;
+  Serial.printf("[OTA] installing v%s (%ld bytes) heap %u\n", r.ver.c_str(), size, ESP.getFreeHeap());
+  if (fromApp) {
+    g_ble.notify(String("{\"ota\":\"installing\",\"version\":\"") + r.ver + "\"}");
+    g_display.message("UPDATE", "v" + r.ver);
+  }
+  // Less memory pressure: the loop (page redraws, Wi-Fi fetches) is blocked
+  // while we run; the panel just keeps showing the UPDATE card.
+  r.step = "download";
+  WiFiClientSecure c; c.setInsecure();
+  HTTPClient h; h.setTimeout(20000); h.setReuse(false);
+  if (!h.begin(c, url)) { r.err = -1; r.msg = "begin"; return r; }
+  int code = h.GET();
+  if (code != 200) { h.end(); r.err = code; r.msg = code < 0 ? HTTPClient::errorToString(code) : String("HTTP ") + code; return r; }
+  if (h.getSize() != size) { r.err = -4; r.msg = String("len ") + h.getSize(); h.end(); return r; }
+  r.step = "begin";
+  if (!Update.begin(size, U_FLASH)) { r.err = Update.getError(); r.msg = Update.errorString(); h.end(); return r; }
+  r.step = "download";
+  mbedtls_sha256_context ctx; mbedtls_sha256_init(&ctx); mbedtls_sha256_starts(&ctx, 0);
+  WiFiClient *s = h.getStreamPtr();
+  static uint8_t buf[4096];
+  long got = 0; unsigned long last = millis(); int lastPct = -1;
+  bool wfail = false;
+  while (got < size && millis() - last < 20000) {
+    size_t n = s->available();
+    if (!n) { if (!h.connected() && !s->available()) break; delay(2); continue; }
+    n = s->readBytes(buf, min((size_t)sizeof(buf), (size_t)(size - got)));
+    if (!n) continue;
+    mbedtls_sha256_update(&ctx, buf, n);
+    if (Update.write(buf, n) != n) { wfail = true; break; }
+    got += n; last = millis();
+    int pct = (int)(got * 100 / size);
+    if (fromApp && pct / 10 != lastPct / 10) {
+      lastPct = pct;
+      g_ble.notify(String("{\"ota\":\"progress\",\"pct\":") + pct + "}");
+      g_display.message("UPDATE", String(pct) + "%");
+    }
+  }
+  h.end();
+  uint8_t dig[32]; mbedtls_sha256_finish(&ctx, dig); mbedtls_sha256_free(&ctx);
+  char hex[65]; for (int i = 0; i < 32; i++) sprintf(hex + i * 2, "%02x", dig[i]);
+  if (wfail) { r.step = "write"; r.err = Update.getError(); r.msg = Update.errorString(); Update.abort(); return r; }
+  if (got != size) { r.err = -5; r.msg = String("got ") + got + "/" + size; Update.abort(); return r; }
+  if (sha != hex) { r.step = "verify"; r.err = -6; r.msg = "sha mismatch"; Update.abort(); return r; }
+  r.step = "finish";
+  if (!Update.end(true)) { r.err = Update.getError(); r.msg = Update.errorString(); return r; }
+  r.ok = true;
+  if (fromApp) { g_ble.notify("{\"ota\":\"progress\",\"pct\":100}"); g_display.message("UPDATE", "restart"); }
+  Serial.println("[OTA] verified, rebooting");
+  delay(500);
+  ESP.restart();
+  return r;
+}
+
 static void otaCheck() {
   if (WiFi.status() != WL_CONNECTED || g_settings.apiBase.length() == 0) {
     g_ble.notify("{\"ota\":\"offline\"}");
+    return;
+  }
+  if (g_settings.simpleMode) {          // 1.2.9: same verified path as nightly
+    OtaResult r = simpleInstall(true);
+    if (r.upToDate) { g_ble.notify("{\"ota\":\"uptodate\",\"fw\":\"" INFOWALL_FW_VERSION "\"}"); return; }
+    if (!r.ok) {
+      Serial.printf("[OTA] FAILED at %s (%d): %s\n", r.step, r.err, r.msg.c_str());
+      g_display.message("UPDATE", "failed");
+      otaFailNotify(r);
+      delay(1500);
+    }
     return;
   }
   String base = g_settings.apiBase;
@@ -122,7 +224,7 @@ static void otaCheck() {
     String q = base + "/api/firmware/latest?current=" INFOWALL_FW_VERSION;
     if (g_settings.simpleMode) q += "&channel=simple";
     if (!http.begin(client, q)) {
-      g_ble.notify("{\"ota\":\"failed\"}");
+      otaFailNotify({false, false, "check", -1, "begin", ""});
       return;
     }
     int code = http.GET();
@@ -131,7 +233,7 @@ static void otaCheck() {
     http.end();
     if (!ok) {
       Serial.printf("[OTA] latest check failed (HTTP %d)\n", code);
-      g_ble.notify("{\"ota\":\"failed\"}");
+      otaFailNotify({false, false, "check", code, String("HTTP ") + code, ""});
       return;
     }
     ver = (const char *)(doc["version"] | "");
@@ -171,7 +273,7 @@ static void otaCheck() {
     Serial.printf("[OTA] FAILED (%d): %s\n", httpUpdate.getLastError(),
                   httpUpdate.getLastErrorString().c_str());
     g_display.message("UPDATE", "failed");
-    g_ble.notify("{\"ota\":\"failed\"}");
+    otaFailNotify({false, false, "install", httpUpdate.getLastError(), httpUpdate.getLastErrorString(), ""});
     delay(1500);
   }
 }
@@ -186,62 +288,9 @@ static int g_nightlyJitterMin = -1;
 static int g_nightlyDoneYday = -1;
 
 static bool nightlyInstall() {
-  String base = g_settings.apiBase;
-  if (base.endsWith("/")) base.remove(base.length() - 1);
-  String ver, path, sha;
-  long size = 0;
-  {
-    WiFiClientSecure c; c.setInsecure();
-    HTTPClient h; h.setTimeout(12000);
-    if (!h.begin(c, base + "/api/firmware/latest?channel=simple&current=" INFOWALL_FW_VERSION)) return false;
-    int code = h.GET();
-    PSRAM_JSON(doc);
-    bool ok = code == 200 && !deserializeJson(doc, h.getStream());
-    h.end();
-    if (!ok) return false;
-    if (String((const char *)(doc["channel"] | "")) != "simple") return true;   // wrong channel: ignore
-    ver = (const char *)(doc["version"] | "");
-    path = (const char *)(doc["url"] | "");
-    sha = (const char *)(doc["sha256"] | "");
-    size = doc["size"] | 0;
-    if (!(doc["available"] | false) || !isNewerVersion(ver, INFOWALL_FW_VERSION)) return true;  // up to date
-    if (sha.length() != 64 || size <= 0 || !path.length()) return false;    // incomplete manifest
-  }
-  sha.toLowerCase();
-  String url = path.startsWith("http") ? path : base + path;
-  Serial.printf("[NIGHTLY] installing v%s (%ld bytes)\n", ver.c_str(), size);
-  WiFiClientSecure c; c.setInsecure();
-  HTTPClient h; h.setTimeout(20000);
-  if (!h.begin(c, url)) return false;
-  int code = h.GET();
-  if (code != 200 || h.getSize() != size) { h.end(); return false; }
-  if (!Update.begin(size, U_FLASH)) { h.end(); return false; }
-  mbedtls_sha256_context ctx; mbedtls_sha256_init(&ctx); mbedtls_sha256_starts(&ctx, 0);
-  WiFiClient *s = h.getStreamPtr();
-  static uint8_t buf[4096];
-  long got = 0; unsigned long last = millis();
-  while (got < size && millis() - last < 20000) {
-    size_t n = s->available();
-    if (!n) { delay(2); continue; }
-    n = s->readBytes(buf, min((size_t)sizeof(buf), (size_t)(size - got)));
-    if (!n) continue;
-    mbedtls_sha256_update(&ctx, buf, n);
-    if (Update.write(buf, n) != n) break;
-    got += n; last = millis();
-  }
-  h.end();
-  uint8_t dig[32]; mbedtls_sha256_finish(&ctx, dig); mbedtls_sha256_free(&ctx);
-  char hex[65]; for (int i = 0; i < 32; i++) sprintf(hex + i * 2, "%02x", dig[i]);
-  if (got != size || sha != hex) {
-    Serial.printf("[NIGHTLY] abort (got %ld/%ld, sha %s)\n", got, size, got == size ? "mismatch" : "-");
-    Update.abort();            // spare slot never marked bootable; current version keeps running
-    return false;
-  }
-  if (!Update.end(true)) return false;
-  Serial.println("[NIGHTLY] verified, rebooting");
-  delay(300);
-  ESP.restart();
-  return true;
+  OtaResult r = simpleInstall(false);
+  if (!r.ok) Serial.printf("[NIGHTLY] failed at %s (%d): %s\n", r.step, r.err, r.msg.c_str());
+  return r.ok;
 }
 
 static void nightlyTick() {

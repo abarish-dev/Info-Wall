@@ -15,11 +15,12 @@ export default function UpdateWall({ current }: { current: string | null }) {
   const [avail, setAvail] = useState<string | null>(null);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+  const [detail, setDetail] = useState("");
   useEffect(() => { availableFirmware().then(setAvail).catch(() => setAvail(null)); }, []);
   const canUpdate = !!current && !!avail && newer(avail, current);
 
   const go = async () => {
-    setBusy(true); setMsg("Asking the wall to update…");
+    setBusy(true); setMsg("Asking the wall to update…"); setDetail("");
     try {
       listen((o) => {
         if (!o || !o.ota) return;
@@ -27,7 +28,11 @@ export default function UpdateWall({ current }: { current: string | null }) {
         else if (o.ota === "progress") setMsg(`Updating… ${o.pct}%`);
         else if (o.ota === "uptodate") { setMsg("The wall is already up to date ✓"); setBusy(false); }
         else if (o.ota === "offline") { setMsg("The wall isn't on Wi-Fi."); setBusy(false); }
-        else if (o.ota === "failed") { setMsg("Update didn't work. Try again later."); setBusy(false); }
+        else if (o.ota === "failed") {
+          setMsg("Update didn't work. Try again later.");
+          if (o.step || o.err != null) setDetail(`${o.step || "?"} · code ${o.err ?? "?"}${o.msg ? ` · ${o.msg}` : ""}`);
+          setBusy(false);
+        }
       });
       await send({ command: "ota" });
     } catch { setMsg("Couldn't reach the wall. Stand closer and try again."); setBusy(false); }
@@ -42,6 +47,7 @@ export default function UpdateWall({ current }: { current: string | null }) {
         <Text style={s.btnText}>{canUpdate ? "Update wall" : "Wall is up to date"}</Text>
       </Pressable>
       {!!msg && <Text style={s.msg}>{msg}</Text>}
+      {!!detail && <Text style={s.detail}>{detail}</Text>}
     </View>
   );
 }
@@ -52,4 +58,5 @@ const s = StyleSheet.create({
   btn: { backgroundColor: C.blue, borderRadius: 16, paddingVertical: 20, alignItems: "center", marginTop: 6 },
   btnText: { color: "#000", fontSize: F.big, fontWeight: "800" },
   msg: { color: C.text, fontSize: F.label, textAlign: "center" },
+  detail: { color: C.dim, fontSize: 12, textAlign: "center" },
 });
