@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "Mom Wall",
+    "slug": "mom-wall",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "momwall",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.abarish.momwall",
+      "infoPlist": {
+        "NSBluetoothAlwaysUsageDescription": "Connect to your Info Wall to change its settings",
+        "NSBluetoothPeripheralUsageDescription": "Connect to your Info Wall to change its settings"
+      }
+    },
+    "android": {
+      "adaptiveIcon": { "foregroundImage": "./assets/adaptive-icon.png", "backgroundColor": "#000000" },
+      "package": "com.abarish.momwall",
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.BLUETOOTH_SCAN",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      ["react-native-ble-plx", { "isBackgroundEnabled": false, "neverForLocation": false,
+        "bluetoothAlwaysPermission": "Connect to your Info Wall to change its settings" }],
+      "expo-web-browser"
+    ],
+    "extra": { "router": {} },
+    "owner": "abarish"
+  }
+}
