@@ -6,7 +6,12 @@
 // you publish to backend/public/fw/ (see that folder's README).
 // ===========================================================================
 #pragma once
+// Mom's Wall (simple channel) builds carry their own version line.
+#ifdef INFOWALL_SIMPLE_BUILD
+#define INFOWALL_FW_VERSION "1.2.19"
+#else
 #define INFOWALL_FW_VERSION "1.3.0"
+#endif
 // Build-variant suffix shown on the boot screen only (not used for OTA).
 #ifndef INFOWALL_FW_TAG
 #define INFOWALL_FW_TAG ""

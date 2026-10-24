@@ -23,7 +23,7 @@ static const SkyRGB SK_SKY   = {56, 189, 248};
 static const SkyRGB SK_GREEN = {16, 185, 129};
 #include "Palette.h"
 // 1.3.0: Mom Wall green phase name; main walls amber as in 1.1.21.
-#define SK_PHASE (g_momPal ? SkyRGB{0, 230, 0} : SK_AMBER)
+#define SK_PHASE SK_AMBER   // 1.2.19: Mom phase name back to amber (as 1.2.7)
 static const SkyRGB SK_RED   = {230, 40, 40};
 
 struct SkyMoon { int il; bool wax; const char *ph, *sr, *ss, *mr; };
