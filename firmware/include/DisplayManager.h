@@ -552,7 +552,7 @@ class DisplayManager {
     // cleanly. Single-channel red renders clean, so warm colours -> pure red.
     // 1.2.18: snapping disabled. The red/green offset was a bad panel (replaced);
     // at ~130 Hz (1.2.14 timing) partial levels are steady, so warm colours
-    // render as asked. Intentional reds (kWarm565 lake TGT, home marker) unchanged.
+    // render as asked. Intentional reds (home marker) unchanged; lake TGT is amber again since 1.2.20.
     (void)r; (void)g; (void)b;
     return c;
   }
@@ -1199,9 +1199,9 @@ class DisplayManager {
       float d = g_settings.lakeTgtDiff.toFloat();
       String t = String("TGT ") + g_settings.lakeTgt;
       if (g_settings.lakeTgtDiff.length()) t += " " + g_settings.lakeTgtDiff + "ft";
-      // 1.2.10: one solid colour for the whole line: pure green near target,
-      // pure red otherwise (single LED channel = no mixed-colour fringes).
-      if (g_settings.simpleMode) centerText(t, 28, fabsf(d) <= 0.5f ? dma_->color565(0, 255, 0) : kWarm565);
+      // 1.2.10: one solid colour for the whole line: pure green near target.
+      // 1.2.20: off target back to the original amber (red was too bright).
+      if (g_settings.simpleMode) centerText(t, 28, fabsf(d) <= 0.5f ? dma_->color565(0, 255, 0) : amber());
       else centerText(t, 28, fabsf(d) <= 0.5f ? green() : amber());   // 1.3.0: main walls as 1.1.21
       if (g_settings.lakeFull.length())
         centerText(String("FULL ") + g_settings.lakeFull + "ft", 40, dma_->color565(120, 175, 215));
