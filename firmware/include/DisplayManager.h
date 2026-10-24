@@ -55,7 +55,22 @@ class DisplayManager {
     mxconfig.gpio.a  = 45; mxconfig.gpio.b  = 36; mxconfig.gpio.c  = 48;
     mxconfig.gpio.d  = 35; mxconfig.gpio.e  = 21;
     mxconfig.gpio.lat = 47; mxconfig.gpio.oe = 14; mxconfig.gpio.clk = 2;
-    mxconfig.clkphase = false;
+    // Panel timing comes from build flags so Mom's env can differ from main
+    // builds (see platformio.ini). Defaults = library defaults (8 MHz req,
+    // latch_blanking 4, 60 Hz min) as used by the main walls through 1.1.21.
+#ifndef PANEL_CLKPHASE
+#define PANEL_CLKPHASE 0
+#endif
+#ifndef PANEL_I2S_HZ
+#define PANEL_I2S_HZ 8000000
+#endif
+#ifndef PANEL_LATCH_BLANK
+#define PANEL_LATCH_BLANK 4
+#endif
+#ifndef PANEL_MIN_REFRESH
+#define PANEL_MIN_REFRESH 60
+#endif
+    mxconfig.clkphase = PANEL_CLKPHASE ? true : false;
     // Library defaults we leave explicit so scanline tearing is easier to reason
     // about: single DMA buffer (writing while the panel is scanning tears),
     // 8 MHz I2S, min_refresh_rate 60 Hz, 8-bit color. Double-buffering would
@@ -67,14 +82,14 @@ class DisplayManager {
     // really outputs 10 MHz (160/16); Mom's panel showed a 1-px green fringe
     // beside red strokes (data/clock skew). S3_LCD_DIV_NUM=32 (platformio.ini)
     // gives 5 MHz; i2sspeed is set to match so the refresh maths is right.
-    mxconfig.i2sspeed = (HUB75_I2S_CFG::clk_speed)5000000;
+    mxconfig.i2sspeed = (HUB75_I2S_CFG::clk_speed)PANEL_I2S_HZ;  // 1.2.14 mom: 8 MHz (div 20)
     // Longer OE blank around each latch (max 8) against row ghosting /
     // top-row blink. clkphase stays false: it shows the image unshifted on
     // this panel; flip only if a whole-column shift ever appears.
-    mxconfig.latch_blanking = 8;
+    mxconfig.latch_blanking = PANEL_LATCH_BLANK;  // 1.2.14 mom: 4 (8 starved green rows?)
     // 1.2.8: 120 Hz (was 60 -> ~82 Hz actual at 8-bit/8 MHz). Mixed-level
     // colours (amber/orange) blink on some panels at the lower rate.
-    mxconfig.min_refresh_rate = 100;   // 1.2.9: ~111 Hz at 5 MHz (transition bit 5)
+    mxconfig.min_refresh_rate = PANEL_MIN_REFRESH;   // mom 100: ~130 Hz at 8 MHz (transition bit 4)
 
     dma_ = new MatrixPanel_I2S_DMA(mxconfig);
     dma_->begin();
@@ -89,7 +104,7 @@ class DisplayManager {
     // 1.2.5: boot card so the running version can be read off the wall.
     // "C" = vertical centering active (simple mode + offscreen canvas OK).
     if (g_settings.simpleMode) {
-      message("MOM'S WALL", String("v" INFOWALL_FW_VERSION) + (canvas_ ? " C" : " -"));
+      message("MOM'S WALL", String("v" INFOWALL_FW_VERSION INFOWALL_FW_TAG) + (canvas_ ? " C" : " -"));
       delay(2500);
       dma_->clearScreen();
     }
