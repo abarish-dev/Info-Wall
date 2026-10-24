@@ -2727,11 +2727,32 @@ def _fw_meta() -> dict:
     return {"version": "", "size": 0}
 
 
+_FW_SIMPLE_DIR = _FW_DIR / "simple"   # Mom Wall (simple mode, 1.2.x) channel
+
+
 @api_router.get("/firmware/latest")
-def firmware_latest(current: str = ""):
+def firmware_latest(current: str = "", channel: str = ""):
     """The panel (BLE "ota" command) and the app ask this for the latest
     firmware. `update` is true when a build is hosted and its version differs
-    from `current`; the firmware itself only installs a strictly newer one."""
+    from `current`; the firmware itself only installs a strictly newer one.
+    channel=simple serves the separate Mom Wall build from public/fw/simple/
+    so 1.2.x never reaches main-channel (1.1.x) walls and vice versa."""
+    if channel == "simple":
+        meta, binp = _FW_SIMPLE_DIR / "meta.json", _FW_SIMPLE_DIR / "firmware.bin"
+        try:
+            m = _json.loads(meta.read_text()) if meta.exists() else {}
+        except Exception:  # noqa: BLE001
+            m = {}
+        has = bool(m.get("version")) and binp.exists()
+        return {
+            "channel": "simple",
+            "version": m.get("version", ""),
+            "size": m.get("size", 0) or (binp.stat().st_size if has else 0),
+            "available": has,
+            "update": has and m.get("version", "") != (current or ""),
+            "url": "/fw/simple/firmware.bin",
+            "sha256": m.get("sha256", ""),
+        }
     m = _fw_meta()
     has = bool(m.get("version")) and _FW_BIN.exists()
     size = m.get("size", 0)
@@ -2742,6 +2763,7 @@ def firmware_latest(current: str = ""):
         "size": size,
         "available": has,
         "update": has and m.get("version", "") != (current or ""),
+        "channel": "main",
         "url": _FW_URL,
         "sha256": m.get("sha256", ""),
     }

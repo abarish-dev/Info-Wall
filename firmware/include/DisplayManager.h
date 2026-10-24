@@ -136,8 +136,11 @@ class DisplayManager {
     }
 
     checkIssPass();
+    // 1.2.6: a multi-page daily slide (word: definition then origin) is not
+    // cut short by a plane; the plane waits until the slide has finished.
+    bool protect = isDaily(cur_.m) && dailyPages(cur_.m) > 1;
     bool cutIn = !dogActive_ && (queueLen_ > 0 || vipPending_ || issPending_) && !g_settings.isPinned &&
-                 (!cur_.interrupt || now - lastSwitch_ >= (unsigned long)hold);
+                 ((!cur_.interrupt && !protect) || now - lastSwitch_ >= (unsigned long)hold);
     bool switchDue = !fading_ && !dogActive_ && (cutIn || (!g_settings.isPinned &&
                                now - lastSwitch_ >= (unsigned long)hold));
     if (switchDue && g_settings.simpleMode) {
@@ -765,7 +768,7 @@ class DisplayManager {
   // Word slide (1.2.3): the definition page dwells longest (>= 10 s), then the
   // origin page follows briefly. Always definition first.
   static const unsigned long WORD_ORIGIN_MS = 6000;
-  unsigned long wordDefMs() { return (unsigned long)max(10000, g_settings.holdDurationMs); }
+  unsigned long wordDefMs() { return 10000UL; }   // 1.2.6: fixed 10 s, then origin 6 s
   int dailySub(Module m) {
     int n = dailyPages(m);
     if (n <= 1) return 0;

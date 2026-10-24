@@ -114,7 +114,12 @@ static void otaCheck() {
     client.setInsecure();
     HTTPClient http;
     http.setTimeout(12000);
-    if (!http.begin(client, base + "/api/firmware/latest?current=" INFOWALL_FW_VERSION)) {
+    // 1.2.6: a simple-mode (Mom Wall) build asks ONLY the separate "simple"
+    // channel, so it never sees the main 1.1.x builds, and main-channel walls
+    // never see 1.2.x.
+    String q = base + "/api/firmware/latest?current=" INFOWALL_FW_VERSION;
+    if (g_settings.simpleMode) q += "&channel=simple";
+    if (!http.begin(client, q)) {
       g_ble.notify("{\"ota\":\"failed\"}");
       return;
     }
@@ -129,7 +134,9 @@ static void otaCheck() {
     }
     ver = (const char *)(doc["version"] | "");
     path = (const char *)(doc["url"] | "/fw/firmware.bin");
-    if (!(doc["available"] | false) || !isNewerVersion(ver, INFOWALL_FW_VERSION)) {
+    String chan = (const char *)(doc["channel"] | "main");
+    bool chanOk = g_settings.simpleMode ? chan == "simple" : chan != "simple";
+    if (!chanOk || !(doc["available"] | false) || !isNewerVersion(ver, INFOWALL_FW_VERSION)) {
       Serial.printf("[OTA] up to date (running %s, server %s)\n",
                     INFOWALL_FW_VERSION, ver.c_str());
       g_ble.notify("{\"ota\":\"uptodate\",\"fw\":\"" INFOWALL_FW_VERSION "\"}");
@@ -147,6 +154,16 @@ static void otaCheck() {
   client.setInsecure();
   httpUpdate.rebootOnUpdate(true);   // reboot straight into the new slot
   httpUpdate.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
+  // 1.2.6: progress for the app's Update button (every 10%).
+  static int lastPct; lastPct = -1;
+  httpUpdate.onProgress([](int cur, int total) {
+    int pct = total > 0 ? (int)((long long)cur * 100 / total) : 0;
+    if (pct / 10 != lastPct / 10) {
+      lastPct = pct;
+      g_ble.notify(String("{\"ota\":\"progress\",\"pct\":") + pct + "}");
+      g_display.message("UPDATE", String(pct) + "%");
+    }
+  });
   t_httpUpdate_return ret = httpUpdate.update(client, url);
   if (ret == HTTP_UPDATE_FAILED) {
     Serial.printf("[OTA] FAILED (%d): %s\n", httpUpdate.getLastError(),
