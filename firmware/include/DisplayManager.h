@@ -63,10 +63,18 @@ class DisplayManager {
     // off for Wi-Fi/BLE heap). We avoid tearing by not clear+redrawing every
     // loop tick — see tick().
     mxconfig.double_buff = false;
-    mxconfig.i2sspeed = HUB75_I2S_CFG::HZ_8M;
+    // 1.2.9: slower, cleaner HUB75 clock. On the S3 the library's "8 MHz"
+    // really outputs 10 MHz (160/16); Mom's panel showed a 1-px green fringe
+    // beside red strokes (data/clock skew). S3_LCD_DIV_NUM=32 (platformio.ini)
+    // gives 5 MHz; i2sspeed is set to match so the refresh maths is right.
+    mxconfig.i2sspeed = (HUB75_I2S_CFG::clk_speed)5000000;
+    // Longer OE blank around each latch (max 8) against row ghosting /
+    // top-row blink. clkphase stays false: it shows the image unshifted on
+    // this panel; flip only if a whole-column shift ever appears.
+    mxconfig.latch_blanking = 8;
     // 1.2.8: 120 Hz (was 60 -> ~82 Hz actual at 8-bit/8 MHz). Mixed-level
     // colours (amber/orange) blink on some panels at the lower rate.
-    mxconfig.min_refresh_rate = 120;
+    mxconfig.min_refresh_rate = 100;   // 1.2.9: ~111 Hz at 5 MHz (transition bit 5)
 
     dma_ = new MatrixPanel_I2S_DMA(mxconfig);
     dma_->begin();
