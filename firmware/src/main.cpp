@@ -251,6 +251,9 @@ static void pollWifiScan() {
 }
 
 void loop() {
+  // Parse BLE writes here, not in the BLE task (1.1.21).
+  g_ble.processPending();
+
   // Handle a Wi-Fi request that arrived over BLE (run outside the callback).
   if (g_ble.wifiRequested) {
     g_ble.wifiRequested = false;

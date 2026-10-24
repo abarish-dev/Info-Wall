@@ -294,6 +294,33 @@ class BLEController {
   }
 
   void handleJson(const String &raw);
+  // 1.1.21: writes are queued by onWrite and parsed in loop() (processPending),
+  // so the Bluedroid BTC task (small stack) never runs JSON parsing / String
+  // churn. The full sync + clock command overflowed it in 1.1.20 -> reboot.
+  static const int kQ = 8;
+  String q_[kQ];
+  int qHead_ = 0, qLen_ = 0;
+  void enqueue(const String &raw) {
+    if (valueLock_) xSemaphoreTake(valueLock_, portMAX_DELAY);
+    if (qLen_ == kQ) { qHead_ = (qHead_ + 1) % kQ; qLen_--; }   // drop oldest
+    q_[(qHead_ + qLen_) % kQ] = raw;
+    qLen_++;
+    if (valueLock_) xSemaphoreGive(valueLock_);
+  }
+ public:
+  void processPending() {
+    for (;;) {
+      String raw;
+      if (valueLock_) xSemaphoreTake(valueLock_, portMAX_DELAY);
+      if (qLen_ > 0) { raw = q_[qHead_]; q_[qHead_] = String(); qHead_ = (qHead_ + 1) % kQ; qLen_--; }
+      if (valueLock_) xSemaphoreGive(valueLock_);
+      if (raw.length() == 0) return;
+      Serial.print("[BLE] rx: ");
+      Serial.println(raw);
+      handleJson(raw);
+    }
+  }
+ private:
   friend class CharCallbacks;
   friend class ServerCallbacks;
 };
@@ -321,11 +348,10 @@ class ServerCallbacks : public BLEServerCallbacks {
 class CharCallbacks : public BLECharacteristicCallbacks {
   void onWrite(BLECharacteristic *c) override {
     // Raw JSON bytes (NOT base64).
-    String raw = String(c->getValue().c_str());
-    if (raw.length() == 0) return;
-    Serial.print("[BLE] rx: ");
-    Serial.println(raw);
-    g_ble.handleJson(raw);
+    // Copy and queue only; loop() parses (see processPending).
+    std::string v = c->getValue();
+    if (v.empty()) return;
+    g_ble.enqueue(String(v.c_str()));
     // Undo the stack's "value = what was just written": put back the last
     // status/hello (always with "fw"), or the read-back echo set by a sync.
     g_ble.restoreValue();
