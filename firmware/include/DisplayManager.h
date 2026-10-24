@@ -74,6 +74,10 @@ class DisplayManager {
     // tail onto the line below (the stray "mi" under the flight card). Long
     // strings are now fitted/truncated or scrolled explicitly instead.
     dma_->setTextWrap(false);
+    gfx_ = dma_;
+    canvas_ = new GFXcanvas16(PANEL_RES_X * PANEL_CHAIN, PANEL_RES_Y);
+    if (canvas_ && !canvas_->getBuffer()) { delete canvas_; canvas_ = nullptr; }
+    if (canvas_) canvas_->setTextWrap(false);
     width_  = PANEL_RES_X * PANEL_CHAIN;
     height_ = PANEL_RES_Y;
     lastSwitch_ = millis();
@@ -193,8 +197,7 @@ class DisplayManager {
     if (fading_ && !fadeOut_ && (now - fadeStart_ < 30)) mustDraw = true;
 
     if (mustDraw) {
-      dma_->clearScreen();
-      drawModule(cur_.m);
+      renderPage();
       lastDrawnM_ = cur_.m;
       lastDrawnIdx_ = cur_.idx;
       lastFp_ = fp;
@@ -205,8 +208,7 @@ class DisplayManager {
       // Dog is animated: redraw the whole page under it each step so we don't
       // leave trails (still only while walking — a few seconds).
       if (!mustDraw) {
-        dma_->clearScreen();
-        drawModule(cur_.m);
+        renderPage();
       }
       if (!drawDog(now)) {
         dogActive_ = false;
@@ -456,6 +458,41 @@ class DisplayManager {
                 M_BORN, M_WORD, M_ORIGIN, M_CFACT, M_CTODAY, M_MATH, M_FAMILY };
 
   MatrixPanel_I2S_DMA *dma_ = nullptr;
+  // 1.2.4: every page draws through gfx_. Normally gfx_ == dma_; in simple
+  // mode (Mom Wall) pages draw into canvas_ first, then renderPage() blits
+  // them vertically centered on the panel.
+  Adafruit_GFX *gfx_ = nullptr;
+  GFXcanvas16 *canvas_ = nullptr;
+
+  // Draw the current page. Simple mode: offscreen, find the rows that have
+  // anything lit, shift so that block sits in the middle of the 64 rows, and
+  // write every pixel (black included) so no clearScreen flash is needed.
+  void renderPage() {
+    if (!g_settings.simpleMode || !canvas_) {
+      dma_->clearScreen();
+      drawModule(cur_.m);
+      return;
+    }
+    canvas_->fillScreen(0);
+    gfx_ = canvas_;
+    drawModule(cur_.m);
+    gfx_ = dma_;
+    const uint16_t *b = canvas_->getBuffer();
+    int top = -1, bot = -1;
+    for (int y = 0; y < height_; y++) {
+      const uint16_t *r = b + y * width_;
+      int xe = (y == 62 && isDaily(cur_.m)) ? 112 : width_;   // sub-page dots stay put
+      for (int x = 0; x < xe; x++) if (r[x]) { if (top < 0) top = y; bot = y; break; }
+    }
+    int dy = top < 0 ? 0 : (height_ - (bot - top + 1)) / 2 - top;
+    for (int y = 0; y < height_; y++) {
+      int sy = y - dy;
+      const uint16_t *r = (sy >= 0 && sy < height_) ? b + sy * width_ : nullptr;
+      for (int x = 0; x < width_; x++) dma_->drawPixel(x, y, r ? r[x] : 0);
+    }
+    if (isDaily(cur_.m) && dy)
+      for (int x = 112; x < width_; x++) dma_->drawPixel(x, 62, b[62 * width_ + x]);
+  }
   int width_ = 128, height_ = 64;
   static const int SHOWS_PER_PAGE = 2;   // Shows module paginates in the carousel
   static const int TEAMS_PER_PAGE = 2;   // Teams rows (24px logo + 2 lines each)
@@ -510,6 +547,7 @@ class DisplayManager {
     if (g_settings.showBigClock && clk) out[n++] = M_CLOCK;
     if (g_settings.smMath && g_settings.dyMathText.length()) out[n++] = M_MATH;
     if (g_settings.smFamily && g_settings.dyFam.length()) out[n++] = M_FAMILY;
+    if (g_settings.smLake && g_settings.lakeLvl.length()) out[n++] = M_LKN;   // 1.2.4
     return n;
   }
   int infoModules(Module *out) {
@@ -680,10 +718,10 @@ class DisplayManager {
     issPending_ = true;
   }
   struct GfxAdapter {
-    MatrixPanel_I2S_DMA *d;
-    void px(int x, int y, uint8_t r, uint8_t g, uint8_t b) { d->drawPixel(x, y, d->color565(r, g, b)); }
+    Adafruit_GFX *d;
+    void px(int x, int y, uint8_t r, uint8_t g, uint8_t b) { d->drawPixel(x, y, MatrixPanel_I2S_DMA::color565(r, g, b)); }
     void text(const char *s, int x, int y, uint8_t r, uint8_t g, uint8_t b) {
-      d->setFont(nullptr); d->setTextSize(1); d->setTextColor(d->color565(r, g, b));
+      d->setFont(nullptr); d->setTextSize(1); d->setTextColor(MatrixPanel_I2S_DMA::color565(r, g, b));
       d->setCursor(x, y); d->print(s);
     }
   };
@@ -722,17 +760,17 @@ class DisplayManager {
     return k >= n ? n - 1 : k;
   }
   struct PxAdapter {
-    MatrixPanel_I2S_DMA *d;
-    void px(int x, int y, uint8_t r, uint8_t g, uint8_t b) { d->drawPixel(x, y, d->color565(r, g, b)); }
+    Adafruit_GFX *d;
+    void px(int x, int y, uint8_t r, uint8_t g, uint8_t b) { d->drawPixel(x, y, MatrixPanel_I2S_DMA::color565(r, g, b)); }
   };
   void drawDaily(Module m) {
-    PxAdapter a{dma_};
+    PxAdapter a{gfx_};
     DyData d = dyData();
     dyDraw(a, dyWhich(m), d, dailySub(m));
   }
 
   void drawMoon() {
-    GfxAdapter a{dma_};
+    GfxAdapter a{gfx_};
     String mr = g_settings.moonRise;
     if (mr.length() && g_settings.moonRiseTmw) mr = "";   // only tonight's moonrise
     SkyMoon m{g_settings.moonIl, g_settings.moonWax, g_settings.moonPh.c_str(),
@@ -740,7 +778,7 @@ class DisplayManager {
     skyDrawMoon(a, m);
   }
   void drawIss() {
-    GfxAdapter a{dma_};
+    GfxAdapter a{gfx_};
     SkyIss s{issOverhead(), g_settings.issMi, g_settings.issNvDay.c_str(), g_settings.issNvTime.c_str(),
              g_settings.issNvFr.c_str(), g_settings.issNvTo.c_str(), g_settings.issNvEl, g_settings.issNvMin,
              g_settings.issPFr.c_str(), g_settings.issPTo.c_str(), g_settings.issPEl};
@@ -748,7 +786,7 @@ class DisplayManager {
   }
   void drawVip() {
     if (g_settings.vipN <= 0) return;
-    GfxAdapter a{dma_};
+    GfxAdapter a{gfx_};
     const VipInfo &v = g_settings.vip[0];
     String l2 = (v.key == "SAM" || v.key == "EXEC" || v.key == "VENUS") ? v.cs + " " + v.type
                                                                        : v.type + " " + v.reg;
@@ -780,8 +818,8 @@ class DisplayManager {
     int x = (width_ - total) / 2;
     for (int i = 0; i < n; i++) {
       if (txt[i] == ':') {
-        dma_->fillRect(x, TOP + 9, COLW, 4, fg);
-        dma_->fillRect(x, TOP + 21, COLW, 4, fg);
+        gfx_->fillRect(x, TOP + 9, COLW, 4, fg);
+        gfx_->fillRect(x, TOP + 21, COLW, 4, fg);
         x += COLW + GAP;
         continue;
       }
@@ -789,15 +827,15 @@ class DisplayManager {
       for (int y = 0; y < BIGCLK_H; y++) {
         uint32_t row = pgm_read_dword(&g[y]);
         for (int b = 0; b < BIGCLK_W; b++)
-          if (row & (1UL << (BIGCLK_W - 1 - b))) dma_->drawPixel(x + b, TOP + y, fg);
+          if (row & (1UL << (BIGCLK_W - 1 - b))) gfx_->drawPixel(x + b, TOP + y, fg);
       }
       x += BIGCLK_W + GAP;
     }
     if (ap[0]) {
-      dma_->setTextSize(1);
-      dma_->setTextColor(fg);
-      dma_->setCursor(x, TOP);
-      dma_->print(ap);
+      gfx_->setTextSize(1);
+      gfx_->setTextColor(fg);
+      gfx_->setCursor(x, TOP);
+      gfx_->print(ap);
     }
     static const char *WD[] = {"SUN","MON","TUE","WED","THU","FRI","SAT"};
     static const char *MO[] = {"JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"};
@@ -807,7 +845,7 @@ class DisplayManager {
   }
 
   void drawMap() {
-    GfxAdapter a{dma_};
+    GfxAdapter a{gfx_};
     char clk[10] = "";
     struct tm t;
     if (getLocalTime(&t, 0)) {
@@ -851,7 +889,7 @@ class DisplayManager {
         int X = x + c;
         if (X < 0 || X >= width_) continue;
         uint8_t idx = pgm_read_byte(&DOG_PIX[f][r * DOG_W + c]);
-        if (idx) dma_->drawPixel(X, y0 + r, pgm_read_word(&DOG_PAL[idx]));
+        if (idx) gfx_->drawPixel(X, y0 + r, pgm_read_word(&DOG_PAL[idx]));
       }
     return true;
   }
@@ -882,13 +920,13 @@ class DisplayManager {
   void monoCenter(const String &t, int baseline, uint16_t c, int left = 0, int w = -1) {
     if (w < 0) w = width_;
     int16_t x1, y1; uint16_t tw, th;
-    dma_->setFont(&FreeMono9pt7b);
-    dma_->setTextSize(1);
-    dma_->getTextBounds(t.c_str(), 0, baseline, &x1, &y1, &tw, &th);
-    dma_->setCursor(left + (w - (int)tw) / 2 - x1, baseline);
-    dma_->setTextColor(c);
-    dma_->print(t);
-    dma_->setFont(nullptr);
+    gfx_->setFont(&FreeMono9pt7b);
+    gfx_->setTextSize(1);
+    gfx_->getTextBounds(t.c_str(), 0, baseline, &x1, &y1, &tw, &th);
+    gfx_->setCursor(left + (w - (int)tw) / 2 - x1, baseline);
+    gfx_->setTextColor(c);
+    gfx_->print(t);
+    gfx_->setFont(nullptr);
   }
   void centerIn(const String &t, int y, uint16_t c, int left, int w) {
     int x = left + (w - (int)t.length() * 6) / 2;
@@ -939,7 +977,7 @@ class DisplayManager {
       const int L = 30, Wd = width_ - 32;
       monoCenter(aw + " " + String(as), 16, as >= hs ? softWhite() : muted(), L, Wd);
       if (ar.length()) centerIn(ar, 19, muted(), L, Wd);
-      dma_->drawFastHLine(32, 30, width_ - 36, faint());
+      gfx_->drawFastHLine(32, 30, width_ - 36, faint());
       monoCenter(hm + " " + String(hs), 42, hs >= as ? softWhite() : muted(), L, Wd);
       if (hr.length()) centerIn(hr, 45, muted(), L, Wd);
       String st = g_settings.teamStatus[i];
@@ -947,7 +985,7 @@ class DisplayManager {
         if (!st.length()) st = "LIVE";
         st = fitWords(st, (width_ - 8) / 6);
         int w = st.length() * 6 + 6, x = (width_ - w) / 2;
-        dma_->fillRect(x, 58, 3, 3, softRed());
+        gfx_->fillRect(x, 58, 3, 3, softRed());
         textAt(st, x + 6, 56, softWhite());
       } else {
         if (!st.length()) st = "FINAL";
@@ -964,7 +1002,7 @@ class DisplayManager {
     monoCenter(home ? "vs" : "@", 20, softWhite(), 27, width_ - 54);
     if (g_settings.teamRecord[i].length()) centerIn(g_settings.teamRecord[i], 30, muted(), 0, 30);
     if (g_settings.teamOppRec[i].length()) centerIn(g_settings.teamOppRec[i], 30, muted(), width_ - 30, 30);
-    dma_->drawFastHLine(4, 40, width_ - 8, faint());
+    gfx_->drawFastHLine(4, 40, width_ - 8, faint());
     centerText(g_settings.teamNextDay[i], 44, hl == "today" ? softAmber() : muted());
     if (g_settings.teamNextTime[i].length()) monoCenter(g_settings.teamNextTime[i], 62, softAmber());
   }
@@ -1008,13 +1046,13 @@ class DisplayManager {
 
   // Center a size-1 GFX string (6px per char) horizontally at row y.
   void centerText(const String &s, int y, uint16_t color, uint8_t size = 1) {
-    dma_->setTextSize(size);
-    dma_->setTextColor(color);
+    gfx_->setTextSize(size);
+    gfx_->setTextColor(color);
     int w = s.length() * 6 * size;
     int x = (width_ - w) / 2;
     if (x < 0) x = 0;
-    dma_->setCursor(x, y);
-    dma_->print(s);
+    gfx_->setCursor(x, y);
+    gfx_->print(s);
   }
 
   void drawModule(Module m) {
@@ -1137,8 +1175,8 @@ class DisplayManager {
       textAt(fn, x, 16, white());
       int cx = x + textW(fn) + 3;
       uint16_t g = green();
-      dma_->drawLine(cx, 19, cx + 2, 21, g);  dma_->drawLine(cx, 20, cx + 2, 22, g);
-      dma_->drawLine(cx + 2, 21, cx + 6, 17, g); dma_->drawLine(cx + 2, 22, cx + 6, 18, g);
+      gfx_->drawLine(cx, 19, cx + 2, 21, g);  gfx_->drawLine(cx, 20, cx + 2, 22, g);
+      gfx_->drawLine(cx + 2, 21, cx + 6, 17, g); gfx_->drawLine(cx + 2, 22, cx + 6, 18, g);
       textAt(al, cx + 10, 16, cyan());
       if (g_settings.flightRoute.length()) centerText(g_settings.flightRoute, 30, amber(), 1);
       if (eta) {
@@ -1164,10 +1202,10 @@ class DisplayManager {
   static int textW(const String &t, uint8_t size = 1) { return t.length() * 6 * size; }
 
   void textAt(const String &t, int x, int y, uint16_t c, uint8_t size = 1) {
-    dma_->setTextSize(size);
-    dma_->setTextColor(c);
-    dma_->setCursor(x, y);
-    dma_->print(t);
+    gfx_->setTextSize(size);
+    gfx_->setTextColor(c);
+    gfx_->setCursor(x, y);
+    gfx_->print(t);
   }
 
   // Shorten to <= maxChars: drop trailing words first ("American Airlines" ->
@@ -1201,20 +1239,20 @@ class DisplayManager {
     if (pages <= 1) return;
     int x = cx - (pages * 5 - 3) / 2;
     for (int k = 0; k < pages; k++, x += 5)
-      dma_->fillRect(x, y, 2, 2, k == page ? muted() : faint());
+      gfx_->fillRect(x, y, 2, 2, k == page ? muted() : faint());
   }
 
   void drawLogo(const LogoAsset *lg, int x, int y) {
     for (int r = 0; r < lg->h; r++)
       for (int c = 0; c < lg->w; c++) {
         uint16_t px = lg->data[r * lg->w + c];
-        if (px) dma_->drawPixel(x + c, y + r, px);  // black = transparent
+        if (px) gfx_->drawPixel(x + c, y + r, px);  // black = transparent
       }
   }
 
   // 24x24 fallback badge when there is no bitmap: dim rounded tile + code.
   void drawBadge(const String &code, int x, int y, uint16_t edge) {
-    dma_->drawRoundRect(x, y, 24, 24, 4, edge);
+    gfx_->drawRoundRect(x, y, 24, 24, 4, edge);
     String c = code.substring(0, 3);
     textAt(c, x + (24 - textW(c)) / 2 + 1, y + 8, softWhite());
   }
@@ -1239,14 +1277,14 @@ class DisplayManager {
     else {
       // Private / GA aircraft: a small top-down plane glyph (nose right).
       uint16_t c = muted();
-      dma_->fillRect(5, 15, 18, 3, c);                       // fuselage
-      dma_->fillTriangle(22, 15, 22, 17, 25, 16, c);         // nose
-      dma_->fillTriangle(17, 15, 13, 15, 9, 5, c);           // upper wing
-      dma_->fillTriangle(17, 15, 9, 5, 11, 5, c);
-      dma_->fillTriangle(17, 17, 13, 17, 9, 27, c);          // lower wing
-      dma_->fillTriangle(17, 17, 9, 27, 11, 27, c);
-      dma_->fillTriangle(8, 15, 5, 15, 3, 10, c);            // tail
-      dma_->fillTriangle(8, 17, 5, 17, 3, 22, c);
+      gfx_->fillRect(5, 15, 18, 3, c);                       // fuselage
+      gfx_->fillTriangle(22, 15, 22, 17, 25, 16, c);         // nose
+      gfx_->fillTriangle(17, 15, 13, 15, 9, 5, c);           // upper wing
+      gfx_->fillTriangle(17, 15, 9, 5, 11, 5, c);
+      gfx_->fillTriangle(17, 17, 13, 17, 9, 27, c);          // lower wing
+      gfx_->fillTriangle(17, 17, 9, 27, 11, 27, c);
+      gfx_->fillTriangle(8, 15, 5, 15, 3, 10, c);            // tail
+      gfx_->fillTriangle(8, 17, 5, 17, 3, 22, c);
     }
 
     const int tx = 32, tw = width_ - tx - 2;           // 94px text column
@@ -1256,7 +1294,7 @@ class DisplayManager {
                                                   : P.type;
     textAt(fitWords(sub, tw / 6), tx, 21, muted());
 
-    dma_->drawFastHLine(3, 32, width_ - 6, faint());
+    gfx_->drawFastHLine(3, 32, width_ - 6, faint());
 
     String mid;
     if (P.from.length() && P.to.length())
@@ -1316,21 +1354,21 @@ class DisplayManager {
       for (int r = 0; r < WX_ICON_H; r++)
         for (int c = 0; c < WX_ICON_W; c++) {
           uint8_t p = pgm_read_byte(&ic[r * WX_ICON_W + c]);
-          if (p) dma_->drawPixel(cx - 8 + c, 15 + r,
+          if (p) gfx_->drawPixel(cx - 8 + c, 15 + r,
                                  dma_->color565(WX_ICON_PAL[p][0], WX_ICON_PAL[p][1], WX_ICON_PAL[p][2]));
         }
       char hi[8], lo[8];
       snprintf(hi, sizeof(hi), "%d", g_settings.fcHi[k]);
       int hw = strlen(hi) * 12;
-      dma_->setFont(nullptr);
-      dma_->setTextSize(2);
-      dma_->setTextColor(amber());
+      gfx_->setFont(nullptr);
+      gfx_->setTextSize(2);
+      gfx_->setTextColor(amber());
       int x0 = cx - (hw + 7) / 2;          // number + gap + 1x degree mark, centered
-      dma_->setCursor(x0, 31);
-      dma_->print(hi);
-      dma_->setTextSize(1);
-      dma_->setCursor(x0 + hw + 1, 31);
-      dma_->print('\xF7');
+      gfx_->setCursor(x0, 31);
+      gfx_->print(hi);
+      gfx_->setTextSize(1);
+      gfx_->setCursor(x0 + hw + 1, 31);
+      gfx_->print('\xF7');
       snprintf(lo, sizeof(lo), "%d\xF7", g_settings.fcLo[k]);
       textAt(lo, cx - (int)strlen(lo) * 3, 51, cyan());
     }
@@ -1433,7 +1471,7 @@ class DisplayManager {
     uint16_t c = muted();
     int x = tx;
     if (hl == "live") {
-      dma_->fillRect(tx, y + 15, 3, 3, softRed());   // small "on air" dot
+      gfx_->fillRect(tx, y + 15, 3, 3, softRed());   // small "on air" dot
       x += 6;
       c = softWhite();
     } else if (hl == "today") c = softAmber();
@@ -1456,13 +1494,13 @@ class DisplayManager {
     if (cnt == 1) { drawTeamRow(idxs[0], 20); }
     else {
       drawTeamRow(idxs[0], 4);
-      dma_->drawFastHLine(32, 32, width_ - 36, faint());
+      gfx_->drawFastHLine(32, 32, width_ - 36, faint());
       drawTeamRow(idxs[1], 36);
     }
     // Vertical page dots at the right edge.
     if (pages > 1)
       for (int k = 0; k < pages; k++)
-        dma_->fillRect(width_ - 3, 32 - pages * 2 + k * 4, 2, 2, k == page ? muted() : faint());
+        gfx_->fillRect(width_ - 3, 32 - pages * 2 + k * 4, 2, 2, k == page ? muted() : faint());
   }
 
   // Two shows per page, calm palette, long titles scroll instead of clipping:
@@ -1496,7 +1534,7 @@ class DisplayManager {
                    lbl.indexOf("tonight") >= 0;
       centerText(fitWords(lbl, width_ / 6), y + 11, fresh ? softAmber() : muted());
     }
-    if (cnt == 2) dma_->drawFastHLine(40, 30, width_ - 80, faint());
+    if (cnt == 2) gfx_->drawFastHLine(40, 30, width_ - 80, faint());
     pageDots(page, pages, width_ / 2, 60);
   }
 
@@ -1522,7 +1560,7 @@ class DisplayManager {
     stU.toUpperCase();
     int sx = width_ - 2 - textW(stU);
     textAt(stU, sx, 1, open ? softGreen() : muted());
-    dma_->fillRect(sx - 5, 3, 3, 3, open ? softGreen() : faint());
+    gfx_->fillRect(sx - 5, 3, 3, 3, open ? softGreen() : faint());
     for (int k = 0; k < g_settings.marketCount && k < 3; k++) {
       const MarketInfo &m = g_settings.markets[k];
       int y = 11 + k * 18;
@@ -1538,13 +1576,13 @@ class DisplayManager {
       // Sparkline box: x 93..126 (34 cols), y+1 .. y+14
       int bx = 93, by = y + 1, bh = 14;
       if (m.base >= 0)
-        for (int x = 0; x < 34; x += 2) dma_->drawPixel(bx + x, by + bh - 1 - m.base, faint());
+        for (int x = 0; x < 34; x += 2) gfx_->drawPixel(bx + x, by + bh - 1 - m.base, faint());
       int px = -1, py = -1;
       for (int i = 0; i < m.sparkLen; i++) {
         if (m.spark[i] < 0) continue;
         int x = bx + i, yy = by + bh - 1 - m.spark[i];
-        if (px >= 0) dma_->drawLine(px, py, x, yy, c);
-        else dma_->drawPixel(x, yy, c);
+        if (px >= 0) gfx_->drawLine(px, py, x, yy, c);
+        else gfx_->drawPixel(x, yy, c);
         px = x; py = yy;
       }
     }
@@ -1590,7 +1628,7 @@ class DisplayManager {
     if (cnt == 0) return;
     if (cnt == 1) { drawTeamRow(idxs[0], 20); return; }
     drawTeamRow(idxs[0], 4);
-    dma_->drawFastHLine(32, 32, width_ - 36, faint());
+    gfx_->drawFastHLine(32, 32, width_ - 36, faint());
     drawTeamRow(idxs[1], 36);
   }
 

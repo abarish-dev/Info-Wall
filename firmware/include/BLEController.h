@@ -182,6 +182,7 @@ struct MatrixSettings {
   // when none), and the daily slides below join the rotation.
   bool simpleMode = false;
   bool smPlanes = true, smTv = true;           // simple-mode-only toggles
+  bool smLake = true;                         // 1.2.4: Lake Norman slide on Mom Wall
   bool smBorn = true, smWord = true, smCFact = true, smCToday = true, smMath = true, smFamily = true;
   // /api/device/daily (persisted so the slides show right after a reboot)
   String dyDate, dyWord, dyPron, dyPos, dyDef, dyOrigin, dyEx;
@@ -675,6 +676,7 @@ inline void BLEController::handleJson(const String &raw) {
     g_settings.smCToday   = doc["ctoday"]     | g_settings.smCToday;
     g_settings.smMath     = doc["math"]       | g_settings.smMath;
     g_settings.smFamily   = doc["family"]     | g_settings.smFamily;
+    g_settings.smLake     = doc["lake"]       | g_settings.smLake;
     // 1.2.2: a wall set up only with the Mom app never got the backend URL or
     // a location (the main app sends those), so it fetched nothing. Default
     // them when simple mode is on and they're unset.

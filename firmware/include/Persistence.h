@@ -81,6 +81,7 @@ inline void serializeSettings(JsonDocument &d) {
   d["smF"] = (g_settings.smPlanes ? 1 : 0) | (g_settings.smTv ? 2 : 0) | (g_settings.smBorn ? 4 : 0) |
              (g_settings.smWord ? 8 : 0) | (g_settings.smCFact ? 16 : 0) | (g_settings.smCToday ? 32 : 0) |
              (g_settings.smMath ? 64 : 0) | (g_settings.smFamily ? 128 : 0);
+  d["smL"] = g_settings.smLake;
   d["dogMin"] = g_settings.dogMinMin;
   d["dogMax"] = g_settings.dogMaxMin;
   d["countdownLabel"] = g_settings.countdownLabel;
@@ -168,6 +169,7 @@ inline void applySettings(JsonDocument &d) {
     g_settings.smPlanes = f & 1; g_settings.smTv = f & 2; g_settings.smBorn = f & 4; g_settings.smWord = f & 8;
     g_settings.smCFact = f & 16; g_settings.smCToday = f & 32; g_settings.smMath = f & 64; g_settings.smFamily = f & 128;
   }
+  g_settings.smLake = d["smL"] | true;   // 1.2.4, default on
   g_settings.dogMinMin = d["dogMin"] | g_settings.dogMinMin;
   g_settings.dogMaxMin = d["dogMax"] | g_settings.dogMaxMin;
   g_settings.countdownLabel = (const char *)(d["countdownLabel"] | "");

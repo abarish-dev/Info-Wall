@@ -101,6 +101,7 @@ class NetworkData {
       if (due(now, tWeather_, 900000)) { settle(now, tWeather_, 900000, fetchWeather());  tLastFetch_ = now; return; }
       if (dailyDue(now)) { settle(now, tDaily_, 1800000, fetchDaily()); tLastFetch_ = now; return; }
       if (g_settings.showMoon && due(now, tSky_, 900000)) { settle(now, tSky_, 900000, fetchSky()); tLastFetch_ = now; return; }
+      if (g_settings.smLake && due(now, tLake_, 3600000)) { settle(now, tLake_, 3600000, fetchLake()); tLastFetch_ = now; return; }
       // 1.2.1: Mom Wall shows no TV, so no TV fetch in simple mode.
       return;
     }
@@ -523,7 +524,7 @@ class NetworkData {
   }
 
   bool fetchLake() {
-    if (!g_settings.showLKN) return true;
+    if (!(g_settings.simpleMode ? g_settings.smLake : g_settings.showLKN)) return true;
     PSRAM_JSON(doc);
     if (!getJson("/api/device/lake", doc, EP_LAKE)) return false;
     if (!doc["lvl"].isNull()) {
