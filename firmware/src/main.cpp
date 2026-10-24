@@ -189,12 +189,35 @@ void setup() {
 static bool     g_scanRunning = false;
 static uint32_t g_scanStart   = 0;
 
+static bool     g_scanPausedJoin = false;  // we stopped a join attempt to scan
+
 static void startWifiScan() {
   if (g_scanRunning) return;
   if (WiFi.getMode() == WIFI_OFF) WiFi.mode(WIFI_STA);
+  // 1.2.1: when the wall is NOT on Wi-Fi (e.g. a new home), the core's
+  // auto-reconnect and WifiKeeper keep (re)starting a join to the old saved
+  // network. On the ESP32 a scan can't start while the STA is connecting
+  // (scanNetworks -> WIFI_SCAN_FAILED) and a WiFi.begin() mid-scan aborts it,
+  // so the picker got nothing. Stop the join for the scan; resume after.
+  if (WiFi.status() != WL_CONNECTED) {
+    WiFi.setAutoReconnect(false);
+    WiFi.disconnect(false, false);
+    g_wifi.pause(true);
+    g_scanPausedJoin = true;
+    delay(100);
+  }
   WiFi.scanDelete();
   int16_t r = WiFi.scanNetworks(true /*async*/, false /*hidden*/);
-  if (r == WIFI_SCAN_FAILED) { g_ble.notify("{\"wsDone\":-1}"); return; }
+  if (r == WIFI_SCAN_FAILED) {             // one retry after a short settle
+    delay(300);
+    r = WiFi.scanNetworks(true, false);
+  }
+  if (r == WIFI_SCAN_FAILED) {
+    Serial.println("[WiFi] scan failed to start");
+    if (g_scanPausedJoin) { g_scanPausedJoin = false; WiFi.setAutoReconnect(true); g_wifi.pause(false); }
+    g_ble.notify("{\"wsDone\":-1}");
+    return;
+  }
   g_scanRunning = true;
   g_scanStart = millis();
   Serial.println("[WiFi] scan started");
@@ -219,6 +242,11 @@ static void pollWifiScan() {
     n = WIFI_SCAN_FAILED;  // give up
   }
   g_scanRunning = false;
+  if (g_scanPausedJoin) {                    // let the saved-network join resume
+    g_scanPausedJoin = false;
+    WiFi.setAutoReconnect(true);
+    g_wifi.pause(false);
+  }
   if (n < 0) { WiFi.scanDelete(); g_ble.notify("{\"wsDone\":-1}"); return; }
 
   const int MAXN = 15;

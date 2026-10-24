@@ -59,6 +59,7 @@ class WifiKeeper {
 
   // Call every loop(). Cheap when connected.
   void tick() {
+    if (paused_) return;                     // a Wi-Fi scan is running (1.2.1)
     unsigned long now = millis();
     bool up = WiFi.status() == WL_CONNECTED;
     if (up) {
@@ -97,6 +98,9 @@ class WifiKeeper {
   }
 
   // Joined by the app just now (tryJoinWifi): reset the backoff.
+  // Hold off reconnect attempts while the app's network scan runs.
+  void pause(bool p) { paused_ = p; if (!p) { lastTry_ = millis() | 1; backoff_ = kMinBackoff; } }
+
   void noteManualJoin() { lastTry_ = millis() | 1; backoff_ = kMinBackoff; }
 
   bool hasCreds() const { return ssid_.length() > 0; }
@@ -115,6 +119,7 @@ class WifiKeeper {
   }
 
  private:
+  bool paused_ = false;
   static const unsigned long kMinBackoff = 10000, kMaxBackoff = 300000;
   String ssid_, pass_;
   bool wasUp_ = false;

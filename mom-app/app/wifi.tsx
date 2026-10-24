@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { listen, send } from "../src/services/wall";
+import { ensureConnected, listen, send } from "../src/services/wall";
 import { C, F } from "../src/theme";
 
 type Net = { ssid: string; rssi: number; secure: boolean };
@@ -16,7 +16,11 @@ export default function Wifi() {
   const scan = async () => {
     setMsg(""); setNets([]); setPick(null); setScanning(true);
     const found: Net[] = [];
+    let done = false;
     try {
+      // Connect BEFORE subscribing: monitorMatrix is a no-op without a link,
+      // so on a fresh app open the scan results were never heard.
+      await ensureConnected();
       listen((o) => {
         if (Array.isArray(o?.ws)) {
           const [, , ssid, rssi, secure] = o.ws;
@@ -24,9 +28,11 @@ export default function Wifi() {
             found.push({ ssid, rssi: Number(rssi), secure: !!secure });
             setNets([...found].sort((a, b) => b.rssi - a.rssi));
           }
-        } else if (o?.wsDone !== undefined) {
+        } else if (typeof o?.wsDone === "number") {
+          done = true;
           setScanning(false);
-          if (o.wsDone < 0 || found.length === 0) setMsg("No networks found. Try again.");
+          if (o.wsDone < 0) setMsg("The wall couldn't scan. Try again in a moment.");
+          else if (found.length === 0) setMsg("No networks found. Try again.");
         } else if (o?.wifiStatus === "connected") {
           setMsg(`Connected! The wall is online (${o.ip ?? ""}).`);
         } else if (o?.wifiStatus === "failed") {
@@ -36,7 +42,11 @@ export default function Wifi() {
         }
       });
       await send({ command: "wifiScan" });
-      setTimeout(() => setScanning(false), 20000);
+      setTimeout(() => {
+        if (done) return;
+        setScanning(false);
+        setMsg(found.length ? "" : "The wall didn't answer. Stand closer and try again.");
+      }, 20000);
     } catch (e: any) {
       setScanning(false);
       setMsg(e?.message ?? "Couldn't reach the wall. Stand closer and try again.");

@@ -160,8 +160,20 @@ export async function connectToMatrix(
         onStatus("connecting");
 
         try {
-          const d = await device.connect();
+          let d = await device.connect();
           await d.discoverAllServicesAndCharacteristics();
+          // Ask for a bigger MTU (as the known-device path does). Without it
+          // Android stays at 23 bytes, so notifies like the Wi-Fi scan's
+          // {"ws":[...]} frames (~40-60 bytes) arrive truncated and are dropped.
+          try {
+            const mtuDev = await Promise.race([
+              d.requestMTU(185),
+              new Promise<null>((r) => setTimeout(() => r(null), 2500)),
+            ]);
+            if (mtuDev) d = mtuDev;
+          } catch {
+            // ignore: keep default MTU
+          }
           connectedDevice = d;
 
           d.onDisconnected(() => {
