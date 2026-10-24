@@ -6,7 +6,7 @@
 // you publish to backend/public/fw/ (see that folder's README).
 // ===========================================================================
 #pragma once
-#define INFOWALL_FW_VERSION "1.2.4"
+#define INFOWALL_FW_VERSION "1.2.5"
 
 // Max TV shows the wall stores and shows (app MAX_SHOWS must match).
 #define MAX_SHOWS 10

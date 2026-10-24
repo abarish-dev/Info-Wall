@@ -75,9 +75,14 @@ class DisplayManager {
     // strings are now fitted/truncated or scrolled explicitly instead.
     dma_->setTextWrap(false);
     gfx_ = dma_;
-    canvas_ = new GFXcanvas16(PANEL_RES_X * PANEL_CHAIN, PANEL_RES_Y);
-    if (canvas_ && !canvas_->getBuffer()) { delete canvas_; canvas_ = nullptr; }
-    if (canvas_) canvas_->setTextWrap(false);
+    ensureCanvas();
+    // 1.2.5: boot card so the running version can be read off the wall.
+    // "C" = vertical centering active (simple mode + offscreen canvas OK).
+    if (g_settings.simpleMode) {
+      message("MOM'S WALL", String("v" INFOWALL_FW_VERSION) + (canvas_ ? " C" : " -"));
+      delay(2500);
+      dma_->clearScreen();
+    }
     width_  = PANEL_RES_X * PANEL_CHAIN;
     height_ = PANEL_RES_Y;
     lastSwitch_ = millis();
@@ -467,8 +472,18 @@ class DisplayManager {
   // Draw the current page. Simple mode: offscreen, find the rows that have
   // anything lit, shift so that block sits in the middle of the 64 rows, and
   // write every pixel (black included) so no clearScreen flash is needed.
+  bool ensureCanvas() {
+    if (canvas_) return true;
+    canvas_ = new GFXcanvas16(PANEL_RES_X * PANEL_CHAIN, PANEL_RES_Y);
+    if (canvas_ && !canvas_->getBuffer()) { delete canvas_; canvas_ = nullptr; }
+    if (canvas_) canvas_->setTextWrap(false);
+    return canvas_ != nullptr;
+  }
+ public:
+  bool centering() { return g_settings.simpleMode && canvas_; }
+ private:
   void renderPage() {
-    if (!g_settings.simpleMode || !canvas_) {
+    if (!g_settings.simpleMode || !ensureCanvas()) {
       dma_->clearScreen();
       drawModule(cur_.m);
       return;
