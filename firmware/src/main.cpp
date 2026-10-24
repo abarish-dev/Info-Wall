@@ -12,6 +12,8 @@
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <HTTPUpdate.h>
+#include <Update.h>
+#include "mbedtls/sha256.h"
 #include <ArduinoJson.h>
 #include "esp_heap_caps.h"
 #include "Version.h"
@@ -172,6 +174,88 @@ static void otaCheck() {
     g_ble.notify("{\"ota\":\"failed\"}");
     delay(1500);
   }
+}
+
+// ---- 1.2.7: nightly self-update (simple mode / Mom Wall only) --------------
+// Around 3 AM local (+ random 0-59 min jitter picked at boot) the wall asks
+// the "simple" channel. A strictly newer build is streamed into the spare OTA
+// slot while its SHA-256 is computed; only if size + hash match is the slot
+// marked bootable and the wall rebooted. Any failure aborts the write, so the
+// running version keeps going and the check is retried the next night.
+static int g_nightlyJitterMin = -1;
+static int g_nightlyDoneYday = -1;
+
+static bool nightlyInstall() {
+  String base = g_settings.apiBase;
+  if (base.endsWith("/")) base.remove(base.length() - 1);
+  String ver, path, sha;
+  long size = 0;
+  {
+    WiFiClientSecure c; c.setInsecure();
+    HTTPClient h; h.setTimeout(12000);
+    if (!h.begin(c, base + "/api/firmware/latest?channel=simple&current=" INFOWALL_FW_VERSION)) return false;
+    int code = h.GET();
+    PSRAM_JSON(doc);
+    bool ok = code == 200 && !deserializeJson(doc, h.getStream());
+    h.end();
+    if (!ok) return false;
+    if (String((const char *)(doc["channel"] | "")) != "simple") return true;   // wrong channel: ignore
+    ver = (const char *)(doc["version"] | "");
+    path = (const char *)(doc["url"] | "");
+    sha = (const char *)(doc["sha256"] | "");
+    size = doc["size"] | 0;
+    if (!(doc["available"] | false) || !isNewerVersion(ver, INFOWALL_FW_VERSION)) return true;  // up to date
+    if (sha.length() != 64 || size <= 0 || !path.length()) return false;    // incomplete manifest
+  }
+  sha.toLowerCase();
+  String url = path.startsWith("http") ? path : base + path;
+  Serial.printf("[NIGHTLY] installing v%s (%ld bytes)\n", ver.c_str(), size);
+  WiFiClientSecure c; c.setInsecure();
+  HTTPClient h; h.setTimeout(20000);
+  if (!h.begin(c, url)) return false;
+  int code = h.GET();
+  if (code != 200 || h.getSize() != size) { h.end(); return false; }
+  if (!Update.begin(size, U_FLASH)) { h.end(); return false; }
+  mbedtls_sha256_context ctx; mbedtls_sha256_init(&ctx); mbedtls_sha256_starts(&ctx, 0);
+  WiFiClient *s = h.getStreamPtr();
+  static uint8_t buf[4096];
+  long got = 0; unsigned long last = millis();
+  while (got < size && millis() - last < 20000) {
+    size_t n = s->available();
+    if (!n) { delay(2); continue; }
+    n = s->readBytes(buf, min((size_t)sizeof(buf), (size_t)(size - got)));
+    if (!n) continue;
+    mbedtls_sha256_update(&ctx, buf, n);
+    if (Update.write(buf, n) != n) break;
+    got += n; last = millis();
+  }
+  h.end();
+  uint8_t dig[32]; mbedtls_sha256_finish(&ctx, dig); mbedtls_sha256_free(&ctx);
+  char hex[65]; for (int i = 0; i < 32; i++) sprintf(hex + i * 2, "%02x", dig[i]);
+  if (got != size || sha != hex) {
+    Serial.printf("[NIGHTLY] abort (got %ld/%ld, sha %s)\n", got, size, got == size ? "mismatch" : "-");
+    Update.abort();            // spare slot never marked bootable; current version keeps running
+    return false;
+  }
+  if (!Update.end(true)) return false;
+  Serial.println("[NIGHTLY] verified, rebooting");
+  delay(300);
+  ESP.restart();
+  return true;
+}
+
+static void nightlyTick() {
+  if (!g_settings.simpleMode) return;
+  static unsigned long lastLook = 0;
+  if (millis() - lastLook < 30000) return;
+  lastLook = millis();
+  if (g_nightlyJitterMin < 0) g_nightlyJitterMin = (int)(esp_random() % 60);
+  struct tm t;
+  if (!getLocalTime(&t, 0) || t.tm_year < 120) return;
+  if (t.tm_hour != 3 || t.tm_min < g_nightlyJitterMin || t.tm_yday == g_nightlyDoneYday) return;
+  if (WiFi.status() != WL_CONNECTED || g_settings.apiBase.length() == 0) return;
+  g_nightlyDoneYday = t.tm_yday;   // one attempt per night; a failure waits for tomorrow
+  nightlyInstall();
 }
 
 void setup() {
@@ -355,6 +439,7 @@ void loop() {
   // panel stays current without the phone. Safe no-op until Wi-Fi + apiBase set.
   g_wifi.tick();
   g_net.tick();
+  nightlyTick();   // 1.2.7: Mom Wall self-update ~3 AM
 
   // Render the current module (reads live from g_settings). DisplayManager
   // honors brightness, schedule, pin, hold/fade timing and visibility toggles.
