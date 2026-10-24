@@ -22,7 +22,7 @@
         "backgroundColor": "#0B1F3A"
       },
       "package": "com.abarish.infowall",
-      "versionCode": 12,
+      "versionCode": 13,
       "softwareKeyboardLayoutMode": "resize",
       "permissions": [
         "android.permission.BLUETOOTH_SCAN",
