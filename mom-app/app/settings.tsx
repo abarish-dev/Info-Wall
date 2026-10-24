@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
-import { applyToggles, DEFAULT_TOGGLES, loadToggles, readWallVersion, type Toggles } from "../src/services/wall";
+import { applyToggles, DEFAULT_TOGGLES, loadBrightness, loadToggles, readWallVersion, setBrightness, type Toggles } from "../src/services/wall";
 import { C, F } from "../src/theme";
+import BrightnessSlider from "../src/BrightnessSlider";
 
 const ROWS: [keyof Toggles, string][] = [
   ["weather", "Weather & forecast"], ["moon", "Moon"], ["map", "World clock & map"],
@@ -15,6 +16,10 @@ export default function Settings() {
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
   const queued = useRef<Toggles | null>(null);
+  const [br, setBr] = useState(80);
+  useEffect(() => { loadBrightness().then(setBr); }, []);
+  const sendBr = (v: number) => setBrightness(v).then(() => setStatus("Brightness saved ✓"))
+    .catch(() => setStatus("Couldn't reach the wall. Stand closer and try again."));
   const [fw, setFw] = useState<string | null>(null);
   const refreshFw = () => readWallVersion().then(setFw).catch(() => {});
   useEffect(() => { loadToggles().then(setT); refreshFw(); }, []);
@@ -36,6 +41,7 @@ export default function Settings() {
 
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={s.wrap}>
+      <BrightnessSlider value={br} onChange={setBr} onDone={sendBr} />
       {ROWS.map(([k, label]) => (
         <Pressable key={k} onPress={() => flip(k)} accessibilityRole="switch"
           accessibilityState={{ checked: t[k] }} style={s.row}>

@@ -10,6 +10,17 @@ const HOME = { lat: 35.58, lon: -80.82 };   // 28117 (Mooresville, NC)
 const KEY_SET_SENT = "momwall.sentOnce";
 
 const KEY_DEV = "momwall.device";
+const KEY_BRIGHT = "momwall.brightness";
+
+export async function loadBrightness(): Promise<number> {
+  const v = Number(await AsyncStorage.getItem(KEY_BRIGHT));
+  return v >= 10 && v <= 100 ? v : 80;
+}
+/** Uses the existing Info-Wall {command:"brightness"} (wall saves it in flash). */
+export async function setBrightness(v: number): Promise<void> {
+  await AsyncStorage.setItem(KEY_BRIGHT, String(v));
+  await send({ command: "brightness", brightness: v });
+}
 const KEY_SET = "momwall.settings";
 let connected = false;
 
@@ -74,6 +85,7 @@ export async function applyToggles(t: Toggles): Promise<void> {
   await send({ command: "weather", lat: HOME.lat, lon: HOME.lon, showWeather: t.weather, showForecast: t.weather, showMoon: t.moon });
   await send({ command: "sky", showMap: t.map, showIss: false, vipAlert: false });
   await send({ command: "clock", showBigClock: t.clock });
+  await send({ command: "brightness", brightness: await loadBrightness() });
   await send({ command: "settime", epoch: Math.floor(Date.now() / 1000) });
 }
 
