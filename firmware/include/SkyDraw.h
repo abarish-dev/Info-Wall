@@ -69,9 +69,9 @@ template <class G> void skyDrawMoon(G &g, const SkyMoon &m) {
     const int8_t rays[8][2] = {{0,-4},{0,4},{-4,0},{4,0},{-3,-3},{3,3},{-3,3},{3,-3}};
     for (auto &r : rays) skPx(g, x + r[0], y + r[1], c);
   };
-  sun(43, 32, {250, 200, 40});
+  sun(43, 32, {255, 255, 0});
   snprintf(b, sizeof(b), "Rise %s", m.sr); skText(g, b, 51, 29, SK_SOFT);
-  sun(43, 44, {240, 110, 40});
+  sun(43, 44, {255, 255, 0});
   snprintf(b, sizeof(b), "Set  %s", m.ss); skText(g, b, 51, 41, SK_SOFT);
   if (m.mr && *m.mr) { snprintf(b, sizeof(b), "Moonrise %s", m.mr); skText(g, b, 38, 54, SK_MUTED); }
 }

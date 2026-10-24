@@ -533,6 +533,7 @@ class DisplayManager {
     // 1.2.10: yellow (R+G) still showed red strokes with green only on the
     // right edge (big temp, lake TGT): this panel can't hold R and G together
     // cleanly. Single-channel red renders clean, so warm colours -> pure red.
+    if (c == 0xFFE0) return c;   // 1.2.12: deliberate full yellow (temp, suns) passes through
     if (r >= 195 && b < 100 && g >= 90) return kWarm565;   // amber/gold/orange -> soft red
     if (r >= 195 && b < 100 && g < 90)  return kWarm565;  // warm red -> soft red
     return c;
@@ -1408,7 +1409,7 @@ class DisplayManager {
       int hw = strlen(hi) * 12;
       gfx_->setFont(nullptr);
       gfx_->setTextSize(2);
-      gfx_->setTextColor(g_settings.simpleMode ? dma_->color565(0, 230, 0) : amber());   // 1.2.11 temps green
+      gfx_->setTextColor(g_settings.simpleMode ? dma_->color565(255, 255, 0) : amber());   // 1.2.12 highs match temp (yellow)
       int x0 = cx - (hw + 7) / 2;          // number + gap + 1x degree mark, centered
       gfx_->setCursor(x0, 31);
       gfx_->print(hi);
@@ -1443,7 +1444,7 @@ class DisplayManager {
       int base = 17;
       char t[16];
       snprintf(t, sizeof(t), "%d\xF7", g_settings.wxTemp);  // temp
-      centerText(t, base, g_settings.simpleMode ? dma_->color565(0, 230, 0) : amber(), 2);   // 1.2.11 green
+      centerText(t, base, g_settings.simpleMode ? dma_->color565(255, 255, 0) : amber(), 2);   // 1.2.12 full yellow
       centerText(g_settings.wxText, base + 21, white());
       char hl[20];
       snprintf(hl, sizeof(hl), "H%d  L%d", g_settings.wxHi, g_settings.wxLo);

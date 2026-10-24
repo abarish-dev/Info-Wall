@@ -4,7 +4,7 @@
 #include <Arduino.h>
 
 static const int WX_ICON_W = 16, WX_ICON_H = 12, WX_ICON_N = 6;
-static const uint8_t WX_ICON_PAL[7][3] = {{0,0,0},{255,176,0},{185,185,180},{120,120,115},{40,160,255},{255,176,0},{240,240,240}};
+static const uint8_t WX_ICON_PAL[7][3] = {{0,0,0},{255,255,0},{185,185,180},{120,120,115},{40,160,255},{255,255,0},{240,240,240}};
 static const uint8_t WX_ICONS[WX_ICON_N][WX_ICON_W * WX_ICON_H] PROGMEM = {
   { // sun
     0,0,0,0,0,0,1,0,0,1,0,0,0,0,0,0,
