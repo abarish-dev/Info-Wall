@@ -512,7 +512,8 @@ class DisplayManager {
       int xe = (y == 62 && isDaily(cur_.m)) ? 112 : width_;   // sub-page dots stay put
       for (int x = 0; x < xe; x++) if (r[x]) { if (top < 0) top = y; bot = y; break; }
     }
-    int dy = top < 0 ? 0 : (height_ - (bot - top + 1)) / 2 - top;
+    // 1.2.13: a block as tall as the panel (or taller) is top-aligned, never centered.
+    int dy = top < 0 ? 0 : (bot - top + 1 >= height_ - 1) ? 0 : (height_ - (bot - top + 1)) / 2 - top;
     for (int y = 0; y < height_; y++) {
       int sy = y - dy;
       const uint16_t *r = (sy >= 0 && sy < height_) ? b + sy * width_ : nullptr;

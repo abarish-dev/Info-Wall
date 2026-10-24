@@ -145,21 +145,33 @@ template <class G> void dyDraw(G &g, int which, const DyData &d, int sub) {
       // slide (only when there is an origin).
       dyTitle(g, "WORD OF THE DAY", DY_AMBER);
       if (sub == 0 || !d.origin[0]) {
-        bool big = dyWidth(d.word, 2) <= 126;
+        // 1.2.13: page always fits 64 rows with margin. Big word only when
+        // the definition is a single line; otherwise everything is size 1.
+        char dl[40][24]; int dn = dyWrap(d.def, 21, dl, 40);
+        if (dn > 3) dn = 3;
+        bool big = dn <= 1 && dyWidth(d.word, 2) <= 126;
         if (big) dyCenter(g, d.word, 13, DY_SKY, 2);
-        else dyCenter(g, d.word, 15, DY_SKY);
+        else dyCenter(g, d.word, 13, DY_SKY);
         if (d.pos[0]) snprintf(b, sizeof(b), "%s - %s", d.pron, d.pos);
         else snprintf(b, sizeof(b), "%s", d.pron);
         if (dyWidth(b, 1) > 126) snprintf(b, sizeof(b), "%s", d.pron);
-        dyCenter(g, b, big ? 30 : 25, DY_MUTED);
-        dyBody(g, d.def, big ? 40 : 36, 3, 0, DY_SOFT);
+        int y = big ? 30 : 22;
+        if (b[0] && dyWidth(b, 1) <= 126) { dyCenter(g, b, y, DY_MUTED); y += 10; }
+        for (int i = 0; i < dn; i++) dyCenter(g, dl[i], y + i * 8, DY_SOFT);
       } else {
-        dyCenter(g, d.word, 12, DY_SKY);
-        snprintf(b, sizeof(b), "Origin:");
-        dyCenter(g, b, 21, DY_MUTED);
-        dyBody(g, d.origin, 30, 2, 0, DY_SOFT);
+        // 1.2.13: always fits 64 rows. Word, "Origin:" label, the origin
+        // wrapped (up to 4 lines), then the example only if ALL of it fits.
+        dyCenter(g, d.word, 13, DY_SKY);
+        dyCenter(g, "Origin:", 22, DY_MUTED);
+        char l[40][24];
+        int n = dyWrap(d.origin, 21, l, 40), y = 31;
+        if (n > 4) n = 4;
+        for (int i = 0; i < n; i++, y += 8) dyCenter(g, l[i], y, DY_SOFT);
         char ex[160]; snprintf(ex, sizeof(ex), "\"%s\"", d.example);
-        dyBody(g, ex, 48, 2, 0, DY_MUTED);
+        int m = d.example[0] ? dyWrap(ex, 21, l, 40) : 0;
+        y += 2;
+        if (m > 0 && y + m * 8 - 1 <= 64)
+          for (int i = 0; i < m; i++) dyCenter(g, l[i], y + i * 8, DY_MUTED);
       }
       break;
     }
@@ -176,11 +188,11 @@ template <class G> void dyDraw(G &g, int which, const DyData &d, int sub) {
       dyTitle(g, "BORN TODAY", DY_ROSE);
       char l[4][24]; int n = dyWrap(d.born, 21, l, 2);
       for (int i = 0; i < n; i++) dyCenter(g, l[i], 14 + i * 9, DY_SOFT);
-      int y = 14 + n * 9 + 1;
+      int y = 14 + n * 9 + 2;   // 1.2.13: +1 row so lines never touch
       if (d.age > 0 && d.age < 110) snprintf(b, sizeof(b), "%d - turns %d", d.bornYear, d.age);
       else snprintf(b, sizeof(b), "Born %d", d.bornYear);
       dyCenter(g, b, y, DY_AMBER);
-      dyBody(g, d.bornDesc, y + 11, n > 1 ? 2 : 3, 0, DY_MUTED);
+      dyBody(g, d.bornDesc, y + 12, n > 1 ? 2 : 3, 0, DY_MUTED);
       break;
     }
     case DY_CFACT:
@@ -190,13 +202,13 @@ template <class G> void dyDraw(G &g, int which, const DyData &d, int sub) {
     case DY_CTODAY: {
       bool comp = strcmp(d.ckind, "composer_born") == 0;
       if (comp) {   // ctoday = composer name, ctDesc = description
-        dyTitle(g, "COMPOSER BORN TODAY", DY_VIOLET);
+        dyTitle(g, "COMPOSER BIRTHDAY", DY_VIOLET);   // 1.2.13: 19 chars hit the panel edges
         char l[3][24]; int n = dyWrap(d.ctoday, 21, l, 2);
         for (int i = 0; i < n; i++) dyCenter(g, l[i], 14 + i * 9, DY_SOFT);
-        int y = 14 + n * 9 + 1;
+        int y = 14 + n * 9 + 2;   // 1.2.13: +1 row so lines never touch
         snprintf(b, sizeof(b), "Born %d", d.ctYear);
         dyCenter(g, b, y, DY_AMBER);
-        dyBody(g, d.ctDesc, y + 11, n > 1 ? 2 : 3, 0, DY_MUTED);
+        dyBody(g, d.ctDesc, y + 12, n > 1 ? 2 : 3, 0, DY_MUTED);
         break;
       }
       dyTitle(g, "MUSIC ON THIS DAY", DY_VIOLET);
