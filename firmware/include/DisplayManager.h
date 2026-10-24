@@ -128,8 +128,18 @@ class DisplayManager {
     checkIssPass();
     bool cutIn = !dogActive_ && (queueLen_ > 0 || vipPending_ || issPending_) && !g_settings.isPinned &&
                  (!cur_.interrupt || now - lastSwitch_ >= (unsigned long)hold);
-    if (!fading_ && !dogActive_ && (cutIn || (!g_settings.isPinned &&
-                               now - lastSwitch_ >= (unsigned long)hold))) {
+    bool switchDue = !fading_ && !dogActive_ && (cutIn || (!g_settings.isPinned &&
+                               now - lastSwitch_ >= (unsigned long)hold));
+    if (switchDue && g_settings.simpleMode) {
+      // 1.2.3 Mom Wall: switch pages instantly. The fade-out/fade-in ramp
+      // (~0.5 s dark each way at the default speed, up to ~1.8 s) read as a
+      // black screen between every slide.
+      if (!advance()) { hasPage_ = false; dma_->clearScreen(); return; }
+      lastSwitch_ = frameStart_ = now;
+      bufferValid_ = false;              // draw the new page this frame
+      switchDue = false;
+    }
+    if (switchDue) {
       fading_    = true;
       fadeOut_   = true;
       fadeStart_ = now;
