@@ -176,6 +176,18 @@ struct MatrixSettings {
   VipInfo vip[2];
   int    vipN = 0;
 
+  // Mom Wall "simple mode" (1.2.0). Off = the wall behaves exactly as 1.1.21.
+  // On: teams / stocks / markets / ISS / VIP / lake / tides / countdown are
+  // hidden, planes are locked to 3 mi around Mooresville 28117 (slide skipped
+  // when none), and the daily slides below join the rotation.
+  bool simpleMode = false;
+  bool smPlanes = true, smTv = true;           // simple-mode-only toggles
+  bool smBorn = true, smWord = true, smCFact = true, smCToday = true, smMath = true, smFamily = true;
+  // /api/device/daily (persisted so the slides show right after a reboot)
+  String dyDate, dyWord, dyPron, dyPos, dyDef, dyOrigin, dyEx;
+  String dyBorn, dyBornDesc, dyCFact, dyCToday, dyCDesc, dyCKind, dyMathBig, dyMathText, dyFam, dyFamFrom;
+  int dyBornYear = 0, dyCTYear = 0;
+
   // Dog walk-by (a sprite of Adam's dachshund crosses the bottom of the panel)
   bool dogEnabled = true;
   int  dogMinMin  = 10;         // random interval between walks, minutes
@@ -643,6 +655,20 @@ inline void BLEController::handleJson(const String &raw) {
     g_settings.showIss  = doc["showIss"]  | g_settings.showIss;
     g_settings.showMap  = doc["showMap"]  | g_settings.showMap;
     g_settings.vipAlert = doc["vipAlert"] | g_settings.vipAlert;
+
+  } else if (strcmp(cmd, "simple") == 0) {
+    // Mom Wall (1.2.0): { simpleMode, planes, tv, born, word, cfact, ctoday,
+    // math, family } (any subset). Weather/moon/map/clock use their own commands.
+    g_settings.simpleMode = doc["simpleMode"] | g_settings.simpleMode;
+    g_settings.smPlanes   = doc["planes"]     | g_settings.smPlanes;
+    g_settings.smTv       = doc["tv"]         | g_settings.smTv;
+    g_settings.smBorn     = doc["born"]       | g_settings.smBorn;
+    g_settings.smWord     = doc["word"]       | g_settings.smWord;
+    g_settings.smCFact    = doc["cfact"]      | g_settings.smCFact;
+    g_settings.smCToday   = doc["ctoday"]     | g_settings.smCToday;
+    g_settings.smMath     = doc["math"]       | g_settings.smMath;
+    g_settings.smFamily   = doc["family"]     | g_settings.smFamily;
+    notify(String("{\"simple\":") + (g_settings.simpleMode ? 1 : 0) + "}");
 
   } else if (strcmp(cmd, "clock") == 0) {
     // App 1.4.3+: { showBigClock, clockColor, clock24 } (any subset).

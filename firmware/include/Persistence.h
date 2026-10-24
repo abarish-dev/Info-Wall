@@ -17,6 +17,37 @@
 
 extern volatile bool g_settingsDirty;
 
+// /api/device/daily payload (also the persisted "dy" copy) -> settings.
+inline void applyDaily(JsonObjectConst y) {
+  auto s = [&](const char *k) { return String((const char *)(y[k] | "")); };
+  g_settings.dyDate = s("d"); g_settings.dyWord = s("w"); g_settings.dyPron = s("wp"); g_settings.dyPos = s("ws");
+  g_settings.dyDef = s("wd"); g_settings.dyOrigin = s("wo"); g_settings.dyEx = s("wx");
+  g_settings.dyBorn = s("bn"); g_settings.dyBornDesc = s("bd"); g_settings.dyBornYear = y["by"] | 0;
+  g_settings.dyCFact = s("cf"); g_settings.dyCToday = s("ct"); g_settings.dyCDesc = s("cx");
+  g_settings.dyCKind = s("ck"); g_settings.dyCTYear = y["cy"] | 0;
+  g_settings.dyMathBig = s("mb"); g_settings.dyMathText = s("mt");
+  g_settings.dyFam = s("fm"); g_settings.dyFamFrom = s("ff");
+}
+
+// The daily payload lives in its own NVS key ("dy", ~0.5 KB) so the main
+// "cfg" blob stays well under the NVS string limit. Written when a new day's
+// content arrives (about once a day), read on boot in simple mode.
+inline void saveDaily(const String &json) {
+  Preferences prefs;
+  prefs.begin("infowall", false);
+  prefs.putString("dy", json);
+  prefs.end();
+}
+inline void loadDaily() {
+  Preferences prefs;
+  prefs.begin("infowall", true);
+  String blob = prefs.getString("dy", "");
+  prefs.end();
+  if (!blob.length()) return;
+  PSRAM_JSON(d);
+  if (deserializeJson(d, blob) == DeserializationError::Ok) applyDaily(d.as<JsonObjectConst>());
+}
+
 inline void serializeSettings(JsonDocument &d) {
   d["radius"] = g_settings.radius;
   d["trackFlight"] = g_settings.trackFlight;
@@ -45,6 +76,11 @@ inline void serializeSettings(JsonDocument &d) {
   d["showMkts"] = g_settings.showMarkets;
   d["showCountdown"] = g_settings.showCountdown;
   d["dog"] = g_settings.dogEnabled;
+  // 1.2.0 simple mode (absent in older saves -> off / defaults)
+  d["simple"] = g_settings.simpleMode;
+  d["smF"] = (g_settings.smPlanes ? 1 : 0) | (g_settings.smTv ? 2 : 0) | (g_settings.smBorn ? 4 : 0) |
+             (g_settings.smWord ? 8 : 0) | (g_settings.smCFact ? 16 : 0) | (g_settings.smCToday ? 32 : 0) |
+             (g_settings.smMath ? 64 : 0) | (g_settings.smFamily ? 128 : 0);
   d["dogMin"] = g_settings.dogMinMin;
   d["dogMax"] = g_settings.dogMaxMin;
   d["countdownLabel"] = g_settings.countdownLabel;
@@ -126,6 +162,12 @@ inline void applySettings(JsonDocument &d) {
   g_settings.showMarkets = d["showMkts"] | g_settings.showMarkets;
   g_settings.showCountdown = d["showCountdown"] | g_settings.showCountdown;
   g_settings.dogEnabled = d["dog"] | g_settings.dogEnabled;
+  g_settings.simpleMode = d["simple"] | false;
+  {
+    int f = d["smF"] | 255;
+    g_settings.smPlanes = f & 1; g_settings.smTv = f & 2; g_settings.smBorn = f & 4; g_settings.smWord = f & 8;
+    g_settings.smCFact = f & 16; g_settings.smCToday = f & 32; g_settings.smMath = f & 64; g_settings.smFamily = f & 128;
+  }
   g_settings.dogMinMin = d["dogMin"] | g_settings.dogMinMin;
   g_settings.dogMaxMin = d["dogMax"] | g_settings.dogMaxMin;
   g_settings.countdownLabel = (const char *)(d["countdownLabel"] | "");
@@ -191,6 +233,7 @@ inline void loadSettings() {
   if (deserializeJson(d, blob) == DeserializationError::Ok) {
     applySettings(d);
     Serial.println("[NVS] restored saved config");
+    if (g_settings.simpleMode) loadDaily();
   }
 }
 

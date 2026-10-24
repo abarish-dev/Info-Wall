@@ -29,15 +29,16 @@
 #include "Version.h"
 #include "DisplayManager.h"
 #include "WifiKeeper.h"
+#include "Persistence.h"
 
 extern DisplayManager g_display;
 
 // Endpoints the panel fetches, for retry bookkeeping and the BLE "diag" reply.
 enum Endpoint { EP_TIME, EP_SCORES, EP_PLANES, EP_QUOTES, EP_MARKETS, EP_WEATHER,
-                EP_FOLLY, EP_LAKE, EP_TV, EP_FLIGHT, EP_SKY, EP_VIP, EP_COUNT };
+                EP_FOLLY, EP_LAKE, EP_TV, EP_FLIGHT, EP_SKY, EP_VIP, EP_DAILY, EP_COUNT };
 static const char *const kEpNames[EP_COUNT] = {"time", "sc", "pl", "qt", "mk",
                                                "wx", "fo", "lk", "tv", "fl",
-                                               "sky", "vip"};
+                                               "sky", "vip", "dy"};
 // Result codes besides HTTP status: -1 connection/TLS error, -2 skipped (low
 // internal heap), -3 JSON parse error, 0 never attempted.
 struct EpStat {
@@ -92,6 +93,17 @@ class NetworkData {
       }
     }
 
+    // Mom Wall simple mode (1.2.0): its own, smaller schedule. Teams, stocks,
+    // markets, VIP, lake and tides are never fetched; planes only while the
+    // Planes toggle is on (locked to 3 mi around 28117 in fetchPlanes).
+    if (g_settings.simpleMode) {
+      if (g_settings.smPlanes && due(now, tPlanes_, 30000)) { settle(now, tPlanes_, 30000, fetchPlanes()); tLastFetch_ = now; return; }
+      if (due(now, tWeather_, 900000)) { settle(now, tWeather_, 900000, fetchWeather());  tLastFetch_ = now; return; }
+      if (dailyDue(now)) { settle(now, tDaily_, 1800000, fetchDaily()); tLastFetch_ = now; return; }
+      if (g_settings.showMoon && due(now, tSky_, 900000)) { settle(now, tSky_, 900000, fetchSky()); tLastFetch_ = now; return; }
+      if (g_settings.smTv && due(now, tTv_, 3600000)) { settle(now, tTv_, 3600000, fetchTv()); tLastFetch_ = now; return; }
+      return;
+    }
     // A fetch only counts as done when it SUCCEEDS. On a skip (low heap) or a
     // failure it is retried in ~30s instead of waiting its full interval
     // (an hour for lake/TV), which is what left the lake page blank.
@@ -154,7 +166,7 @@ class NetworkData {
     if (last == 0) last = 1;
   }
   unsigned long tScores_ = 0, tQuotes_ = 0, tWeather_ = 0, tPlanes_ = 0, tTv_ = 0;
-  unsigned long tFlight_ = 0, tSky_ = 0, tVip_ = 0;
+  unsigned long tFlight_ = 0, tSky_ = 0, tVip_ = 0, tDaily_ = 0;
   String flightFor_;
   unsigned long tFolly_ = 0, tLake_ = 0, tMarkets_ = 0;
   unsigned long tLastFetch_ = 0;
@@ -393,10 +405,41 @@ class NetworkData {
     return true;
   }
 
+  // Simple mode: every 30 min, and right away once the ET date has changed
+  // (the family message can change during the day, so 30 min not 24 h).
+  bool dailyDue(unsigned long now) {
+    struct tm t;
+    if (getLocalTime(&t, 0) && g_settings.dyDate.length()) {
+      char today[12];
+      strftime(today, sizeof(today), "%Y-%m-%d", &t);
+      if (g_settings.dyDate != today && (tDaily_ == 0 || now - tDaily_ > 60000)) { tDaily_ = now | 1; return true; }
+    }
+    return due(now, tDaily_, 1800000);
+  }
+
+  bool fetchDaily() {
+    PSRAM_JSON(doc);
+    if (!getJson("/api/device/daily", doc, EP_DAILY)) return false;
+    if (!doc["d"].is<const char *>()) return false;
+    String before = g_settings.dyDate + g_settings.dyFam + g_settings.dyFamFrom + g_settings.dyBorn;
+    applyDaily(doc.as<JsonObjectConst>());
+    String after = g_settings.dyDate + g_settings.dyFam + g_settings.dyFamFrom + g_settings.dyBorn;
+    if (before != after) {
+      String blob;
+      serializeJson(doc, blob);
+      saveDaily(blob);
+      g_display.invalidate();
+    }
+    return true;
+  }
+
   bool fetchPlanes() {
     char path[80];
-    snprintf(path, sizeof(path), "/api/device/planes?lat=%.4f&lon=%.4f&radius=%d",
-             g_settings.lat, g_settings.lon, g_settings.radius);
+    // Simple mode locks the flights page to 3 mi around Mooresville, NC 28117.
+    float la = g_settings.simpleMode ? 35.58f : g_settings.lat;
+    float lo = g_settings.simpleMode ? -80.82f : g_settings.lon;
+    int rad = g_settings.simpleMode ? 3 : g_settings.radius;
+    snprintf(path, sizeof(path), "/api/device/planes?lat=%.4f&lon=%.4f&radius=%d", la, lo, rad);
     PSRAM_JSON(doc);
     PSRAM_JSON(filter);
     JsonObject fp = filter["p"].add<JsonObject>();

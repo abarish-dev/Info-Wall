@@ -24,6 +24,7 @@
 #include "Logos.h"
 #include "DogSprite.h"
 #include "SkyDraw.h"
+#include "DailyDraw.h"
 #include "BigClockFont.h"
 #include <Fonts/FreeMono9pt7b.h>
 #include <esp_system.h>
@@ -110,6 +111,8 @@ class DisplayManager {
       int slot = teamSlotAt(cur_.idx);
       if (slot >= 0 && g_settings.teamHL[slot] == "live") hold = hold * 2;
     }
+    // Daily slides with a long body show it in 2-3 parts, one hold each.
+    if (isDaily(cur_.m)) hold *= dailyPages(cur_.m);
 
     // Dog walk-by: at a random time (or on request from the app), the dog
     // walks across the bottom of whatever page is up. The page doesn't change
@@ -327,6 +330,14 @@ class DisplayManager {
         h = mix(h, (uint32_t)g_settings.clockColor);
         h = mix(h, g_settings.clock24 ? 1u : 0u);
         break;
+      case M_BORN: case M_WORD: case M_ORIGIN: case M_CFACT:
+      case M_CTODAY: case M_MATH: case M_FAMILY:
+        h = mixStr(h, g_settings.dyDate);
+        h = mixStr(h, g_settings.dyFam);
+        h = mixStr(h, g_settings.dyFamFrom);
+        h = mixStr(h, g_settings.dyBorn);
+        h = mix(h, (uint32_t)dailySub(cur_.m));
+        break;
       case M_VIP:
         if (g_settings.vipN > 0) {
           h = mixStr(h, g_settings.vip[0].hex);
@@ -380,6 +391,9 @@ class DisplayManager {
     }
   }
 
+  // New /api/device/daily content: redraw the current page.
+  void invalidate() { bufferValid_ = false; }
+
   // A quick RGB sweep so the user can confirm the BLE link is live.
   void flashTest() {
     if (!dma_) return;
@@ -426,7 +440,9 @@ class DisplayManager {
   static const uint32_t kTeamLabelStaleSec = 3 * 3600;  // saved team label max age
   enum Module { M_MARKETS, M_MESSAGE, M_FLIGHT, M_PLANES, M_WEATHER, M_SPORTS, M_SCORES,
                 M_TV, M_STOCKS, M_COUNTDOWN, M_REMINDERS, M_LKN, M_FOLLY, M_FORECAST,
-                M_MOON, M_ISS, M_MAP, M_VIP, M_CLOCK };
+                M_MOON, M_ISS, M_MAP, M_VIP, M_CLOCK,
+                // 1.2.0 simple mode (Mom Wall) daily slides
+                M_BORN, M_WORD, M_ORIGIN, M_CFACT, M_CTODAY, M_MATH, M_FAMILY };
 
   MatrixPanel_I2S_DMA *dma_ = nullptr;
   int width_ = 128, height_ = 64;
@@ -468,7 +484,25 @@ class DisplayManager {
   unsigned long seenAt_[SEEN_MAX] = {0};
   bool planesSeeded_ = false;
 
+  int simpleModules(Module *out) {
+    // Mom Wall order: alternate a "glance" page with a reading page.
+    int n = 0;
+    bool clk = time(nullptr) > 1600000000;
+    if (g_settings.showWeather) out[n++] = M_WEATHER;
+    if (g_settings.smWord && g_settings.dyWord.length()) { out[n++] = M_WORD; out[n++] = M_ORIGIN; }
+    if (g_settings.showWeather && g_settings.showForecast && g_settings.fcN > 0) out[n++] = M_FORECAST;
+    if (g_settings.smBorn && g_settings.dyBorn.length()) out[n++] = M_BORN;
+    if (g_settings.showMoon && g_settings.moonIl >= 0) out[n++] = M_MOON;
+    if (g_settings.smCFact && g_settings.dyCFact.length()) out[n++] = M_CFACT;
+    if (g_settings.showMap && clk) out[n++] = M_MAP;
+    if (g_settings.smCToday && g_settings.dyCToday.length()) out[n++] = M_CTODAY;
+    if (g_settings.showBigClock && clk) out[n++] = M_CLOCK;
+    if (g_settings.smMath && g_settings.dyMathText.length()) out[n++] = M_MATH;
+    if (g_settings.smFamily && g_settings.dyFam.length()) out[n++] = M_FAMILY;
+    return n;
+  }
   int infoModules(Module *out) {
+    if (g_settings.simpleMode) return simpleModules(out);
     int n = 0;
     if (g_settings.showCustomMessage && msgHasText()) out[n++] = M_MESSAGE;
     if (g_settings.trackFlight && g_settings.flightIdent.length()) out[n++] = M_FLIGHT;
@@ -498,9 +532,10 @@ class DisplayManager {
     Module tmp[20];
     switch (c) {
       case C_INFO:   return infoModules(tmp);
-      case C_TEAMS:  { int l = liveCount(); return l ? l : teamCount(); }  // live only while any is live
-      case C_SHOWS:  return showPages();
-      case C_PLANES: return g_settings.planeCount;
+      case C_TEAMS:  { if (g_settings.simpleMode) return 0;
+                       int l = liveCount(); return l ? l : teamCount(); }  // live only while any is live
+      case C_SHOWS:  return (g_settings.simpleMode && !g_settings.smTv) ? 0 : showPages();
+      case C_PLANES: return (g_settings.simpleMode && !g_settings.smPlanes) ? 0 : g_settings.planeCount;
       default:       return 0;
     }
   }
@@ -540,13 +575,13 @@ class DisplayManager {
     // ahead of everything; they never join the normal rotation.
     if (!g_settings.isPinned && vipPending_) {
       vipPending_ = false;
-      if (g_settings.vipAlert && g_settings.vipN > 0) {
+      if (g_settings.vipAlert && g_settings.vipN > 0 && !g_settings.simpleMode) {
         cur_ = Page(); cur_.m = M_VIP; cur_.interrupt = true; return true;
       }
     }
     if (!g_settings.isPinned && issPending_) {
       issPending_ = false;
-      if (g_settings.showIss && issOverhead()) {
+      if (g_settings.showIss && issOverhead() && !g_settings.simpleMode) {
         cur_ = Page(); cur_.m = M_ISS; cur_.interrupt = true; return true;
       }
     }
@@ -555,6 +590,7 @@ class DisplayManager {
       for (int i = 1; i < queueLen_; i++) queue_[i - 1] = queue_[i];
       queueLen_--;
       if (planeSlot(cs) < 0) continue;   // already gone
+      if (g_settings.simpleMode && !g_settings.smPlanes) continue;
       cur_ = Page();
       cur_.m = M_PLANES; cur_.plane = cs; cur_.interrupt = true;
       return true;
@@ -640,6 +676,45 @@ class DisplayManager {
       d->setCursor(x, y); d->print(s);
     }
   };
+  // ---- Daily slides (1.2.0 simple mode) ------------------------------------
+  static bool isDaily(Module m) { return m >= M_BORN && m <= M_FAMILY; }
+  static int dyWhich(Module m) {
+    switch (m) {
+      case M_BORN: return DY_BORN;     case M_WORD: return DY_WORD;   case M_ORIGIN: return DY_ORIGIN;
+      case M_CFACT: return DY_CFACT;   case M_CTODAY: return DY_CTODAY;
+      case M_MATH: return DY_MATH;     default: return DY_FAMILY;
+    }
+  }
+  DyData dyData() {
+    int age = 0;
+    struct tm t;
+    if (getLocalTime(&t, 0) && g_settings.dyBornYear > 0) age = t.tm_year + 1900 - g_settings.dyBornYear;
+    return DyData{g_settings.dyWord.c_str(), g_settings.dyPron.c_str(), g_settings.dyPos.c_str(),
+                  g_settings.dyDef.c_str(), g_settings.dyOrigin.c_str(), g_settings.dyEx.c_str(),
+                  g_settings.dyBorn.c_str(), g_settings.dyBornDesc.c_str(), g_settings.dyBornYear, age,
+                  g_settings.dyCFact.c_str(), g_settings.dyCToday.c_str(), g_settings.dyCDesc.c_str(),
+                  g_settings.dyCKind.c_str(), g_settings.dyCTYear,
+                  g_settings.dyMathBig.c_str(), g_settings.dyMathText.c_str(),
+                  g_settings.dyFam.c_str(), g_settings.dyFamFrom.c_str()};
+  }
+  int dailyPages(Module m) { DyData d = dyData(); int n = dyPages(dyWhich(m), d); return n > 3 ? 3 : n; }
+  int dailySub(Module m) {
+    int n = dailyPages(m);
+    if (n <= 1) return 0;
+    unsigned long per = (unsigned long)max(2000, g_settings.holdDurationMs);
+    int k = (int)((millis() - frameStart_) / per);
+    return k >= n ? n - 1 : k;
+  }
+  struct PxAdapter {
+    MatrixPanel_I2S_DMA *d;
+    void px(int x, int y, uint8_t r, uint8_t g, uint8_t b) { d->drawPixel(x, y, d->color565(r, g, b)); }
+  };
+  void drawDaily(Module m) {
+    PxAdapter a{dma_};
+    DyData d = dyData();
+    dyDraw(a, dyWhich(m), d, dailySub(m));
+  }
+
   void drawMoon() {
     GfxAdapter a{dma_};
     String mr = g_settings.moonRise;
@@ -947,6 +1022,9 @@ class DisplayManager {
       case M_MAP:       drawMap();     break;
       case M_VIP:       drawVip();     break;
       case M_CLOCK:     drawBigClock(); break;
+      case M_BORN: case M_WORD: case M_ORIGIN: case M_CFACT:
+      case M_CTODAY: case M_MATH: case M_FAMILY:
+                        drawDaily(m); break;
     }
   }
 
