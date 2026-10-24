@@ -302,6 +302,20 @@ def family_set(wall: str, text: str, sender: str) -> dict:
     return rec
 
 
+def family_clear(wall: str = "mom") -> dict:
+    kv = _kv()
+    if kv:
+        requests.post(f"{kv[0]}/del/family:{wall}", headers={"Authorization": f"Bearer {kv[1]}"},
+                      timeout=5).raise_for_status()
+    elif _FAM_FILE.exists():
+        all_ = json.loads(_FAM_FILE.read_text())
+        all_.pop(wall, None)
+        _FAM_FILE.write_text(json.dumps(all_))
+    with _lock:
+        _cache.clear()
+    return {}
+
+
 # ---- Assembly --------------------------------------------------------------
 def daily(d: _dt.date | None = None) -> dict:
     d = d or today_et()

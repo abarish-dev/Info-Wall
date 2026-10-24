@@ -2798,16 +2798,29 @@ def family_read(wall: str = "mom"):
     return _daily.family_get(wall)
 
 
+def _family_auth(x_family_token: str) -> None:
+    import hmac
+    tok = os.environ.get("FAMILY_WRITE_TOKEN", "")
+    if not tok or not hmac.compare_digest(x_family_token, tok):
+        raise HTTPException(status_code=401, detail="bad token")
+
+
 @api_router.post("/family")
 def family_write(msg: FamilyMsg, x_family_token: str = Header(default="")):
     """Set the family message shown on the wall. Requires header
-    X-Family-Token == env FAMILY_WRITE_TOKEN (writes are refused when unset)."""
-    tok = os.environ.get("FAMILY_WRITE_TOKEN", "")
-    if not tok or x_family_token != tok:
-        raise HTTPException(status_code=401, detail="bad token")
+    X-Family-Token == env FAMILY_WRITE_TOKEN (writes are refused when unset).
+    Posting an empty/blank text clears the message."""
+    _family_auth(x_family_token)
     if not msg.text.strip():
-        raise HTTPException(status_code=400, detail="empty message")
+        return _daily.family_clear(msg.wall)
     return _daily.family_set(msg.wall, msg.text, msg.sender)
+
+
+@api_router.delete("/family")
+def family_delete(wall: str = "mom", x_family_token: str = Header(default="")):
+    """Clear the family message (same token as POST)."""
+    _family_auth(x_family_token)
+    return _daily.family_clear(wall)
 
 
 # Include the router in the main app
