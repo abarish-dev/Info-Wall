@@ -47,6 +47,7 @@ import {
   lonLatToTileFrac,
 } from "@/src/components/MatrixMap";
 import { TransitionsSection } from "@/src/components/TransitionsSection";
+import { MomMessageSection } from "@/src/components/MomMessageSection";
 import { TeamRows } from "@/src/components/TeamPicker";
 import { ShowRows } from "@/src/components/ShowRows";
 import { StockRows } from "@/src/components/StockRows";
@@ -2581,6 +2582,11 @@ export default function ControlPanel() {
             onChangeText={(t) => patchSettings({ msgLine3: t })}
           />
         </Section>
+
+        <MomMessageSection
+          open={sectionOpen.mom}
+          onToggle={() => toggleSection("mom")}
+        />
 
         <TransitionsSection
           fadeSpeed={settings.fadeSpeed}

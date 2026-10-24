@@ -21,6 +21,7 @@ export type SectionKey =
   | "tv"
   | "stocks"
   | "message"
+  | "mom"
   | "transitions"
   | "sync";
 
@@ -33,6 +34,7 @@ export const SECTION_DEFAULT_OPEN: Record<SectionKey, boolean> = {
   tv: false,
   stocks: false,
   message: false,
+  mom: false,
   transitions: false,
   sync: false,
 };
