@@ -312,7 +312,21 @@ export async function scanForDevices(
 }
 
 /** Reconnect to a previously known device by id (no scan). */
-export async function connectToKnownDevice(
+// One connect at a time: auto-reconnect on open and a manual Connect tap used
+// to race, and the loser's retry path cancelled the winner's live link.
+let connectInFlight: Promise<{ id: string; name: string; rssi: number | null }> | null = null;
+export function connectToKnownDevice(
+  deviceId: string,
+  onStatus: (s: BleStatus) => void,
+  onDisconnect?: () => void,
+): Promise<{ id: string; name: string; rssi: number | null }> {
+  if (connectInFlight) return connectInFlight;
+  const p = connectKnownImpl(deviceId, onStatus, onDisconnect);
+  connectInFlight = p;
+  p.then(() => { connectInFlight = null; }, () => { connectInFlight = null; });
+  return p;
+}
+async function connectKnownImpl(
   deviceId: string,
   onStatus: (s: BleStatus) => void,
   onDisconnect?: () => void,
@@ -333,9 +347,23 @@ export async function connectToKnownDevice(
   try {
     d = await bleManager.connectToDevice(deviceId);
   } catch (e) {
-    // Clear a half-open link left by a failed attempt, then retry once.
-    try { await bleManager.cancelDeviceConnection(deviceId); } catch {}
-    d = await bleManager.connectToDevice(deviceId);
+    // Another connect (auto-reconnect vs. a manual tap) may already own a
+    // live link to this wall: "already connected" lands here. Cancelling then
+    // would kill the good connection right after it syncs, so reuse it.
+    let live = false;
+    try { live = await bleManager.isDeviceConnected(deviceId); } catch {}
+    if (live && connectedDevice?.id === deviceId) {
+      onStatus("connected");
+      return { id: connectedDevice.id, name: connectedDevice.name ?? "LED Matrix", rssi: null };
+    }
+    if (live) {
+      const [dev] = await bleManager.devices([deviceId]);
+      d = dev;
+    } else {
+      // Truly half-open/failed: clear it, then retry once.
+      try { await bleManager.cancelDeviceConnection(deviceId); } catch {}
+      d = await bleManager.connectToDevice(deviceId);
+    }
   }
   await d.discoverAllServicesAndCharacteristics();
   try {
