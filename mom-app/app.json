@@ -16,7 +16,10 @@
       }
     },
     "android": {
-      "adaptiveIcon": { "foregroundImage": "./assets/adaptive-icon.png", "backgroundColor": "#000000" },
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#000000"
+      },
       "package": "com.abarish.momwall",
       "versionCode": 1,
       "permissions": [
@@ -29,11 +32,22 @@
     },
     "plugins": [
       "expo-router",
-      ["react-native-ble-plx", { "isBackgroundEnabled": false, "neverForLocation": false,
-        "bluetoothAlwaysPermission": "Connect to your Info Wall to change its settings" }],
+      [
+        "react-native-ble-plx",
+        {
+          "isBackgroundEnabled": false,
+          "neverForLocation": false,
+          "bluetoothAlwaysPermission": "Connect to your Info Wall to change its settings"
+        }
+      ],
       "expo-web-browser"
     ],
-    "extra": { "router": {} },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "63b7cc73-5b5c-49fa-bd1e-eb1c58ec8b13"
+      }
+    },
     "owner": "abarish"
   }
 }
