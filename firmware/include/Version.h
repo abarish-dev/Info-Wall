@@ -6,7 +6,7 @@
 // you publish to backend/public/fw/ (see that folder's README).
 // ===========================================================================
 #pragma once
-#define INFOWALL_FW_VERSION "1.2.16"
+#define INFOWALL_FW_VERSION "1.2.17"
 // Build-variant suffix shown on the boot screen only (not used for OTA).
 #ifndef INFOWALL_FW_TAG
 #define INFOWALL_FW_TAG ""

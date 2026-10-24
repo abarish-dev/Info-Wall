@@ -550,6 +550,7 @@ class DisplayManager {
     // right edge (big temp, lake TGT): this panel can't hold R and G together
     // cleanly. Single-channel red renders clean, so warm colours -> pure red.
     if (c == 0xFFE0) return c;   // 1.2.12: deliberate full yellow (temp, suns) passes through
+    if (c == 0xFDE0) return c;   // 1.2.17: deliberate amber 255,190,0 (world-map clock) passes through
     if (r >= 195 && b < 100 && g >= 90) return kWarm565;   // amber/gold/orange -> soft red
     if (r >= 195 && b < 100 && g < 90)  return kWarm565;  // warm red -> soft red
     return c;

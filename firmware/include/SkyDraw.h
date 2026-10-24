@@ -176,7 +176,7 @@ template <class G> void skyDrawMap(G &g, time_t utc, float homeLat, float homeLo
       // warm amber text, no bleed from the bright day-side behind it.
       int w = (int)strlen(clock) * 6 + 3;
       for (int y = 54; y < 64; y++) for (int x = 0; x < w; x++) skPx(g, x, y, SkyRGB{0, 0, 0});
-      skText(g, clock, 2, 56, SkyRGB{230, 150, 40});
+      skText(g, clock, 2, 56, SkyRGB{255, 190, 0});   // 1.2.17: amber (565 0xFDE0, passes steady565)
     } else skText(g, clock, 2, 56, SK_SOFT);
   }
 }
