@@ -131,6 +131,7 @@ inline int dyPages(int which, const DyData &d) {
     case DY_MATH:   n = (dyLineCount(d.mathText) + (d.mathBig[0] ? 3 : 5)) / (d.mathBig[0] ? 4 : 6); break;
     case DY_FAMILY: n = (dyLineCount(d.fam) + 3) / 4; break;
     case DY_BORN:   n = 1; break;
+    case DY_WORD:   n = d.origin[0] ? 2 : 1; break;
   }
   return n < 1 ? 1 : n;
 }
@@ -139,15 +140,30 @@ template <class G> void dyDraw(G &g, int which, const DyData &d, int sub) {
   char b[48];
   switch (which) {
     case DY_WORD: {
+      // 1.2.3: page 1 is always word + pronunciation/part of speech + the
+      // DEFINITION. The origin + example is an optional 2nd page of the same
+      // slide (only when there is an origin).
       dyTitle(g, "WORD OF THE DAY", DY_AMBER);
-      bool big = dyWidth(d.word, 2) <= 126;
-      if (big) dyCenter(g, d.word, 13, DY_SKY, 2);
-      else dyCenter(g, d.word, 15, DY_SKY);
-      dyCenter(g, d.pron, big ? 30 : 25, DY_MUTED);
-      dyBody(g, d.def, big ? 40 : 36, 3, 0, DY_SOFT);
+      if (sub == 0 || !d.origin[0]) {
+        bool big = dyWidth(d.word, 2) <= 126;
+        if (big) dyCenter(g, d.word, 13, DY_SKY, 2);
+        else dyCenter(g, d.word, 15, DY_SKY);
+        if (d.pos[0]) snprintf(b, sizeof(b), "%s - %s", d.pron, d.pos);
+        else snprintf(b, sizeof(b), "%s", d.pron);
+        if (dyWidth(b, 1) > 126) snprintf(b, sizeof(b), "%s", d.pron);
+        dyCenter(g, b, big ? 30 : 25, DY_MUTED);
+        dyBody(g, d.def, big ? 40 : 36, 3, 0, DY_SOFT);
+      } else {
+        dyCenter(g, d.word, 12, DY_SKY);
+        snprintf(b, sizeof(b), "Origin:");
+        dyCenter(g, b, 21, DY_MUTED);
+        dyBody(g, d.origin, 30, 2, 0, DY_SOFT);
+        char ex[160]; snprintf(ex, sizeof(ex), "\"%s\"", d.example);
+        dyBody(g, ex, 48, 2, 0, DY_MUTED);
+      }
       break;
     }
-    case DY_ORIGIN: {
+    case DY_ORIGIN: {   // legacy page (no longer in the rotation)
       dyTitle(g, "WORD ORIGIN", DY_AMBER);
       snprintf(b, sizeof(b), "%s (%s)", d.word, d.pos);
       dyCenter(g, b, 12, DY_SKY);

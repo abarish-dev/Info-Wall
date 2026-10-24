@@ -112,7 +112,8 @@ class DisplayManager {
       if (slot >= 0 && g_settings.teamHL[slot] == "live") hold = hold * 2;
     }
     // Daily slides with a long body show it in 2-3 parts, one hold each.
-    if (isDaily(cur_.m)) hold *= dailyPages(cur_.m);
+    if (cur_.m == M_WORD && dailyPages(M_WORD) > 1) hold = wordDefMs() + WORD_ORIGIN_MS;
+    else if (isDaily(cur_.m)) hold *= dailyPages(cur_.m);
 
     // Dog walk-by: at a random time (or on request from the app), the dog
     // walks across the bottom of whatever page is up. The page doesn't change
@@ -499,7 +500,7 @@ class DisplayManager {
     int n = 0;
     bool clk = time(nullptr) > 1600000000;
     if (g_settings.showWeather) out[n++] = M_WEATHER;
-    if (g_settings.smWord && g_settings.dyWord.length()) { out[n++] = M_WORD; out[n++] = M_ORIGIN; }
+    if (g_settings.smWord && g_settings.dyWord.length()) out[n++] = M_WORD;   // origin is its 2nd page (1.2.3)
     if (g_settings.showWeather && g_settings.showForecast && g_settings.fcN > 0) out[n++] = M_FORECAST;
     if (g_settings.smBorn && g_settings.dyBorn.length()) out[n++] = M_BORN;
     if (g_settings.showMoon && g_settings.moonIl >= 0) out[n++] = M_MOON;
@@ -708,9 +709,14 @@ class DisplayManager {
                   g_settings.dyFam.c_str(), g_settings.dyFamFrom.c_str()};
   }
   int dailyPages(Module m) { DyData d = dyData(); int n = dyPages(dyWhich(m), d); return n > 3 ? 3 : n; }
+  // Word slide (1.2.3): the definition page dwells longest (>= 10 s), then the
+  // origin page follows briefly. Always definition first.
+  static const unsigned long WORD_ORIGIN_MS = 6000;
+  unsigned long wordDefMs() { return (unsigned long)max(10000, g_settings.holdDurationMs); }
   int dailySub(Module m) {
     int n = dailyPages(m);
     if (n <= 1) return 0;
+    if (m == M_WORD) return (millis() - frameStart_) < wordDefMs() ? 0 : 1;
     unsigned long per = (unsigned long)max(2000, g_settings.holdDurationMs);
     int k = (int)((millis() - frameStart_) / per);
     return k >= n ? n - 1 : k;
