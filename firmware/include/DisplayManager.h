@@ -524,11 +524,17 @@ class DisplayManager {
   // 1.2.8 Mom Wall "steady colours": amber/orange/yellow and red text are
   // snapped to fully-on channels (yellow 255,255,0 / red 255,0,0). A channel
   // at 0 or 255 is never pulse-width modulated, so it cannot blink.
+  // 1.2.10 default "soft red" (200,0,0): one LED channel only (no R+G/R+B
+  // mix, so no coloured fringes) and less harsh than full 255 red.
+  static constexpr uint16_t kWarm565 = ((200 >> 3) << 11);
   static uint16_t steady565(uint16_t c) {
     if (!c) return c;
     int r = ((c >> 11) & 31) * 255 / 31, g = ((c >> 5) & 63) * 255 / 63, b = (c & 31) * 255 / 31;
-    if (r >= 195 && b < 100 && g >= 90) return 0xFFE0;   // amber/gold/orange -> yellow
-    if (r >= 195 && b < 100 && g < 90)  return 0xF800;   // warm red -> pure red
+    // 1.2.10: yellow (R+G) still showed red strokes with green only on the
+    // right edge (big temp, lake TGT): this panel can't hold R and G together
+    // cleanly. Single-channel red renders clean, so warm colours -> pure red.
+    if (r >= 195 && b < 100 && g >= 90) return kWarm565;   // amber/gold/orange -> soft red
+    if (r >= 195 && b < 100 && g < 90)  return kWarm565;  // warm red -> soft red
     return c;
   }
   int width_ = 128, height_ = 64;
@@ -1160,7 +1166,9 @@ class DisplayManager {
       float d = g_settings.lakeTgtDiff.toFloat();
       String t = String("TGT ") + g_settings.lakeTgt;
       if (g_settings.lakeTgtDiff.length()) t += " " + g_settings.lakeTgtDiff + "ft";
-      centerText(t, 28, fabsf(d) <= 0.5f ? green() : amber());
+      // 1.2.10: one solid colour for the whole line: pure green near target,
+      // pure red otherwise (single LED channel = no mixed-colour fringes).
+      centerText(t, 28, fabsf(d) <= 0.5f ? dma_->color565(0, 255, 0) : kWarm565);
       if (g_settings.lakeFull.length())
         centerText(String("FULL ") + g_settings.lakeFull + "ft", 40, dma_->color565(120, 175, 215));
       if (g_settings.lakeWater > 0) {
@@ -1429,7 +1437,8 @@ class DisplayManager {
       } else {
         snprintf(clk, sizeof(clk), "--:--");
       }
-      centerText(clk, 5, haveClock ? cyan() : dim());
+      // 1.2.10: Mom Wall hides the clock row until the time is known.
+      if (haveClock || !g_settings.simpleMode) centerText(clk, 5, haveClock ? cyan() : dim());
       // Rest of the layout sits below the (always-present) clock row.
       int base = 17;
       char t[16];

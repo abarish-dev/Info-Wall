@@ -62,7 +62,7 @@ class NetworkData {
     // (Re)start SNTP whenever the link comes (back) up, and again every 5 min
     // while the clock is still unset, so a missed first sync isn't permanent.
     unsigned long nowMs = millis();
-    if (!clockSynced_ || (!clockValid_ && nowMs - tNtp_ > 300000UL)) {
+    if (!clockSynced_ || (!clockValid_ && nowMs - tNtp_ > 60000UL)   /* 1.2.10: 1 min (was 5) */) {
       configTzTime(INFOWALL_TZ, "pool.ntp.org", "time.nist.gov", "time.google.com");
       clockSynced_ = true;
       tNtp_ = nowMs | 1;
