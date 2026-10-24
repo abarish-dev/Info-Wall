@@ -21,7 +21,9 @@ static const SkyRGB SK_FAINT = {38, 38, 38};
 static const SkyRGB SK_AMBER = {245, 158, 11};
 static const SkyRGB SK_SKY   = {56, 189, 248};
 static const SkyRGB SK_GREEN = {16, 185, 129};
-static const SkyRGB SK_PHASE = {0, 230, 0};   // 1.2.16: moon phase name green again (1.2.15 lavender was interim)
+#include "Palette.h"
+// 1.3.0: Mom Wall green phase name; main walls amber as in 1.1.21.
+#define SK_PHASE (g_momPal ? SkyRGB{0, 230, 0} : SK_AMBER)
 static const SkyRGB SK_RED   = {230, 40, 40};
 
 struct SkyMoon { int il; bool wax; const char *ph, *sr, *ss, *mr; };
@@ -69,9 +71,9 @@ template <class G> void skyDrawMoon(G &g, const SkyMoon &m) {
     const int8_t rays[8][2] = {{0,-4},{0,4},{-4,0},{4,0},{-3,-3},{3,3},{-3,3},{3,-3}};
     for (auto &r : rays) skPx(g, x + r[0], y + r[1], c);
   };
-  sun(43, 32, {255, 255, 0});
+  sun(43, 32, g_momPal ? SkyRGB{255, 255, 0} : SkyRGB{250, 200, 40});
   snprintf(b, sizeof(b), "Rise %s", m.sr); skText(g, b, 51, 29, SK_SOFT);
-  sun(43, 44, {255, 255, 0});
+  sun(43, 44, g_momPal ? SkyRGB{255, 255, 0} : SkyRGB{240, 110, 40});
   snprintf(b, sizeof(b), "Set  %s", m.ss); skText(g, b, 51, 41, SK_SOFT);
   if (m.mr && *m.mr) { snprintf(b, sizeof(b), "Moonrise %s", m.mr); skText(g, b, 38, 54, SK_MUTED); }
 }

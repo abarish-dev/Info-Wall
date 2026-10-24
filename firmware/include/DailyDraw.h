@@ -27,7 +27,10 @@ struct DyRGB { uint8_t r, g, b; };
 static const DyRGB DY_SOFT  = {185, 185, 180};
 static const DyRGB DY_MUTED = {120, 120, 115};
 static const DyRGB DY_FAINT = {38, 38, 38};
-static const DyRGB DY_AMBER = {0, 230, 0};   // 1.2.16: back to green (1.2.11-1.2.14 palette; 1.2.15 lavender was interim)
+#include "Palette.h"
+// 1.3.0: accent is runtime - Mom Wall green (1.2.16), main walls amber (1.2.0 original).
+static inline DyRGB dyAccent() { return g_momPal ? DyRGB{0, 230, 0} : DyRGB{245, 158, 11}; }
+#define DY_AMBER dyAccent()
 static const DyRGB DY_SKY   = {56, 189, 248};
 static const DyRGB DY_GREEN = {16, 185, 129};
 static const DyRGB DY_ROSE  = {244, 114, 182};

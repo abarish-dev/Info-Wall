@@ -184,6 +184,13 @@ struct MatrixSettings {
   bool smPlanes = true, smTv = true;           // simple-mode-only toggles
   bool smLake = true;                         // 1.2.4: Lake Norman slide on Mom Wall
   bool smBorn = true, smWord = true, smCFact = true, smCToday = true, smMath = true, smFamily = true;
+  // 1.3.0 Trivia section (main walls, normal mode). Ignored in simple mode,
+  // which keeps its own sm* toggles. Defaults: all on except Math.
+  bool tvOn = true, tvBorn = true, tvComposer = true, tvMusicDay = true, tvWord = true,
+       tvOrigin = true, tvCFact = true, tvMath = false;
+  // 1.3.0: nightly (~3 AM + jitter) SHA-verified self-update on the wall's own
+  // channel (main, or simple for Mom Wall). Default on.
+  bool autoUpdate = true;
   // /api/device/daily (persisted so the slides show right after a reboot)
   String dyDate, dyWord, dyPron, dyPos, dyDef, dyOrigin, dyEx;
   String dyBorn, dyBornDesc, dyCFact, dyCToday, dyCDesc, dyCKind, dyMathBig, dyMathText, dyFam, dyFamFrom;
@@ -682,6 +689,23 @@ inline void BLEController::handleJson(const String &raw) {
     // them when simple mode is on and they're unset.
     simpleDefaults();
     notify(String("{\"simple\":") + (g_settings.simpleMode ? 1 : 0) + "}");
+
+  } else if (strcmp(cmd, "trivia") == 0) {
+    // 1.3.0: { tvOn, born, composer, musicDay, word, origin, cfact, math } (any subset).
+    g_settings.tvOn       = doc["tvOn"]     | g_settings.tvOn;
+    g_settings.tvBorn     = doc["born"]     | g_settings.tvBorn;
+    g_settings.tvComposer = doc["composer"] | g_settings.tvComposer;
+    g_settings.tvMusicDay = doc["musicDay"] | g_settings.tvMusicDay;
+    g_settings.tvWord     = doc["word"]     | g_settings.tvWord;
+    g_settings.tvOrigin   = doc["origin"]   | g_settings.tvOrigin;
+    g_settings.tvCFact    = doc["cfact"]    | g_settings.tvCFact;
+    g_settings.tvMath     = doc["math"]     | g_settings.tvMath;
+    notify(String("{\"trivia\":") + (g_settings.tvOn ? 1 : 0) + "}");
+
+  } else if (strcmp(cmd, "autoupdate") == 0) {
+    // 1.3.0: { nightly: bool }
+    g_settings.autoUpdate = doc["nightly"] | g_settings.autoUpdate;
+    notify(String("{\"autoupdate\":") + (g_settings.autoUpdate ? 1 : 0) + "}");
 
   } else if (strcmp(cmd, "clock") == 0) {
     // App 1.4.3+: { showBigClock, clockColor, clock24 } (any subset).

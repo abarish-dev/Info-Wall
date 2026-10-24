@@ -117,6 +117,13 @@ class NetworkData {
     if (due(now, tWeather_, 900000)) { settle(now, tWeather_, 900000, fetchWeather());  tLastFetch_ = now; return; }
     if (due(now, tFolly_, 1800000))  { settle(now, tFolly_, 1800000, fetchFolly());     tLastFetch_ = now; return; }
     if (due(now, tLake_, 3600000))   { settle(now, tLake_, 3600000, fetchLake());       tLastFetch_ = now; return; }
+    // 1.3.0 Trivia: daily slides on main walls. Extra heap guard on top of
+    // getJson's 45 KB floor so a busy full-feature wall never trades a
+    // scores/planes fetch for trivia text.
+    if (g_settings.tvOn && dailyDue(now)) {
+      if (ESP.getFreeHeap() < 60000) { tDaily_ = now | 1; }   // retry next 30 min window
+      else { settle(now, tDaily_, 1800000, fetchDaily()); tLastFetch_ = now; return; }
+    }
     if ((g_settings.showMoon || g_settings.showIss) && due(now, tSky_, 900000)) { settle(now, tSky_, 900000, fetchSky()); tLastFetch_ = now; return; }
     if (due(now, tTv_, 3600000))     { settle(now, tTv_, 3600000, fetchTv());           tLastFetch_ = now; return; }
     if (g_settings.trackFlight && g_settings.flightIdent.length()) {

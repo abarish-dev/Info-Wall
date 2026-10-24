@@ -112,3 +112,43 @@ App writes `{"command":"wifiScan"}`. The wall runs an async scan (display keeps
 running) and notifies one network per frame, strongest first, deduped, max 15:
 `{"ws":[index,count,"SSID",rssi,secure]}` then `{"wsDone":count}` (`-1` = scan failed).
 Hidden networks are skipped; the app keeps a manual SSID field for them.
+
+## Trivia section (fw 1.3.0+, main walls / normal mode)
+
+The Mom Wall daily slides, each on its own toggle, in the normal rotation.
+Ignored in simple mode (Mom Wall keeps its own `simple` toggles). Any subset
+of keys may be sent; missing keys keep their current value. Persisted (`tvF`).
+
+```json
+{ "command": "trivia", "tvOn": true, "born": true, "composer": true,
+  "musicDay": true, "word": true, "origin": true, "cfact": true, "math": false }
+```
+
+| key | slide | default |
+|---|---|---|
+| `tvOn` | master switch | on |
+| `born` | Born Today | on |
+| `composer` | Composer Birthday (`ck == "composer_born"`) | on |
+| `musicDay` | Classical On This Day (any other `ck`) | on |
+| `word` | Word of the Day | on |
+| `origin` | Word Origin (2nd page of Word) | on |
+| `cfact` | Classical Fact | on |
+| `math` | Math | off |
+
+Reply: `{"trivia":1|0}`. Data comes from `GET /api/device/daily` (fetched by
+the wall when `tvOn`, at day change / every 30 min, skipped below 60 KB free
+heap). Normal mode uses amber accents (titles/years); short slides are
+vertically centred.
+
+## Nightly auto-update (fw 1.3.0+)
+
+```json
+{ "command": "autoupdate", "nightly": true }
+```
+
+Default on, persisted (`auU`). Around 3 AM local + random jitter the wall asks
+`/api/firmware/latest` on its own channel (main walls: default/main channel;
+simple mode: `channel=simple`), and installs only a strictly newer version,
+streamed into the spare OTA slot and marked bootable only if size + SHA-256
+match the manifest. The app's Update button uses the same verified path on
+both channels. Reply: `{"autoupdate":1|0}`.

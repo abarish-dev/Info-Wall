@@ -511,7 +511,8 @@ class DisplayManager {
   bool centering() { return g_settings.simpleMode && canvas_; }
  private:
   void renderPage() {
-    if (!g_settings.simpleMode || !ensureCanvas()) {
+    // 1.3.0: main walls also centre the (short) Trivia/daily slides vertically.
+    if ((!g_settings.simpleMode && !isDaily(cur_.m)) || !ensureCanvas()) {
       dma_->clearScreen();
       drawModule(cur_.m);
       return;
@@ -626,6 +627,15 @@ class DisplayManager {
     if (g_settings.showLKN)   out[n++] = M_LKN;
     if (g_settings.showFolly) out[n++] = M_FOLLY;
     if (g_settings.showWeather && g_settings.showMoon && g_settings.moonIl >= 0) out[n++] = M_MOON;
+    // 1.3.0 Trivia (main walls): Mom Wall daily slides, each on its own toggle.
+    if (g_settings.tvOn) {
+      bool comp = g_settings.dyCKind == "composer_born";
+      if (g_settings.tvWord && g_settings.dyWord.length()) out[n++] = M_WORD;   // origin = 2nd page (tvOrigin)
+      if (g_settings.tvBorn && g_settings.dyBorn.length()) out[n++] = M_BORN;
+      if (g_settings.tvCFact && g_settings.dyCFact.length()) out[n++] = M_CFACT;
+      if (g_settings.dyCToday.length() && (comp ? g_settings.tvComposer : g_settings.tvMusicDay)) out[n++] = M_CTODAY;
+      if (g_settings.tvMath && g_settings.dyMathText.length()) out[n++] = M_MATH;
+    }
     if (g_settings.showIss && g_settings.issOk) out[n++] = M_ISS;
     if (g_settings.showMap && time(nullptr) > 1600000000) out[n++] = M_MAP;
     if (g_settings.showBigClock && time(nullptr) > 1600000000) out[n++] = M_CLOCK;
@@ -808,7 +818,11 @@ class DisplayManager {
                   g_settings.dyMathBig.c_str(), g_settings.dyMathText.c_str(),
                   g_settings.dyFam.c_str(), g_settings.dyFamFrom.c_str()};
   }
-  int dailyPages(Module m) { DyData d = dyData(); int n = dyPages(dyWhich(m), d); return n > 3 ? 3 : n; }
+  int dailyPages(Module m) {
+    DyData d = dyData(); int n = dyPages(dyWhich(m), d);
+    if (m == M_WORD && !g_settings.simpleMode && !g_settings.tvOrigin && n > 1) n = 1;   // 1.3.0 Word Origin toggle
+    return n > 3 ? 3 : n;
+  }
   // Word slide (1.2.3): the definition page dwells longest (>= 10 s), then the
   // origin page follows briefly. Always definition first.
   static const unsigned long WORD_ORIGIN_MS = 6000;
@@ -1118,6 +1132,7 @@ class DisplayManager {
   }
 
   void drawModule(Module m) {
+    g_momPal = g_settings.simpleMode;   // 1.3.0: shared draw code picks Mom vs main colours
     switch (m) {
       case M_MESSAGE:   drawMessage();   break;
       case M_FLIGHT:    drawFlight();    break;
@@ -1186,7 +1201,8 @@ class DisplayManager {
       if (g_settings.lakeTgtDiff.length()) t += " " + g_settings.lakeTgtDiff + "ft";
       // 1.2.10: one solid colour for the whole line: pure green near target,
       // pure red otherwise (single LED channel = no mixed-colour fringes).
-      centerText(t, 28, fabsf(d) <= 0.5f ? dma_->color565(0, 255, 0) : kWarm565);
+      if (g_settings.simpleMode) centerText(t, 28, fabsf(d) <= 0.5f ? dma_->color565(0, 255, 0) : kWarm565);
+      else centerText(t, 28, fabsf(d) <= 0.5f ? green() : amber());   // 1.3.0: main walls as 1.1.21
       if (g_settings.lakeFull.length())
         centerText(String("FULL ") + g_settings.lakeFull + "ft", 40, dma_->color565(120, 175, 215));
       if (g_settings.lakeWater > 0) {
@@ -1419,7 +1435,8 @@ class DisplayManager {
         for (int c = 0; c < WX_ICON_W; c++) {
           uint8_t p = pgm_read_byte(&ic[r * WX_ICON_W + c]);
           if (p) gfx_->drawPixel(cx - 8 + c, 15 + r,
-                                 dma_->color565(WX_ICON_PAL[p][0], WX_ICON_PAL[p][1], WX_ICON_PAL[p][2]));
+                                 g_settings.simpleMode ? dma_->color565(WX_ICON_PAL[p][0], WX_ICON_PAL[p][1], WX_ICON_PAL[p][2])
+                                                      : dma_->color565(WX_ICON_PAL_MAIN[p][0], WX_ICON_PAL_MAIN[p][1], WX_ICON_PAL_MAIN[p][2]));
         }
       char hi[8], lo[8];
       snprintf(hi, sizeof(hi), "%d", g_settings.fcHi[k]);

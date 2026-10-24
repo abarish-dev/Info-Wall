@@ -123,14 +123,17 @@ static OtaResult simpleInstall(bool fromApp) {
   {
     WiFiClientSecure c; c.setInsecure();
     HTTPClient h; h.setTimeout(12000); h.setReuse(false);
-    if (!h.begin(c, base + "/api/firmware/latest?channel=simple&current=" INFOWALL_FW_VERSION)) { r.err = -1; r.msg = "begin"; return r; }
+    String q = base + "/api/firmware/latest?current=" INFOWALL_FW_VERSION;
+    if (g_settings.simpleMode) q += "&channel=simple";   // 1.3.0: main walls ask the main channel
+    if (!h.begin(c, q)) { r.err = -1; r.msg = "begin"; return r; }
     int code = h.GET();
     PSRAM_JSON(doc);
     DeserializationError je = code == 200 ? deserializeJson(doc, h.getStream()) : DeserializationError::Ok;
     h.end();
     if (code != 200) { r.err = code; r.msg = code < 0 ? HTTPClient::errorToString(code) : String("HTTP ") + code; return r; }
     if (je) { r.err = -2; r.msg = String("json ") + je.c_str(); return r; }
-    if (String((const char *)(doc["channel"] | "")) != "simple") { r.ok = r.upToDate = true; return r; }
+    { String ch = (const char *)(doc["channel"] | "main");
+      if (g_settings.simpleMode ? ch != "simple" : ch == "simple") { r.ok = r.upToDate = true; return r; } }
     r.ver = (const char *)(doc["version"] | "");
     path = (const char *)(doc["url"] | "");
     sha = (const char *)(doc["sha256"] | "");
@@ -198,7 +201,7 @@ static void otaCheck() {
     g_ble.notify("{\"ota\":\"offline\"}");
     return;
   }
-  if (g_settings.simpleMode) {          // 1.2.9: same verified path as nightly
+  {                                     // 1.2.9 simple / 1.3.0 main: same verified path as nightly
     OtaResult r = simpleInstall(true);
     if (r.upToDate) { g_ble.notify("{\"ota\":\"uptodate\",\"fw\":\"" INFOWALL_FW_VERSION "\"}"); return; }
     if (!r.ok) {
@@ -294,7 +297,7 @@ static bool nightlyInstall() {
 }
 
 static void nightlyTick() {
-  if (!g_settings.simpleMode) return;
+  if (!g_settings.autoUpdate) return;   // 1.3.0: all walls, own channel; app can turn it off
   static unsigned long lastLook = 0;
   if (millis() - lastLook < 30000) return;
   lastLook = millis();
