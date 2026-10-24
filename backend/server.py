@@ -2762,6 +2762,54 @@ def device_vip(lat: float = 35.58, lon: float = -80.81, r: float = 60):
     return _sky.device_vip(lat, lon, max(5.0, min(150.0, r)))
 
 
+# ---- Mom Wall daily content (firmware 1.2.0 simple mode + mom-app) ---------
+import os  # noqa: E402
+import daily as _daily  # noqa: E402
+from fastapi import Header  # noqa: E402
+from pydantic import BaseModel  # noqa: E402
+
+
+@api_router.get("/daily")
+def api_daily(date: str = ""):
+    """Today's word / classical / math / born-today for the mom-app Today page
+    (full text + links). `date=YYYY-MM-DD` previews another day."""
+    import datetime as _d
+    d = _d.date.fromisoformat(date) if date else None
+    out = dict(_daily.daily(d))
+    out["family"] = _daily.family_get()
+    return out
+
+
+@api_router.get("/device/daily")
+def device_daily(date: str = "", wall: str = "mom"):
+    """Compact ASCII version for the panel's simple-mode slides."""
+    import datetime as _d
+    return _daily.device_daily(_d.date.fromisoformat(date) if date else None, wall)
+
+
+class FamilyMsg(BaseModel):
+    text: str
+    sender: str = ""
+    wall: str = "mom"
+
+
+@api_router.get("/family")
+def family_read(wall: str = "mom"):
+    return _daily.family_get(wall)
+
+
+@api_router.post("/family")
+def family_write(msg: FamilyMsg, x_family_token: str = Header(default="")):
+    """Set the family message shown on the wall. Requires header
+    X-Family-Token == env FAMILY_WRITE_TOKEN (writes are refused when unset)."""
+    tok = os.environ.get("FAMILY_WRITE_TOKEN", "")
+    if not tok or x_family_token != tok:
+        raise HTTPException(status_code=401, detail="bad token")
+    if not msg.text.strip():
+        raise HTTPException(status_code=400, detail="empty message")
+    return _daily.family_set(msg.wall, msg.text, msg.sender)
+
+
 # Include the router in the main app
 app.include_router(api_router)
 

@@ -1,0 +1,2198 @@
+[
+ {
+  "id": 1,
+  "text": "Zero as a number was developed in India; Brahmagupta gave rules for it in 628 AD.",
+  "source": "https://en.wikipedia.org/wiki/Number",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 2,
+  "text": "Pi is irrational: its decimals never end or repeat.",
+  "source": "https://en.wikipedia.org/wiki/Pi",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 3,
+  "text": "Pi Day is March 14 (3/14), also Albert Einstein's birthday.",
+  "source": "https://en.wikipedia.org/wiki/Pi_Day",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 4,
+  "text": "Archimedes showed pi is between 3 10/71 and 3 1/7.",
+  "source": "https://en.wikipedia.org/wiki/Orders_of_magnitude_%28numbers%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 5,
+  "text": "The symbol π for pi was popularized by Leonhard Euler in the 1700s.",
+  "source": "https://en.wikipedia.org/wiki/History_of_gravitational_theory",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 6,
+  "text": "Euler's identity, e^(iπ) + 1 = 0, links five key constants.",
+  "source": "https://en.wikipedia.org/wiki/Euler%27s_identity",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 7,
+  "text": "e is about 2.71828 and is the base of natural logarithms.",
+  "source": "https://en.wikipedia.org/wiki/E_%28mathematical_constant%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 8,
+  "text": "The golden ratio is about 1.618.",
+  "source": "https://en.wikipedia.org/wiki/Golden_ratio",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 9,
+  "text": "Each Fibonacci number is the sum of the two before it: 1, 1, 2, 3, 5, 8, 13...",
+  "source": "https://en.wikipedia.org/wiki/Fibonacci_sequence",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 10,
+  "text": "Ratios of consecutive Fibonacci numbers approach the golden ratio.",
+  "source": "https://en.wikipedia.org/wiki/Golden_ratio",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 11,
+  "text": "Fibonacci introduced Hindu-Arabic numerals to Europe in his 1202 book Liber Abaci.",
+  "source": "https://en.wikipedia.org/wiki/Liber_Abaci",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 12,
+  "text": "There are infinitely many prime numbers, proved by Euclid around 300 BC.",
+  "source": "https://en.wikipedia.org/wiki/Euclid",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 13,
+  "text": "2 is the only even prime number.",
+  "source": "https://en.wikipedia.org/wiki/2",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 14,
+  "text": "1 is not considered a prime number.",
+  "source": "https://en.wikipedia.org/wiki/Prime_number",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 15,
+  "text": "The largest known primes are Mersenne primes, of the form 2^p - 1.",
+  "source": "https://en.wikipedia.org/wiki/Largest_known_prime_number",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 16,
+  "text": "A googol is 1 followed by 100 zeros.",
+  "source": "https://en.wikipedia.org/wiki/Googolplex",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 17,
+  "text": "The name Google came from 'googol'.",
+  "source": "https://en.wikipedia.org/wiki/Google",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 18,
+  "text": "The word 'googol' was coined by 9-year-old Milton Sirotta in 1938.",
+  "source": "https://en.wikipedia.org/wiki/Googol",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 19,
+  "text": "A googolplex is 1 followed by a googol zeros.",
+  "source": "https://en.wikipedia.org/wiki/Googolplex",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 20,
+  "text": "Zero is neither positive nor negative.",
+  "source": "https://en.wikipedia.org/wiki/Sign_%28mathematics%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 21,
+  "text": "Any number to the power 0 equals 1 (except 0, which is debated).",
+  "source": "https://en.wikipedia.org/wiki/Golden_ratio",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 22,
+  "text": "The sum of the angles in a triangle is 180 degrees.",
+  "source": "https://en.wikipedia.org/wiki/Sum_of_angles_of_a_triangle",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 23,
+  "text": "A triangle with sides 3, 4 and 5 is a right triangle.",
+  "source": "https://en.wikipedia.org/wiki/Right_triangle",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 24,
+  "text": "The Pythagorean theorem: a² + b² = c² for right triangles.",
+  "source": "https://en.wikipedia.org/wiki/Pythagorean_theorem",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 25,
+  "text": "Babylonian tablet Plimpton 322 lists Pythagorean triples about 3,800 years ago.",
+  "source": "https://en.wikipedia.org/wiki/Plimpton_322",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 26,
+  "text": "Fermat's Last Theorem says aⁿ + bⁿ = cⁿ has no whole-number solutions for n > 2.",
+  "source": "https://en.wikipedia.org/wiki/Diophantus",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 27,
+  "text": "Andrew Wiles proved Fermat's Last Theorem in 1994, after 358 years.",
+  "source": "https://en.wikipedia.org/wiki/Fermat%27s_Last_Theorem",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 28,
+  "text": "Fermat wrote that his margin was too small to contain his proof.",
+  "source": "https://en.wikipedia.org/wiki/Fermat%27s_Last_Theorem",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 29,
+  "text": "A circle has 360 degrees, a Babylonian tradition.",
+  "source": "https://en.wikipedia.org/wiki/Babylonian_astronomy",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 30,
+  "text": "The Babylonians used a base-60 number system, which gives us 60 minutes and seconds.",
+  "source": "https://en.wikipedia.org/wiki/Clock",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 31,
+  "text": "The Mayans used a base-20 number system with a symbol for zero.",
+  "source": "https://en.wikipedia.org/wiki/Maya_numerals",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 32,
+  "text": "Roman numerals have no symbol for zero.",
+  "source": "https://en.wikipedia.org/wiki/Roman_numerals",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 33,
+  "text": "In Roman numerals, M is 1,000 and D is 500.",
+  "source": "https://en.wikipedia.org/wiki/Roman_numerals",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 34,
+  "text": "The equals sign was invented by Robert Recorde in 1557.",
+  "source": "https://en.wikipedia.org/wiki/Equals_sign",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 35,
+  "text": "Recorde chose two parallel lines because 'no two things can be more equal.'",
+  "source": "https://en.wikipedia.org/wiki/Neymar",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 36,
+  "text": "The plus and minus signs first appeared in print in 1489.",
+  "source": "https://en.wikipedia.org/wiki/Plus_and_minus_signs",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 37,
+  "text": "The word 'algebra' comes from the Arabic 'al-jabr', from al-Khwarizmi's 9th-century book.",
+  "source": "https://en.wikipedia.org/wiki/Al-Khwarizmi",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 38,
+  "text": "The word 'algorithm' comes from the name al-Khwarizmi.",
+  "source": "https://en.wikipedia.org/wiki/Al-Khwarizmi",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 39,
+  "text": "A 'dozen' is 12 and a 'gross' is 144.",
+  "source": "https://en.wikipedia.org/wiki/Gross_%28unit%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 40,
+  "text": "A 'baker's dozen' is 13.",
+  "source": "https://en.wikipedia.org/wiki/Baker%27s_dozen_%28disambiguation%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 41,
+  "text": "111,111,111 × 111,111,111 = 12,345,678,987,654,321.",
+  "source": "computed (verified by script)",
+  "verified": "computed"
+ },
+ {
+  "id": 42,
+  "text": "The number 1729 is the smallest number expressible as the sum of two cubes in two ways.",
+  "source": "https://en.wikipedia.org/wiki/1729_%28number%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 43,
+  "text": "1729 is called the Hardy–Ramanujan number, after a taxi ride story.",
+  "source": "https://en.wikipedia.org/wiki/Putney",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 44,
+  "text": "Srinivasa Ramanujan was largely self-taught and filled notebooks with discoveries.",
+  "source": "https://en.wikipedia.org/wiki/Srinivasa_Ramanujan",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 45,
+  "text": "A perfect number equals the sum of its divisors: 6 = 1 + 2 + 3.",
+  "source": "https://en.wikipedia.org/wiki/Divisor_function",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 46,
+  "text": "28 is the second perfect number: 1 + 2 + 4 + 7 + 14.",
+  "source": "https://en.wikipedia.org/wiki/Perfect_number",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 47,
+  "text": "All known perfect numbers are even.",
+  "source": "https://en.wikipedia.org/wiki/List_of_Mersenne_primes_and_perfect_numbers",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 48,
+  "text": "Nobody knows whether an odd perfect number exists.",
+  "source": "https://en.wikipedia.org/wiki/Rounding",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 49,
+  "text": "Goldbach's conjecture says every even number above 2 is the sum of two primes; still unproven.",
+  "source": "https://en.wikipedia.org/wiki/Goldbach%27s_conjecture",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 50,
+  "text": "The twin prime conjecture asks if there are infinitely many primes 2 apart.",
+  "source": "https://en.wikipedia.org/wiki/Conjecture",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 51,
+  "text": "The Riemann Hypothesis carries a $1 million Millennium Prize.",
+  "source": "https://en.wikipedia.org/wiki/Millennium_Prize_Problems",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 52,
+  "text": "The Poincaré conjecture was proved by Grigori Perelman, who declined the $1 million prize.",
+  "source": "https://en.wikipedia.org/wiki/Millennium_Prize_Problems",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 53,
+  "text": "There are seven Millennium Prize Problems; only one has been solved.",
+  "source": "https://en.wikipedia.org/wiki/Millennium_Prize_Problems",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 54,
+  "text": "The Fields Medal is awarded every four years to mathematicians under 40.",
+  "source": "https://en.wikipedia.org/wiki/Fields_Medal",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 55,
+  "text": "Maryam Mirzakhani was the first woman to win the Fields Medal, in 2014.",
+  "source": "https://en.wikipedia.org/wiki/Maryam_Mirzakhani",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 56,
+  "text": "There is no Nobel Prize in mathematics.",
+  "source": "https://en.wikipedia.org/wiki/Nobel_Prize_controversies",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 57,
+  "text": "The Abel Prize, first given in 2003, is often called math's Nobel.",
+  "source": "https://en.wikipedia.org/wiki/Nobel_Prize_controversies",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 58,
+  "text": "A Möbius strip has only one side and one edge.",
+  "source": "https://en.wikipedia.org/wiki/M%C3%B6bius_strip",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 59,
+  "text": "A Klein bottle has no inside or outside.",
+  "source": "https://en.wikipedia.org/wiki/Klein_bottle",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 60,
+  "text": "To a topologist, a coffee cup and a donut are the same shape.",
+  "source": "https://en.wikipedia.org/wiki/Shape",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 61,
+  "text": "The Four Color Theorem: any map needs at most four colors.",
+  "source": "https://en.wikipedia.org/wiki/Four_color_theorem",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 62,
+  "text": "The Four Color Theorem (1976) was the first major proof done with a computer.",
+  "source": "https://en.wikipedia.org/wiki/Four_color_theorem",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 63,
+  "text": "Euler solved the Seven Bridges of Königsberg problem in 1736, founding graph theory.",
+  "source": "https://en.wikipedia.org/wiki/Graph_theory",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 64,
+  "text": "There are exactly five Platonic solids.",
+  "source": "https://en.wikipedia.org/wiki/Platonic_solid",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 65,
+  "text": "A soccer ball pattern is a truncated icosahedron: 12 pentagons and 20 hexagons.",
+  "source": "https://en.wikipedia.org/wiki/Truncated_icosahedron",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 66,
+  "text": "Bees build hexagonal cells, which use the least wax for the area.",
+  "source": "https://en.wikipedia.org/wiki/Honey_bee",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 67,
+  "text": "Honeycomb efficiency was proved mathematically by Thomas Hales in 1999.",
+  "source": "https://en.wikipedia.org/wiki/History_of_rockets",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 68,
+  "text": "A sphere has the smallest surface area for its volume.",
+  "source": "https://en.wikipedia.org/wiki/Surface-area-to-volume_ratio",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 69,
+  "text": "Archimedes asked that a sphere inside a cylinder be carved on his tomb.",
+  "source": "https://en.wikipedia.org/wiki/List_of_Egyptian_inventions_and_discoveries",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 70,
+  "text": "A sphere's volume is two-thirds that of the cylinder around it.",
+  "source": "https://en.wikipedia.org/wiki/Sphere",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 71,
+  "text": "Eratosthenes estimated Earth's circumference around 240 BC using shadows.",
+  "source": "https://en.wikipedia.org/wiki/Earth%27s_circumference",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 72,
+  "text": "The Rhind Papyrus, about 1550 BC, is an Egyptian math textbook.",
+  "source": "https://en.wikipedia.org/wiki/Timeline_of_scientific_discoveries",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 73,
+  "text": "Hypatia of Alexandria was a renowned mathematician around 400 AD.",
+  "source": "https://en.wikipedia.org/wiki/Hypatia",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 74,
+  "text": "Euclid's Elements was used as a textbook for over 2,000 years.",
+  "source": "https://en.wikipedia.org/wiki/Euclidean_geometry",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 75,
+  "text": "Leonhard Euler kept producing mathematics after going nearly blind.",
+  "source": "https://en.wikipedia.org/wiki/Frederick_the_Great",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 76,
+  "text": "Euler is among the most prolific mathematicians, with over 800 papers and books.",
+  "source": "https://en.wikipedia.org/wiki/Leonhard_Euler",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 77,
+  "text": "Carl Friedrich Gauss is called the 'Prince of Mathematicians'.",
+  "source": "https://en.wikipedia.org/wiki/Carl_Friedrich_Gauss",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 78,
+  "text": "As a child, Gauss reportedly added 1 to 100 quickly: the answer is 5,050.",
+  "source": "https://en.wikipedia.org/wiki/Carl_Friedrich_Gauss",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 79,
+  "text": "The sum of 1 to n is n(n+1)/2.",
+  "source": "https://en.wikipedia.org/wiki/N-sphere",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 80,
+  "text": "Isaac Newton and Gottfried Leibniz independently invented calculus.",
+  "source": "https://en.wikipedia.org/wiki/Leibniz%E2%80%93Newton_calculus_controversy",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 81,
+  "text": "Leibniz's notation, like dx and the ∫ sign, is the one we use today.",
+  "source": "https://en.wikipedia.org/wiki/Leibniz%27s_notation",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 82,
+  "text": "The ∫ symbol is a stretched 'S' for 'sum'.",
+  "source": "https://en.wikipedia.org/wiki/Context_mixing",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 83,
+  "text": "Newton was also Warden of the Royal Mint.",
+  "source": "https://en.wikipedia.org/wiki/Royal_Mint",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 84,
+  "text": "René Descartes invented the coordinate system, named 'Cartesian' after him.",
+  "source": "https://en.wikipedia.org/wiki/Ren%C3%A9_Descartes",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 85,
+  "text": "Blaise Pascal built a mechanical calculator at age 19.",
+  "source": "https://en.wikipedia.org/wiki/Blaise_Pascal",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 86,
+  "text": "Pascal's triangle was known in China and Persia centuries before Pascal.",
+  "source": "https://en.wikipedia.org/wiki/Pascal%27s_triangle",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 87,
+  "text": "Ada Lovelace wrote what is considered the first computer program, in 1843.",
+  "source": "https://en.wikipedia.org/wiki/Ada_Lovelace",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 88,
+  "text": "Ada Lovelace was the daughter of the poet Lord Byron.",
+  "source": "https://en.wikipedia.org/wiki/Ada_Lovelace",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 89,
+  "text": "Alan Turing helped break the Enigma code in World War II.",
+  "source": "https://en.wikipedia.org/wiki/Alan_Turing",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 90,
+  "text": "Alan Turing appears on the Bank of England's £50 note.",
+  "source": "https://en.wikipedia.org/wiki/Bank_of_England_%C2%A350_note",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 91,
+  "text": "Katherine Johnson calculated trajectories for NASA's early spaceflights.",
+  "source": "https://en.wikipedia.org/wiki/Katherine_Johnson",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 92,
+  "text": "John Glenn asked for Katherine Johnson to check the computer's numbers before his orbit.",
+  "source": "https://en.wikipedia.org/wiki/Hidden_Figures",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 93,
+  "text": "Emmy Noether's theorem links symmetry to conservation laws in physics.",
+  "source": "https://en.wikipedia.org/wiki/Emmy_Noether",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 94,
+  "text": "Sophie Germain wrote to Gauss under a man's name, 'Monsieur LeBlanc'.",
+  "source": "https://en.wikipedia.org/wiki/Sophie_Germain",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 95,
+  "text": "Lewis Carroll, author of Alice in Wonderland, was a mathematician at Oxford.",
+  "source": "https://en.wikipedia.org/wiki/Lewis_Carroll",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 96,
+  "text": "Probability theory began with letters between Pascal and Fermat in 1654.",
+  "source": "https://en.wikipedia.org/wiki/Pierre_de_Fermat",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 97,
+  "text": "In a room of 23 people, there's over a 50% chance two share a birthday.",
+  "source": "https://en.wikipedia.org/wiki/Birthday_problem",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 98,
+  "text": "With 70 people, a shared birthday is over 99.9% likely.",
+  "source": "https://en.wikipedia.org/wiki/Birthday_problem",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 99,
+  "text": "The Monty Hall problem: switching doors gives a 2/3 chance of winning.",
+  "source": "https://en.wikipedia.org/wiki/Monty_Hall_problem",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 100,
+  "text": "A shuffled deck is almost certainly in an order never seen before: 52! is about 8 × 10⁶⁷.",
+  "source": "https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 101,
+  "text": "There are 2,598,960 possible five-card poker hands.",
+  "source": "https://en.wikipedia.org/wiki/List_of_poker_hands",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 102,
+  "text": "The odds of a royal flush are about 1 in 649,740.",
+  "source": "https://en.wikipedia.org/wiki/Poker_probability",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 103,
+  "text": "Rolling two dice, 7 is the most likely total.",
+  "source": "https://en.wikipedia.org/wiki/Dice",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 104,
+  "text": "Opposite faces of a standard die add to 7.",
+  "source": "https://en.wikipedia.org/wiki/Dice",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 105,
+  "text": "A Rubik's Cube has about 43 quintillion positions.",
+  "source": "https://en.wikipedia.org/wiki/Rubik%27s_Cube",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 106,
+  "text": "Any Rubik's Cube position can be solved in 20 moves or fewer.",
+  "source": "https://en.wikipedia.org/wiki/Rubik%27s_Cube_group",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 107,
+  "text": "Chess has more possible games than atoms in the observable universe, by Shannon's estimate.",
+  "source": "https://en.wikipedia.org/wiki/Orders_of_magnitude_%28numbers%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 108,
+  "text": "The wheat-and-chessboard puzzle: doubling grains on 64 squares gives over 18 quintillion.",
+  "source": "https://en.wikipedia.org/wiki/Orders_of_magnitude_%28numbers%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 109,
+  "text": "Folding paper in half doubles thickness; 42 folds would reach past the Moon.",
+  "source": "https://en.wikipedia.org/wiki/List_of_Vanderbilt_University_people",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 110,
+  "text": "A number is divisible by 3 if its digits add to a multiple of 3.",
+  "source": "https://en.wikipedia.org/wiki/Divisibility_rule",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 111,
+  "text": "A number is divisible by 9 if its digits add to a multiple of 9.",
+  "source": "https://en.wikipedia.org/wiki/9",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 112,
+  "text": "A number is divisible by 11 if alternating digit sums differ by a multiple of 11.",
+  "source": "https://en.wikipedia.org/wiki/ISBN",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 113,
+  "text": "Multiplying any number by 9 gives digits that add to a multiple of 9.",
+  "source": "https://en.wikipedia.org/wiki/ISBN",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 114,
+  "text": "142857 × 2, 3, 4, 5 or 6 gives the same digits rearranged.",
+  "source": "computed (verified by script)",
+  "verified": "computed"
+ },
+ {
+  "id": 115,
+  "text": "1/7 = 0.142857 repeating.",
+  "source": "https://en.wikipedia.org/wiki/142857",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 116,
+  "text": "1/3 + 1/3 + 1/3 = 1, so 0.999... repeating equals 1.",
+  "source": "https://en.wikipedia.org/wiki/0.999...",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 117,
+  "text": "The square root of 2 was the first number known to be irrational.",
+  "source": "https://en.wikipedia.org/wiki/Square_root_of_2",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 118,
+  "text": "Legend says a Pythagorean was drowned for revealing √2 is irrational.",
+  "source": "https://en.wikipedia.org/wiki/Hippasus",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 119,
+  "text": "A 'palindrome number' reads the same backward, like 12321.",
+  "source": "computed (verified by script)",
+  "verified": "computed"
+ },
+ {
+  "id": 120,
+  "text": "The year 2002 was a palindrome year.",
+  "source": "https://en.wikipedia.org/wiki/Duo_Palindrome_2002",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 121,
+  "text": "Squaring numbers made of 1s gives palindromes: 11² = 121, 111² = 12321.",
+  "source": "computed (verified by script)",
+  "verified": "computed"
+ },
+ {
+  "id": 122,
+  "text": "A 'prime gap' can be as large as you like.",
+  "source": "https://en.wikipedia.org/wiki/Missile_gap",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 123,
+  "text": "The ancient Greeks didn't consider 1 a number at all.",
+  "source": "https://en.wikipedia.org/wiki/Ancient_Greece%E2%80%93Ancient_India_relations",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 124,
+  "text": "Kepler discovered planets move in ellipses.",
+  "source": "https://en.wikipedia.org/wiki/Kepler%27s_laws_of_planetary_motion",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 125,
+  "text": "The bell curve is also called the normal or Gaussian distribution.",
+  "source": "https://en.wikipedia.org/wiki/Normal_distribution",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 126,
+  "text": "Benford's Law: in many datasets, about 30% of numbers start with the digit 1.",
+  "source": "https://en.wikipedia.org/wiki/Benford%27s_law",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 127,
+  "text": "The 'golden angle' of about 137.5° appears in sunflower seed spirals.",
+  "source": "https://en.wikipedia.org/wiki/Patterns_in_nature",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 128,
+  "text": "Sunflower spirals often come in Fibonacci numbers like 34 and 55.",
+  "source": "https://en.wikipedia.org/wiki/Common_sunflower",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 129,
+  "text": "A circle's area is π times the radius squared.",
+  "source": "https://en.wikipedia.org/wiki/Area_of_a_circle",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 130,
+  "text": "A circle's circumference is π times its diameter.",
+  "source": "https://en.wikipedia.org/wiki/Area_of_a_circle",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 131,
+  "text": "Pi has been calculated to over 100 trillion digits.",
+  "source": "https://en.wikipedia.org/wiki/Approximations_of_pi",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 132,
+  "text": "NASA uses only about 15 digits of pi for interplanetary navigation.",
+  "source": "https://en.wikipedia.org/wiki/Significant_figures",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 133,
+  "text": "Indiana's 1897 'Pi Bill' nearly declared a wrong value of pi by law.",
+  "source": "https://en.wikipedia.org/wiki/Indiana_Pi_Bill",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 134,
+  "text": "Tau (τ) is 2π, about 6.283.",
+  "source": "https://en.wikipedia.org/wiki/Turn_%28angle%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 135,
+  "text": "Infinity comes in different sizes, shown by Georg Cantor.",
+  "source": "https://en.wikipedia.org/wiki/Infinity",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 136,
+  "text": "There are as many even numbers as whole numbers.",
+  "source": "https://en.wikipedia.org/wiki/Numbers_station",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 137,
+  "text": "There are more real numbers than whole numbers.",
+  "source": "https://en.wikipedia.org/wiki/List_of_types_of_numbers",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 138,
+  "text": "Hilbert's Hotel is a puzzle showing a full infinite hotel can still take new guests.",
+  "source": "https://en.wikipedia.org/wiki/List_of_paradoxes",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 139,
+  "text": "David Hilbert posed 23 famous problems in 1900.",
+  "source": "https://en.wikipedia.org/wiki/Max_Dehn",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 140,
+  "text": "Kurt Gödel proved some true statements can never be proved.",
+  "source": "https://en.wikipedia.org/wiki/Kurt_G%C3%B6del",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 141,
+  "text": "The abacus is one of the oldest calculating tools, used for thousands of years.",
+  "source": "https://en.wikipedia.org/wiki/Abacus",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 142,
+  "text": "John Napier invented logarithms in 1614.",
+  "source": "https://en.wikipedia.org/wiki/John_Napier",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 143,
+  "text": "The slide rule, based on logarithms, was used for 350 years until calculators.",
+  "source": "https://en.wikipedia.org/wiki/History_of_computing_hardware",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 144,
+  "text": "The Apollo astronauts carried slide rules as backups.",
+  "source": "https://en.wikipedia.org/wiki/Apollo_1",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 145,
+  "text": "The first handheld electronic calculators appeared around 1970.",
+  "source": "https://en.wikipedia.org/wiki/Calculator",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 146,
+  "text": "'Percent' means 'per hundred'.",
+  "source": "https://en.wikipedia.org/wiki/Percentage",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 147,
+  "text": "A 'billion' is a thousand million in the US system.",
+  "source": "https://en.wikipedia.org/wiki/Parts-per_notation",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 148,
+  "text": "A 'myriad' was the Greek word for 10,000.",
+  "source": "https://en.wikipedia.org/wiki/Myriad",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 149,
+  "text": "The 'Rule of 72': divide 72 by an interest rate to estimate years to double money.",
+  "source": "https://en.wikipedia.org/wiki/Rule_of_72",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 150,
+  "text": "Compound interest is how e was discovered, by Jacob Bernoulli.",
+  "source": "https://en.wikipedia.org/wiki/Jacob_Bernoulli",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 151,
+  "text": "The Bernoulli family produced eight notable mathematicians.",
+  "source": "https://en.wikipedia.org/wiki/Bernoulli_family",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 152,
+  "text": "Every number can be written as a sum of four squares (Lagrange, 1770).",
+  "source": "https://en.wikipedia.org/wiki/Lagrange%27s_four-square_theorem",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 153,
+  "text": "Fermat proved some primes are sums of two squares: 13 = 4 + 9.",
+  "source": "https://en.wikipedia.org/wiki/Sum_of_two_squares_theorem",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 154,
+  "text": "A 'magic square' has rows, columns and diagonals with the same sum.",
+  "source": "https://en.wikipedia.org/wiki/Magic_square",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 155,
+  "text": "The Lo Shu square from ancient China is a 3×3 magic square summing to 15.",
+  "source": "https://en.wikipedia.org/wiki/Magic_square",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 156,
+  "text": "Albrecht Dürer's engraving Melencolia I contains a 4×4 magic square showing the year 1514.",
+  "source": "https://en.wikipedia.org/wiki/Melencolia_I",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 157,
+  "text": "Sudoku puzzles have 6.67 × 10²¹ possible filled grids.",
+  "source": "https://en.wikipedia.org/wiki/Sudoku",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 158,
+  "text": "A Sudoku needs at least 17 clues to have a unique solution.",
+  "source": "https://en.wikipedia.org/wiki/Crossword",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 159,
+  "text": "The word 'geometry' means 'earth measurement' in Greek.",
+  "source": "https://en.wikipedia.org/wiki/Spherical_geometry",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 160,
+  "text": "'Mathematics' comes from the Greek 'mathema', meaning learning.",
+  "source": "https://en.wikipedia.org/wiki/Mathematics",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 161,
+  "text": "A 'hexagon' has 6 sides; a 'heptagon' 7; an 'octagon' 8.",
+  "source": "https://en.wikipedia.org/wiki/Coinage_shapes",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 162,
+  "text": "A shape with 1,000 sides is a chiliagon.",
+  "source": "https://en.wikipedia.org/wiki/List_of_two-dimensional_geometric_shapes",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 163,
+  "text": "Stop signs are regular octagons.",
+  "source": "https://en.wikipedia.org/wiki/Octagon",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 164,
+  "text": "The number 4 is considered unlucky in China because it sounds like 'death'.",
+  "source": "https://en.wikipedia.org/wiki/Chinese_numerology",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 165,
+  "text": "The number 8 is lucky in China; the 2008 Beijing Olympics opened at 8:08 pm on 8/8/08.",
+  "source": "https://en.wikipedia.org/wiki/2008_Summer_Olympics",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 166,
+  "text": "Friday the 13th happens at least once every year.",
+  "source": "https://en.wikipedia.org/wiki/Friday_the_13th",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 167,
+  "text": "A leap year is divisible by 4, except century years not divisible by 400.",
+  "source": "https://en.wikipedia.org/wiki/Century_leap_year",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 168,
+  "text": "The year 2000 was a leap year; 1900 was not.",
+  "source": "https://en.wikipedia.org/wiki/Century_leap_year",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 169,
+  "text": "The Gregorian calendar repeats exactly every 400 years.",
+  "source": "https://en.wikipedia.org/wiki/Gregorian_calendar",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 170,
+  "text": "The 13th of the month is slightly more likely to be a Friday than any other day.",
+  "source": "https://en.wikipedia.org/wiki/Friday_the_13th",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 171,
+  "text": "A week of 7 days dates back to ancient Babylon.",
+  "source": "https://en.wikipedia.org/wiki/Names_of_the_days_of_the_week",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 172,
+  "text": "A 'fortnight' is 14 days.",
+  "source": "https://en.wikipedia.org/wiki/Fortnight",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 173,
+  "text": "The Fibonacci sequence appears in pinecones, pineapples and artichokes.",
+  "source": "https://en.wikipedia.org/wiki/Fibonacci_sequence",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 174,
+  "text": "Nautilus shells are often said to follow the golden ratio, but measurements show they don't exactly.",
+  "source": "https://en.wikipedia.org/wiki/Golden_spiral",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 175,
+  "text": "A fractal looks similar at every scale.",
+  "source": "https://en.wikipedia.org/wiki/Mandelbrot_set",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 176,
+  "text": "Benoit Mandelbrot coined the word 'fractal' in 1975.",
+  "source": "https://en.wikipedia.org/wiki/Benoit_Mandelbrot",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 177,
+  "text": "The coastline of Britain has no fixed length; it depends on your ruler.",
+  "source": "https://en.wikipedia.org/wiki/Royal_Navy",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 178,
+  "text": "The Koch snowflake has infinite perimeter but finite area.",
+  "source": "https://en.wikipedia.org/wiki/Koch_snowflake",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 179,
+  "text": "Snowflakes have sixfold symmetry.",
+  "source": "https://en.wikipedia.org/wiki/Pattern",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 180,
+  "text": "Penrose tilings cover a plane without ever repeating.",
+  "source": "https://en.wikipedia.org/wiki/Tessellation",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 181,
+  "text": "In 2023, the 'hat' tile was found: one shape that tiles the plane without repeating.",
+  "source": "https://en.wikipedia.org/wiki/Tessellation",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 182,
+  "text": "Escher's art drew on hyperbolic geometry and tessellations.",
+  "source": "https://en.wikipedia.org/wiki/M._C._Escher",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 183,
+  "text": "The Great Pyramid's base is very nearly a perfect square.",
+  "source": "https://en.wikipedia.org/wiki/Ahmose_I",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 184,
+  "text": "Stonehenge's alignments track the solstices.",
+  "source": "https://en.wikipedia.org/wiki/Stonehenge",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 185,
+  "text": "Mathematician John Nash's life inspired the film A Beautiful Mind.",
+  "source": "https://en.wikipedia.org/wiki/A_Beautiful_Mind",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 186,
+  "text": "Paul Erdős wrote around 1,500 papers with over 500 coauthors.",
+  "source": "https://en.wikipedia.org/wiki/Paul_Erd%C5%91s",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 187,
+  "text": "An 'Erdős number' measures how close you are to Erdős by coauthorship.",
+  "source": "https://en.wikipedia.org/wiki/Erd%C5%91s_number",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 188,
+  "text": "Erdős lived out of a suitcase, staying with colleagues.",
+  "source": "https://en.wikipedia.org/wiki/Paul_Erd%C5%91s",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 189,
+  "text": "Terence Tao began university-level math classes at age 9.",
+  "source": "https://en.wikipedia.org/wiki/Terence_Tao",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 190,
+  "text": "Grace Hopper popularized the term 'bug' after finding a moth in a computer.",
+  "source": "https://en.wikipedia.org/wiki/Software_bug",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 191,
+  "text": "Binary uses only 0 and 1.",
+  "source": "https://en.wikipedia.org/wiki/Binary_number",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 192,
+  "text": "Leibniz studied binary numbers in 1703.",
+  "source": "https://en.wikipedia.org/wiki/Gottfried_Wilhelm_Leibniz",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 193,
+  "text": "George Boole's logic of true and false underlies all computers.",
+  "source": "https://en.wikipedia.org/wiki/George_Boole",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 194,
+  "text": "A 'byte' is 8 bits.",
+  "source": "https://en.wikipedia.org/wiki/Byte",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 195,
+  "text": "In binary, 10 means two.",
+  "source": "https://en.wikipedia.org/wiki/Binary_number",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 196,
+  "text": "There are 10 kinds of people: those who understand binary and those who don't.",
+  "source": "https://en.wikipedia.org/wiki/Non-binary",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 197,
+  "text": "A 'nonillion' has 30 zeros in the US system.",
+  "source": "https://en.wikipedia.org/wiki/Names_of_large_numbers",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 198,
+  "text": "Light travels about 186,000 miles per second.",
+  "source": "https://en.wikipedia.org/wiki/Optical_fiber",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 199,
+  "text": "A light-year is about 5.9 trillion miles.",
+  "source": "https://en.wikipedia.org/wiki/Light-year",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 200,
+  "text": "The Earth is about 93 million miles from the Sun.",
+  "source": "https://en.wikipedia.org/wiki/93_Million_Miles",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 201,
+  "text": "The Moon is about 239,000 miles from Earth on average.",
+  "source": "https://en.wikipedia.org/wiki/Lunar_distance",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 202,
+  "text": "The Moon's diameter is about 27% of Earth's.",
+  "source": "https://en.wikipedia.org/wiki/Orbit_of_the_Moon",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 203,
+  "text": "By coincidence, the Sun is about 400 times wider and 400 times farther than the Moon.",
+  "source": "https://en.wikipedia.org/wiki/Betelgeuse",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 204,
+  "text": "That 400 coincidence is why total solar eclipses look so perfect.",
+  "source": "https://en.wikipedia.org/wiki/Timeline_of_Mars_Science_Laboratory",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 205,
+  "text": "A 'square number' is a number times itself: 1, 4, 9, 16, 25...",
+  "source": "https://en.wikipedia.org/wiki/Square_number",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 206,
+  "text": "A 'triangular number' can form a triangle of dots: 1, 3, 6, 10, 15...",
+  "source": "https://en.wikipedia.org/wiki/Triangular_number",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 207,
+  "text": "Adding two consecutive triangular numbers gives a square number.",
+  "source": "https://en.wikipedia.org/wiki/Square_number",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 208,
+  "text": "The sum of the first n odd numbers is n²: 1 + 3 + 5 = 9.",
+  "source": "https://en.wikipedia.org/wiki/Bernoulli_number",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 209,
+  "text": "Every cube is the difference of two squares of triangular numbers.",
+  "source": "https://en.wikipedia.org/wiki/Square_number",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 210,
+  "text": "1³ + 2³ + 3³ = (1 + 2 + 3)² = 36.",
+  "source": "https://en.wikipedia.org/wiki/Transport_Layer_Security",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 211,
+  "text": "Nicomachus noticed sums of cubes are squares, around 100 AD.",
+  "source": "https://en.wikipedia.org/wiki/Prime_number",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 212,
+  "text": "Ten is the base of our number system, likely because we have ten fingers.",
+  "source": "https://en.wikipedia.org/wiki/Positional_notation",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 213,
+  "text": "The Yuki people of California counted in base 8 using spaces between fingers.",
+  "source": "https://en.wikipedia.org/wiki/Finger-counting",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 214,
+  "text": "A 'score' is 20; Lincoln's 'four score and seven' means 87.",
+  "source": "https://en.wikipedia.org/wiki/Lincoln_%28film%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 215,
+  "text": "Euler's formula for polyhedra: vertices − edges + faces = 2.",
+  "source": "https://en.wikipedia.org/wiki/Euler_characteristic",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 216,
+  "text": "A cube has 8 vertices, 12 edges and 6 faces.",
+  "source": "https://en.wikipedia.org/wiki/6-cube",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 217,
+  "text": "A tetrahedron has 4 triangular faces.",
+  "source": "https://en.wikipedia.org/wiki/Regular_tetrahedron",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 218,
+  "text": "An icosahedron has 20 faces; d20 dice are icosahedra.",
+  "source": "https://en.wikipedia.org/wiki/Regular_icosahedron",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 219,
+  "text": "Kepler once modeled the solar system with nested Platonic solids.",
+  "source": "https://en.wikipedia.org/wiki/Johannes_Kepler",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 220,
+  "text": "The Fibonacci sequence was known in India centuries earlier, in poetry rhythms.",
+  "source": "https://en.wikipedia.org/wiki/Hemachandra",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 221,
+  "text": "The 'Ishango bone' from Africa, over 20,000 years old, may be an early tally.",
+  "source": "https://en.wikipedia.org/wiki/Tally_marks",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 222,
+  "text": "The Lebombo bone, about 43,000 years old, has 29 notches.",
+  "source": "https://en.wikipedia.org/wiki/Tally_stick",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 223,
+  "text": "Mathematician Emmy Noether was called 'the most significant woman in math history' by Einstein.",
+  "source": "https://en.wikipedia.org/wiki/Emmy_Noether",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 224,
+  "text": "Florence Nightingale was a pioneering statistician and invented a type of pie chart.",
+  "source": "https://en.wikipedia.org/wiki/History_of_statistics",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 225,
+  "text": "William Playfair invented the bar chart and line graph in the 1780s.",
+  "source": "https://en.wikipedia.org/wiki/William_Playfair",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 226,
+  "text": "Thomas Jefferson was an enthusiastic amateur mathematician.",
+  "source": "https://en.wikipedia.org/wiki/List_of_burials_at_Laurel_Hill_Cemetery",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 227,
+  "text": "President James Garfield published his own proof of the Pythagorean theorem in 1876.",
+  "source": "https://en.wikipedia.org/wiki/James_A._Garfield",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 228,
+  "text": "There are over 300 known proofs of the Pythagorean theorem.",
+  "source": "https://en.wikipedia.org/wiki/Pythagorean_theorem",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 229,
+  "text": "Napoleon was a keen mathematician; Napoleon's theorem bears his name.",
+  "source": "https://en.wikipedia.org/wiki/Humphry_Davy",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 230,
+  "text": "Isaac Newton's Principia was published in 1687.",
+  "source": "https://en.wikipedia.org/wiki/Philosophi%C3%A6_Naturalis_Principia_Mathematica",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 231,
+  "text": "Galileo said the book of nature is written in the language of mathematics.",
+  "source": "https://en.wikipedia.org/wiki/Galileo_Galilei",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 232,
+  "text": "'QED' means 'quod erat demonstrandum': which was to be shown.",
+  "source": "https://en.wikipedia.org/wiki/List_of_Latin_phrases_%28full%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 233,
+  "text": "The □ symbol at the end of a proof is called the 'tombstone' or 'Halmos'.",
+  "source": "https://en.wikipedia.org/wiki/Tombstone_%28typography%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 234,
+  "text": "A 'lemma' is a stepping-stone theorem.",
+  "source": "https://en.wikipedia.org/wiki/List_of_theorems_called_fundamental",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 235,
+  "text": "A 'corollary' follows directly from a theorem.",
+  "source": "https://en.wikipedia.org/wiki/G%C3%B6del%27s_incompleteness_theorems",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 236,
+  "text": "'Conjecture' means a statement believed but not yet proved.",
+  "source": "https://en.wikipedia.org/wiki/Conjecture",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 237,
+  "text": "A 'hypotenuse' is the longest side of a right triangle.",
+  "source": "https://en.wikipedia.org/wiki/Hypotenuse",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 238,
+  "text": "'Isosceles' means 'equal legs' in Greek.",
+  "source": "https://en.wikipedia.org/wiki/Angle_trisection",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 239,
+  "text": "A 'scalene' triangle has no equal sides.",
+  "source": "https://en.wikipedia.org/wiki/Triangle",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 240,
+  "text": "An 'obtuse' angle is more than 90°.",
+  "source": "https://en.wikipedia.org/wiki/Acute_and_obtuse_triangles",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 241,
+  "text": "An 'acute' angle is less than 90°.",
+  "source": "https://en.wikipedia.org/wiki/Acute_and_obtuse_triangles",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 242,
+  "text": "A 'reflex' angle is more than 180°.",
+  "source": "https://en.wikipedia.org/wiki/Angle",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 243,
+  "text": "'Sine' comes from a Latin mistranslation of an Arabic word meaning 'bosom' or 'fold'.",
+  "source": "https://en.wikipedia.org/wiki/Sine_and_cosine",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 244,
+  "text": "Trigonometry means 'triangle measurement'.",
+  "source": "https://en.wikipedia.org/wiki/Inverse_trigonometric_functions",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 245,
+  "text": "Hipparchus made the first known table of chords around 140 BC.",
+  "source": "https://en.wikipedia.org/wiki/Greek_numerals",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 246,
+  "text": "A 'radian' is the angle where the arc equals the radius.",
+  "source": "https://en.wikipedia.org/wiki/Radian",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 247,
+  "text": "There are about 57.3 degrees in a radian.",
+  "source": "https://en.wikipedia.org/wiki/Pi",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 248,
+  "text": "A full turn is 2π radians.",
+  "source": "https://en.wikipedia.org/wiki/Tau_%28mathematics%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 249,
+  "text": "A parabola is the path of a thrown ball, ignoring air.",
+  "source": "https://en.wikipedia.org/wiki/Magnus_effect",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 250,
+  "text": "Satellite dishes are parabolic so signals focus at one point.",
+  "source": "https://en.wikipedia.org/wiki/Parabolic_reflector",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 251,
+  "text": "An ellipse has two foci.",
+  "source": "https://en.wikipedia.org/wiki/Ellipse",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 252,
+  "text": "Whispering galleries use ellipses: a whisper at one focus is heard at the other.",
+  "source": "https://en.wikipedia.org/wiki/Whispering_gallery",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 253,
+  "text": "The US Capitol's Statuary Hall is a famous whispering gallery.",
+  "source": "https://en.wikipedia.org/wiki/Missouri_State_Capitol",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 254,
+  "text": "The catenary curve is the shape of a hanging chain.",
+  "source": "https://en.wikipedia.org/wiki/Catenary",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 255,
+  "text": "The Gateway Arch in St Louis is a flattened catenary.",
+  "source": "https://en.wikipedia.org/wiki/Catenary",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 256,
+  "text": "Gaudí used hanging chains to design his churches upside down.",
+  "source": "https://en.wikipedia.org/wiki/Arch",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 257,
+  "text": "A cycloid is the curve of a point on a rolling wheel.",
+  "source": "https://en.wikipedia.org/wiki/Cycloid",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 258,
+  "text": "A ball rolls fastest down a cycloid ramp, the 'brachistochrone' problem.",
+  "source": "https://en.wikipedia.org/wiki/Brachistochrone_curve",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 259,
+  "text": "The Fibonacci number F(12) = 144 is also a square.",
+  "source": "https://en.wikipedia.org/wiki/Fibonacci_sequence",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 260,
+  "text": "The only square Fibonacci numbers are 0, 1 and 144.",
+  "source": "https://en.wikipedia.org/wiki/Fibonacci_sequence",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 261,
+  "text": "Cicadas emerge in prime-number cycles of 13 or 17 years.",
+  "source": "https://en.wikipedia.org/wiki/Periodical_cicadas",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 262,
+  "text": "Prime cycles may help cicadas avoid predators with shorter cycles.",
+  "source": "https://en.wikipedia.org/wiki/Cicada",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 263,
+  "text": "Modern internet encryption relies on the difficulty of factoring large numbers.",
+  "source": "https://en.wikipedia.org/wiki/RSA_cryptosystem",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 264,
+  "text": "RSA encryption, invented in 1977, is based on prime numbers.",
+  "source": "https://en.wikipedia.org/wiki/RSA_cryptosystem",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 265,
+  "text": "The 'Caesar cipher' shifts each letter by a fixed amount.",
+  "source": "https://en.wikipedia.org/wiki/Cipher",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 266,
+  "text": "Mary, Queen of Scots, was convicted partly through decoded cipher letters.",
+  "source": "https://en.wikipedia.org/wiki/Babington_Plot",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 267,
+  "text": "Bletchley Park's codebreakers included many women mathematicians.",
+  "source": "https://en.wikipedia.org/wiki/Women_in_Bletchley_Park",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 268,
+  "text": "The Navajo Code Talkers used language, not math, to create an unbroken code.",
+  "source": "https://en.wikipedia.org/wiki/Code_talker",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 269,
+  "text": "A 'perfect shuffle' of a deck returns it to order after 8 shuffles.",
+  "source": "https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 270,
+  "text": "Seven riffle shuffles are needed to randomize a deck, per Bayer and Diaconis.",
+  "source": "https://en.wikipedia.org/wiki/Persi_Diaconis",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 271,
+  "text": "The 'law of large numbers': averages settle down with more trials.",
+  "source": "https://en.wikipedia.org/wiki/Witch_trials_in_the_early_modern_period",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 272,
+  "text": "The 'gambler's fallacy' is believing past coin flips affect the next.",
+  "source": "https://en.wikipedia.org/wiki/Gambler%27s_fallacy",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 273,
+  "text": "A fair coin has a 50% chance each flip, no matter what came before.",
+  "source": "https://en.wikipedia.org/wiki/Gambler%27s_fallacy",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 274,
+  "text": "Real coin tosses slightly favor the side facing up at the start, per Persi Diaconis.",
+  "source": "https://en.wikipedia.org/wiki/Coin_flipping",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 275,
+  "text": "The 'Kissing number' in 3D is 12 spheres touching one sphere.",
+  "source": "https://en.wikipedia.org/wiki/Sphere_packing",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 276,
+  "text": "Kepler conjectured the densest way to stack oranges; it was proved in 1998.",
+  "source": "https://en.wikipedia.org/wiki/Kepler_conjecture",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 277,
+  "text": "Oranges stacked in a pyramid fill about 74% of the space.",
+  "source": "https://en.wikipedia.org/wiki/San_Diego",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 278,
+  "text": "The 'Bridges of Königsberg' have no route crossing each bridge exactly once.",
+  "source": "https://en.wikipedia.org/wiki/Seven_Bridges_of_K%C3%B6nigsberg",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 279,
+  "text": "The 'traveling salesman problem' asks for the shortest route visiting every city.",
+  "source": "https://en.wikipedia.org/wiki/Travelling_salesman_problem",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 280,
+  "text": "Six degrees of separation suggests everyone is linked by about six acquaintances.",
+  "source": "https://en.wikipedia.org/wiki/Six_degrees_of_separation",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 281,
+  "text": "A 'Venn diagram' was introduced by John Venn in 1880.",
+  "source": "https://en.wikipedia.org/wiki/Venn_diagram",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 282,
+  "text": "Charles Babbage designed the Analytical Engine, a mechanical computer.",
+  "source": "https://en.wikipedia.org/wiki/Analytical_engine",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 283,
+  "text": "The Difference Engine No. 2 was built from Babbage's plans in 1991, and it works.",
+  "source": "https://en.wikipedia.org/wiki/Difference_engine",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 284,
+  "text": "The ENIAC, finished in 1945, weighed about 30 tons.",
+  "source": "https://en.wikipedia.org/wiki/Computer_program",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 285,
+  "text": "NASA's 'human computers' did calculations by hand before electronic computers.",
+  "source": "https://en.wikipedia.org/wiki/Computer",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 286,
+  "text": "Archimedes said: 'Give me a place to stand and I will move the Earth.'",
+  "source": "https://en.wikipedia.org/wiki/Archimedes",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 287,
+  "text": "'Eureka!' means 'I have found it!', attributed to Archimedes.",
+  "source": "https://en.wikipedia.org/wiki/Eureka_%28word%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 288,
+  "text": "Archimedes was killed during the Roman siege of Syracuse in 212 BC.",
+  "source": "https://en.wikipedia.org/wiki/Siege_of_Syracuse_%28213%E2%80%93212_BC%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 289,
+  "text": "Pythagoras's followers believed 'all is number'.",
+  "source": "https://en.wikipedia.org/wiki/Pythagoras",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 290,
+  "text": "The Pythagoreans linked musical harmony to whole-number ratios.",
+  "source": "https://en.wikipedia.org/wiki/Pythagoreanism",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 291,
+  "text": "An octave doubles a note's frequency, a 2:1 ratio.",
+  "source": "https://en.wikipedia.org/wiki/Piano_key_frequencies",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 292,
+  "text": "A perfect fifth in music is a 3:2 ratio.",
+  "source": "https://en.wikipedia.org/wiki/Perfect_fifth",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 293,
+  "text": "Bach's Well-Tempered Clavier explored tuning systems that work in all keys.",
+  "source": "https://en.wikipedia.org/wiki/The_Well-Tempered_Clavier",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 294,
+  "text": "Equal temperament divides an octave into 12 equal steps.",
+  "source": "https://en.wikipedia.org/wiki/19_equal_temperament",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 295,
+  "text": "Each semitone in equal temperament multiplies frequency by the 12th root of 2.",
+  "source": "https://en.wikipedia.org/wiki/Twelfth_root_of_two",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 296,
+  "text": "The 'Mozart effect' on intelligence is not well supported by research.",
+  "source": "https://en.wikipedia.org/wiki/Mozart_effect",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 297,
+  "text": "Tom Lehrer, satirical songwriter, taught math at MIT and Harvard.",
+  "source": "https://en.wikipedia.org/wiki/Tom_Lehrer",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 298,
+  "text": "Brian May of Queen holds a PhD in astrophysics.",
+  "source": "https://en.wikipedia.org/wiki/Tim_Blais",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 299,
+  "text": "A 'hendecagon' has 11 sides.",
+  "source": "https://en.wikipedia.org/wiki/Hendecagon",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 300,
+  "text": "Origami has helped design folding solar panels for space.",
+  "source": "https://en.wikipedia.org/wiki/Mathematics_of_paper_folding",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 301,
+  "text": "Ancient Egyptians wrote fractions as sums of unit fractions like 1/2 + 1/4.",
+  "source": "https://en.wikipedia.org/wiki/Fraction",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 302,
+  "text": "Greek mathematician Diophantus is called the 'father of algebra'.",
+  "source": "https://en.wikipedia.org/wiki/Diophantus",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 303,
+  "text": "A riddle says Diophantus lived to 84.",
+  "source": "https://en.wikipedia.org/wiki/Diophantus",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 304,
+  "text": "Omar Khayyam, the poet, was also a mathematician and astronomer.",
+  "source": "https://en.wikipedia.org/wiki/Omar_Khayyam",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 305,
+  "text": "Khayyam helped reform the Persian calendar to be very accurate.",
+  "source": "https://en.wikipedia.org/wiki/Omar_Khayyam",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 306,
+  "text": "Indian mathematician Aryabhata estimated pi as 3.1416 around 499 AD.",
+  "source": "https://en.wikipedia.org/wiki/Pi",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 307,
+  "text": "Madhava of India found infinite series for pi in the 1300s.",
+  "source": "https://en.wikipedia.org/wiki/Madhava_of_Sangamagrama",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 308,
+  "text": "Chinese mathematician Zu Chongzhi found pi ≈ 355/113 around 480 AD.",
+  "source": "https://en.wikipedia.org/wiki/Pi",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 309,
+  "text": "355/113 matches pi to six decimal places.",
+  "source": "https://en.wikipedia.org/wiki/Approximations_of_pi",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 310,
+  "text": "'22/7' is a common approximation of pi, accurate to two decimals.",
+  "source": "https://en.wikipedia.org/wiki/Approximations_of_pi",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 311,
+  "text": "Pi Approximation Day is July 22 (22/7).",
+  "source": "https://en.wikipedia.org/wiki/Pi_Day",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 312,
+  "text": "'Mole Day' is October 23, from 6.02 × 10²³.",
+  "source": "https://en.wikipedia.org/wiki/Mole_Day",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 313,
+  "text": "Fibonacci Day is November 23 (1, 1, 2, 3).",
+  "source": "https://en.wikipedia.org/wiki/Orders_of_magnitude_%28numbers%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 314,
+  "text": "Square Root Day happens when day and month are the square root of the year's last digits, like 4/4/16.",
+  "source": "https://en.wikipedia.org/wiki/Steve_Smith_%28cricketer%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 315,
+  "text": "The Collatz conjecture says repeatedly halving evens and tripling-plus-one odds always reaches 1; it's unproven.",
+  "source": "https://en.wikipedia.org/wiki/Collatz_conjecture",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 316,
+  "text": "Square Root Days include 3/3/09, 4/4/16 and 5/5/25; the next is 6/6/36.",
+  "source": "https://en.wikipedia.org/wiki/Java_version_history",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 317,
+  "text": "6 is the smallest perfect number.",
+  "source": "https://en.wikipedia.org/wiki/6",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 318,
+  "text": "9 times any digit gives digits summing to 9, like 9 × 7 = 63.",
+  "source": "https://en.wikipedia.org/wiki/Divisibility_rule",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 319,
+  "text": "12 has more divisors than any smaller number.",
+  "source": "https://en.wikipedia.org/wiki/12_%28number%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 320,
+  "text": "23 is the number of people for the birthday paradox to pass 50%.",
+  "source": "https://en.wikipedia.org/wiki/List_of_paradoxes",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 321,
+  "text": "24 is 4 factorial: 4 × 3 × 2 × 1.",
+  "source": "https://en.wikipedia.org/wiki/Factorial",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 322,
+  "text": "27 is 3 cubed.",
+  "source": "https://en.wikipedia.org/wiki/Cube_%28algebra%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 323,
+  "text": "37 × 3 = 111, and 37 × 6 = 222.",
+  "source": "https://en.wikipedia.org/wiki/111_%28number%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 324,
+  "text": "42 is the 'answer to everything' in The Hitchhiker's Guide to the Galaxy.",
+  "source": "https://en.wikipedia.org/wiki/The_Hitchhiker%27s_Guide_to_the_Galaxy_%28novel%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 325,
+  "text": "64 is both a square (8²) and a cube (4³).",
+  "source": "https://en.wikipedia.org/wiki/Tesseract",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 326,
+  "text": "73 is the 21st prime, and 21 = 7 × 3; 37 is the 12th prime.",
+  "source": "https://en.wikipedia.org/wiki/73_%28number%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 327,
+  "text": "89 is a Fibonacci number, and 1/89 hides the Fibonacci sequence in its decimals.",
+  "source": "https://en.wikipedia.org/wiki/Fibonacci_sequence",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 328,
+  "text": "128 is 2 to the 7th power, and our wall is 128 pixels wide.",
+  "source": "https://en.wikipedia.org/wiki/IPad",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 329,
+  "text": "144 is a 'gross' and 12 squared.",
+  "source": "https://en.wikipedia.org/wiki/Gross_%28unit%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 330,
+  "text": "360 has 24 divisors, which is why it's handy for a circle.",
+  "source": "https://en.wikipedia.org/wiki/0",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 331,
+  "text": "365 = 10² + 11² + 12² = 13² + 14².",
+  "source": "https://en.wikipedia.org/wiki/Microsoft_365",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 332,
+  "text": "496 is the third perfect number.",
+  "source": "https://en.wikipedia.org/wiki/496_%28number%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 333,
+  "text": "720 is 6 factorial, the minutes in 12 hours.",
+  "source": "https://en.wikipedia.org/wiki/Mixed_radix",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 334,
+  "text": "1,000 seconds is about 16.7 minutes; a million seconds is about 11.6 days.",
+  "source": "https://en.wikipedia.org/wiki/FourFiveSeconds",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 335,
+  "text": "A billion seconds is about 31.7 years.",
+  "source": "computed (verified by script)",
+  "verified": "computed"
+ },
+ {
+  "id": 336,
+  "text": "An 81-year life is about 2.56 billion seconds.",
+  "source": "https://en.wikipedia.org/wiki/Earth",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 337,
+  "text": "The average heart beats about 100,000 times a day.",
+  "source": "https://en.wikipedia.org/wiki/The_New_York_Times",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 338,
+  "text": "8,128 is the fourth perfect number.",
+  "source": "https://en.wikipedia.org/wiki/Orders_of_magnitude_%28numbers%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 339,
+  "text": "10! seconds is exactly 6 weeks.",
+  "source": "https://en.wikipedia.org/wiki/Every_Day_Is_Exactly_the_Same",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 340,
+  "text": "A 'centillion' has 303 zeros in the US system.",
+  "source": "https://en.wikipedia.org/wiki/Large_numbers",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 341,
+  "text": "Multiplying 1089 by 9 gives 9801, its reverse.",
+  "source": "https://en.wikipedia.org/wiki/1089_%28number%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 342,
+  "text": "Kaprekar's constant is 6174: sort four digits high-to-low minus low-to-high, and repeat.",
+  "source": "https://en.wikipedia.org/wiki/6174",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 343,
+  "text": "Any 3-digit number like 123123 (repeated) is divisible by 7, 11 and 13.",
+  "source": "computed (verified by script)",
+  "verified": "computed"
+ },
+ {
+  "id": 344,
+  "text": "7 × 11 × 13 = 1001.",
+  "source": "https://en.wikipedia.org/wiki/1001_%28number%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 345,
+  "text": "Adding 1 to 2³ gives 3², the only consecutive powers (Catalan, proved 2002).",
+  "source": "https://en.wikipedia.org/wiki/Catalan%27s_conjecture",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 346,
+  "text": "The number 2 is called 'the oddest prime' as a joke because it is the only even one.",
+  "source": "https://en.wikipedia.org/wiki/List_of_automobiles_notable_for_negative_reception",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 347,
+  "text": "In a group of 367 people, two must share a birthday, by the pigeonhole principle.",
+  "source": "https://en.wikipedia.org/wiki/Pigeonhole_principle",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 348,
+  "text": "London has two people with the same number of hairs on their heads, by the pigeonhole principle.",
+  "source": "https://en.wikipedia.org/wiki/Pigeonhole_principle",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 349,
+  "text": "A 'triskaidekaphobe' fears the number 13.",
+  "source": "https://en.wikipedia.org/wiki/Triskaidekaphobia",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 350,
+  "text": "Many buildings skip a 13th floor label.",
+  "source": "https://en.wikipedia.org/wiki/Triskaidekaphobia",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 351,
+  "text": "A 'gross of grosses' is 1,728, a 'great gross'.",
+  "source": "https://en.wikipedia.org/wiki/Gross_%28unit%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 352,
+  "text": "1,728 is 12 cubed, also the cubic inches in a cubic foot.",
+  "source": "https://en.wikipedia.org/wiki/Dimensional_weight",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 353,
+  "text": "A cubic foot of water weighs about 62.4 pounds.",
+  "source": "https://en.wikipedia.org/wiki/Imperial_units",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 354,
+  "text": "A US gallon is exactly 231 cubic inches.",
+  "source": "https://en.wikipedia.org/wiki/Gallon",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 355,
+  "text": "A mile is 5,280 feet.",
+  "source": "https://en.wikipedia.org/wiki/Empower_Field_at_Mile_High",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 356,
+  "text": "A nautical mile is based on one minute of latitude.",
+  "source": "https://en.wikipedia.org/wiki/Knot_%28unit%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 357,
+  "text": "An acre was originally land a yoke of oxen could plow in a day.",
+  "source": "https://en.wikipedia.org/wiki/Forty_acres_and_a_mule",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 358,
+  "text": "A 'hand', used for horses, is 4 inches.",
+  "source": "https://en.wikipedia.org/wiki/Hand_%28unit%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 359,
+  "text": "A 'league' was about the distance a person walks in an hour, roughly 3 miles.",
+  "source": "https://en.wikipedia.org/wiki/League_%28unit%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 360,
+  "text": "2 to the 10th power is 1,024, which is why a kilobyte is sometimes 1,024 bytes.",
+  "source": "https://en.wikipedia.org/wiki/Kilobyte",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 361,
+  "text": "There are 17 distinct wallpaper symmetry groups for repeating flat patterns.",
+  "source": "https://en.wikipedia.org/wiki/Mathematics_and_art",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 362,
+  "text": "Forty is the only English number name with its letters in alphabetical order.",
+  "source": "https://en.wikipedia.org/wiki/Abjad",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 363,
+  "text": "The digits of 1/81 run 0.012345679 repeating, skipping 8.",
+  "source": "computed (verified by script)",
+  "verified": "computed"
+ },
+ {
+  "id": 364,
+  "text": "Every whole number greater than 1 factors into primes in exactly one way.",
+  "source": "https://en.wikipedia.org/wiki/Prime_number",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 365,
+  "text": "A hexagon's side equals the radius of the circle around it.",
+  "source": "https://en.wikipedia.org/wiki/Hexagon",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 366,
+  "text": "The angles of any quadrilateral add up to 360 degrees.",
+  "source": "https://en.wikipedia.org/wiki/Quadrilateral",
+  "verified": "wikipedia-keyword-match"
+ }
+]

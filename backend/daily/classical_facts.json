@@ -1,0 +1,3175 @@
+[
+ {
+  "id": 1,
+  "topic": "Bach",
+  "text": "Johann Sebastian Bach was born in Eisenach, Germany, in 1685.",
+  "source": "https://en.wikipedia.org/wiki/Bach_House_%28Eisenach%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 2,
+  "topic": "Bach",
+  "text": "Bach had 20 children with his two wives; about half survived childhood.",
+  "source": "https://en.wikipedia.org/wiki/Sting_%28musician%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 3,
+  "topic": "Bach",
+  "text": "Bach worked as Thomaskantor in Leipzig from 1723 until his death in 1750.",
+  "source": "https://en.wikipedia.org/wiki/Johann_Sebastian_Bach",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 4,
+  "topic": "Bach",
+  "text": "As a young man, Bach walked about 250 miles to Lübeck to hear organist Dieterich Buxtehude.",
+  "source": "https://en.wikipedia.org/wiki/Johann_Sebastian_Bach",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 5,
+  "topic": "Bach",
+  "text": "Bach's six Brandenburg Concertos were dedicated to the Margrave of Brandenburg in 1721.",
+  "source": "https://en.wikipedia.org/wiki/Brandenburg_Concerto_No._5",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Bach+Brandenburg+Concertos"
+ },
+ {
+  "id": 6,
+  "topic": "Bach",
+  "text": "Mendelssohn's 1829 performance of the St Matthew Passion sparked a Bach revival.",
+  "source": "https://en.wikipedia.org/wiki/Reception_of_Johann_Sebastian_Bach%27s_music",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Bach+St+Matthew+Passion"
+ },
+ {
+  "id": 7,
+  "topic": "Bach",
+  "text": "Bach's Goldberg Variations has 30 variations framed by an aria.",
+  "source": "https://en.wikipedia.org/wiki/Goldberg_Variations",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Bach+Goldberg+Variations"
+ },
+ {
+  "id": 8,
+  "topic": "Bach",
+  "text": "The Well-Tempered Clavier has preludes and fugues in all 24 major and minor keys.",
+  "source": "https://en.wikipedia.org/wiki/The_Well-Tempered_Clavier",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Bach+Well-Tempered+Clavier"
+ },
+ {
+  "id": 9,
+  "topic": "Bach",
+  "text": "Four of Bach's sons became composers, including C.P.E. and J.C. Bach.",
+  "source": "https://en.wikipedia.org/wiki/Johann_Sebastian_Bach",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 10,
+  "topic": "Bach",
+  "text": "Bach's Toccata and Fugue in D minor appears in Disney's Fantasia (1940).",
+  "source": "https://en.wikipedia.org/wiki/Toccata_and_Fugue_in_D_minor%2C_BWV_565",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Bach+Toccata+and+Fugue+in+D+minor"
+ },
+ {
+  "id": 11,
+  "topic": "Bach",
+  "text": "Bach's music was included on the Voyager Golden Record launched in 1977.",
+  "source": "https://en.wikipedia.org/wiki/Voyager_Golden_Record",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 12,
+  "topic": "Bach",
+  "text": "Bach spent about a month in jail in Weimar in 1717 for demanding to leave his job.",
+  "source": "https://en.wikipedia.org/wiki/Johann_Sebastian_Bach",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 13,
+  "topic": "Handel",
+  "text": "George Frideric Handel was born in Halle in 1685, the same year as Bach.",
+  "source": "https://en.wikipedia.org/wiki/George_Frideric_Handel",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 14,
+  "topic": "Handel",
+  "text": "Handel wrote Messiah in about 24 days in 1741.",
+  "source": "https://en.wikipedia.org/wiki/Messiah_%28Handel%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Handel+Messiah"
+ },
+ {
+  "id": 15,
+  "topic": "Handel",
+  "text": "Messiah premiered in Dublin, not London, in April 1742.",
+  "source": "https://en.wikipedia.org/wiki/Messiah_%28Handel%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Handel+Messiah"
+ },
+ {
+  "id": 16,
+  "topic": "Handel",
+  "text": "Handel became a British subject in 1727.",
+  "source": "https://en.wikipedia.org/wiki/Handel_Hendrix_House",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 17,
+  "topic": "Handel",
+  "text": "Handel is buried in Westminster Abbey.",
+  "source": "https://en.wikipedia.org/wiki/George_Frideric_Handel",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 18,
+  "topic": "Handel",
+  "text": "Handel's Water Music was first played on a barge on the Thames in 1717.",
+  "source": "https://en.wikipedia.org/wiki/Water_Music",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Handel+Water+Music"
+ },
+ {
+  "id": 19,
+  "topic": "Handel",
+  "text": "Music for the Royal Fireworks celebrated the 1748 Treaty of Aix-la-Chapelle.",
+  "source": "https://en.wikipedia.org/wiki/Music_for_the_Royal_Fireworks",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Handel+Music+for+the+Royal+Fireworks"
+ },
+ {
+  "id": 20,
+  "topic": "Handel",
+  "text": "Handel wrote over 40 operas, mostly in Italian.",
+  "source": "https://en.wikipedia.org/wiki/Concerti_grossi%2C_Op._6_%28Handel%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 21,
+  "topic": "Handel",
+  "text": "Handel went blind late in life but kept performing on the organ.",
+  "source": "https://en.wikipedia.org/wiki/George_Frideric_Handel",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 22,
+  "topic": "Handel",
+  "text": "Handel's London house on Brook Street is now a museum; Jimi Hendrix later lived next door.",
+  "source": "https://en.wikipedia.org/wiki/Jimi_Hendrix",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 23,
+  "topic": "Handel",
+  "text": "Handel's Zadok the Priest has been sung at every British coronation since 1727.",
+  "source": "https://en.wikipedia.org/wiki/Zadok_the_Priest",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Handel+Zadok+the+Priest"
+ },
+ {
+  "id": 24,
+  "topic": "Vivaldi",
+  "text": "Antonio Vivaldi was a Catholic priest, nicknamed 'the Red Priest' for his red hair.",
+  "source": "https://en.wikipedia.org/wiki/Antonio_Vivaldi",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 25,
+  "topic": "Vivaldi",
+  "text": "Vivaldi taught music at the Ospedale della Pietà, a Venetian orphanage for girls.",
+  "source": "https://en.wikipedia.org/wiki/Antonio_Vivaldi",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 26,
+  "topic": "Vivaldi",
+  "text": "Vivaldi's Four Seasons were published in 1725 with sonnets describing each season.",
+  "source": "https://en.wikipedia.org/wiki/The_Four_Seasons_%28Vivaldi%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Vivaldi+Four+Seasons"
+ },
+ {
+  "id": 27,
+  "topic": "Vivaldi",
+  "text": "Vivaldi wrote about 500 concertos, around 230 of them for violin.",
+  "source": "https://en.wikipedia.org/wiki/Antonio_Vivaldi",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 28,
+  "topic": "Vivaldi",
+  "text": "Vivaldi died poor in Vienna in 1741.",
+  "source": "https://en.wikipedia.org/wiki/Antonio_Vivaldi",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 29,
+  "topic": "Vivaldi",
+  "text": "Much of Vivaldi's music was rediscovered only in the 20th century.",
+  "source": "https://en.wikipedia.org/wiki/Antonio_Vivaldi",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 30,
+  "topic": "Haydn",
+  "text": "Joseph Haydn wrote 104 numbered symphonies.",
+  "source": "https://en.wikipedia.org/wiki/Joseph_Haydn",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 31,
+  "topic": "Haydn",
+  "text": "Haydn is often called the 'Father of the Symphony' and of the string quartet.",
+  "source": "https://en.wikipedia.org/wiki/Joseph_Haydn",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 32,
+  "topic": "Haydn",
+  "text": "Haydn served the wealthy Esterházy family for nearly 30 years.",
+  "source": "https://en.wikipedia.org/wiki/Joseph_Haydn",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 33,
+  "topic": "Haydn",
+  "text": "Haydn's 'Surprise' Symphony No. 94 has a sudden loud chord in its slow movement.",
+  "source": "https://en.wikipedia.org/wiki/Joseph_Haydn",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Haydn+Surprise%27+Symphony"
+ },
+ {
+  "id": 34,
+  "topic": "Haydn",
+  "text": "In the 'Farewell' Symphony, musicians leave one by one, hinting the prince should let them go home.",
+  "source": "https://en.wikipedia.org/wiki/God_Save_the_King",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Haydn+Farewell%27+Symphony"
+ },
+ {
+  "id": 35,
+  "topic": "Haydn",
+  "text": "Haydn's tune for 'Gott erhalte Franz den Kaiser' is now Germany's national anthem melody.",
+  "source": "https://en.wikipedia.org/wiki/Gott_erhalte_Franz_den_Kaiser",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 36,
+  "topic": "Haydn",
+  "text": "Haydn made two highly successful trips to London in the 1790s.",
+  "source": "https://en.wikipedia.org/wiki/Joseph_Haydn",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 37,
+  "topic": "Haydn",
+  "text": "Haydn briefly taught the young Beethoven in Vienna.",
+  "source": "https://en.wikipedia.org/wiki/Joseph_Haydn",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 38,
+  "topic": "Haydn",
+  "text": "Haydn's oratorio The Creation was inspired by hearing Handel in London.",
+  "source": "https://en.wikipedia.org/wiki/Joseph_Haydn",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Haydn+The+Creation"
+ },
+ {
+  "id": 39,
+  "topic": "Mozart",
+  "text": "Wolfgang Amadeus Mozart was born in Salzburg in 1756.",
+  "source": "https://en.wikipedia.org/wiki/Wolfgang_Amadeus_Mozart",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 40,
+  "topic": "Mozart",
+  "text": "Mozart wrote his first symphony at about age 8.",
+  "source": "https://en.wikipedia.org/wiki/Leopold_Mozart",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 41,
+  "topic": "Mozart",
+  "text": "Mozart toured Europe as a child prodigy with his sister Nannerl.",
+  "source": "https://en.wikipedia.org/wiki/Maria_Anna_Mozart",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 42,
+  "topic": "Mozart",
+  "text": "In Rome, the teenage Mozart wrote down Allegri's secret Miserere after hearing it.",
+  "source": "https://en.wikipedia.org/wiki/Miserere_%28Allegri%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Mozart+Miserere"
+ },
+ {
+  "id": 43,
+  "topic": "Mozart",
+  "text": "Mozart wrote over 600 works in a life of only 35 years.",
+  "source": "https://en.wikipedia.org/wiki/List_of_compositions_by_Wolfgang_Amadeus_Mozart",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 44,
+  "topic": "Mozart",
+  "text": "Mozart's works are numbered by the Köchel catalogue, hence 'K.' numbers.",
+  "source": "https://en.wikipedia.org/wiki/Catalogues_of_classical_compositions",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 45,
+  "topic": "Mozart",
+  "text": "Mozart's last three symphonies were written in about six weeks in 1788.",
+  "source": "https://en.wikipedia.org/wiki/Wolfgang_Amadeus_Mozart",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 46,
+  "topic": "Mozart",
+  "text": "Mozart died in 1791, leaving his Requiem unfinished.",
+  "source": "https://en.wikipedia.org/wiki/Requiem_%28Mozart%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Mozart+Requiem"
+ },
+ {
+  "id": 47,
+  "topic": "Mozart",
+  "text": "Mozart's pupil Franz Xaver Süssmayr completed the Requiem.",
+  "source": "https://en.wikipedia.org/wiki/Franz_Xaver_S%C3%BCssmayr",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Mozart+Requiem"
+ },
+ {
+  "id": 48,
+  "topic": "Mozart",
+  "text": "The Magic Flute premiered just over two months before Mozart's death.",
+  "source": "https://en.wikipedia.org/wiki/The_Magic_Flute",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Mozart+Magic+Flute"
+ },
+ {
+  "id": 49,
+  "topic": "Mozart",
+  "text": "Mozart's Symphony No. 41 is nicknamed 'Jupiter', a title not given by Mozart.",
+  "source": "https://en.wikipedia.org/wiki/Wolfgang_Amadeus_Mozart",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Mozart+Jupiter"
+ },
+ {
+  "id": 50,
+  "topic": "Mozart",
+  "text": "Mozart's Clarinet Concerto was written for his friend Anton Stadler.",
+  "source": "https://en.wikipedia.org/wiki/Clarinet_Concerto_%28Mozart%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Mozart+Clarinet+Concerto"
+ },
+ {
+  "id": 51,
+  "topic": "Mozart",
+  "text": "Mozart's opera librettist Lorenzo Da Ponte later emigrated and taught Italian at Columbia.",
+  "source": "https://en.wikipedia.org/wiki/Opera_in_the_United_States",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 52,
+  "topic": "Mozart",
+  "text": "Mozart was a Freemason; The Magic Flute contains Masonic symbolism.",
+  "source": "https://en.wikipedia.org/wiki/The_Magic_Flute",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Mozart+Magic+Flute"
+ },
+ {
+  "id": 53,
+  "topic": "Beethoven",
+  "text": "Ludwig van Beethoven was born in Bonn in 1770.",
+  "source": "https://en.wikipedia.org/wiki/Johann_van_Beethoven",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 54,
+  "topic": "Beethoven",
+  "text": "Beethoven wrote nine symphonies.",
+  "source": "https://en.wikipedia.org/wiki/Symphony_No._7_%28Beethoven%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 55,
+  "topic": "Beethoven",
+  "text": "Beethoven began losing his hearing in his late twenties.",
+  "source": "https://en.wikipedia.org/wiki/Symphony_No._7_%28Beethoven%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 56,
+  "topic": "Beethoven",
+  "text": "At the Ninth Symphony premiere, Beethoven had to be turned to see the applause.",
+  "source": "https://en.wikipedia.org/wiki/Symphony_No._9_%28Beethoven%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Beethoven+Ninth+Symphony"
+ },
+ {
+  "id": 57,
+  "topic": "Beethoven",
+  "text": "Beethoven's Heiligenstadt Testament (1802) is a letter about his despair over deafness.",
+  "source": "https://en.wikipedia.org/wiki/Vienna_Museum",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 58,
+  "topic": "Beethoven",
+  "text": "Beethoven first dedicated his Third Symphony to Napoleon, then scratched it out.",
+  "source": "https://en.wikipedia.org/wiki/Symphony_No._3_%28Beethoven%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Beethoven+Third+Symphony"
+ },
+ {
+  "id": 59,
+  "topic": "Beethoven",
+  "text": "The 'Moonlight' Sonata's nickname came from critic Ludwig Rellstab after Beethoven's death.",
+  "source": "https://en.wikipedia.org/wiki/Piano_Sonata_No._14_%28Beethoven%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Beethoven+Moonlight%27+Sonata"
+ },
+ {
+  "id": 60,
+  "topic": "Beethoven",
+  "text": "Beethoven wrote only one opera, Fidelio.",
+  "source": "https://en.wikipedia.org/wiki/Fidelio",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Beethoven+Fidelio"
+ },
+ {
+  "id": 61,
+  "topic": "Beethoven",
+  "text": "Beethoven's Ninth ends with Schiller's 'Ode to Joy'.",
+  "source": "https://en.wikipedia.org/wiki/Ode_to_Joy",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Beethoven+Beethoven%27s+Ninth"
+ },
+ {
+  "id": 62,
+  "topic": "Beethoven",
+  "text": "'Ode to Joy' is the anthem of the European Union.",
+  "source": "https://en.wikipedia.org/wiki/Ode_to_Joy",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Beethoven+Ode+to+Joy"
+ },
+ {
+  "id": 63,
+  "topic": "Beethoven",
+  "text": "Beethoven's 'Für Elise' was published about 40 years after his death.",
+  "source": "https://en.wikipedia.org/wiki/F%C3%BCr_Elise",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Beethoven+F%C3%BCr+Elise"
+ },
+ {
+  "id": 64,
+  "topic": "Beethoven",
+  "text": "Beethoven used conversation books so visitors could write to him.",
+  "source": "https://en.wikipedia.org/wiki/Ludwig_van_Beethoven",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 65,
+  "topic": "Beethoven",
+  "text": "An estimated 10,000 or more people attended Beethoven's funeral in Vienna in 1827.",
+  "source": "https://en.wikipedia.org/wiki/Ludwig_van_Beethoven",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 66,
+  "topic": "Beethoven",
+  "text": "Beethoven wrote 32 piano sonatas.",
+  "source": "https://en.wikipedia.org/wiki/Piano_sonatas_%28Beethoven%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 67,
+  "topic": "Beethoven",
+  "text": "Beethoven's Sixth Symphony, the 'Pastoral', depicts country life and a storm.",
+  "source": "https://en.wikipedia.org/wiki/Symphony_No._8_%28Dvo%C5%99%C3%A1k%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Beethoven+Sixth+Symphony"
+ },
+ {
+  "id": 68,
+  "topic": "Beethoven",
+  "text": "Beethoven's Fifth opens with a famous four-note motif: short-short-short-long.",
+  "source": "https://en.wikipedia.org/wiki/Symphony_No._5_%28Beethoven%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Beethoven+Fifth"
+ },
+ {
+  "id": 69,
+  "topic": "Beethoven",
+  "text": "Beethoven wrote 16 string quartets.",
+  "source": "https://en.wikipedia.org/wiki/Late_string_quartets_%28Beethoven%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 70,
+  "topic": "Beethoven",
+  "text": "Beethoven never married.",
+  "source": "https://en.wikipedia.org/wiki/Johann_van_Beethoven",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 71,
+  "topic": "Beethoven",
+  "text": "Beethoven's 'Immortal Beloved' letter was found after his death; her identity is still debated.",
+  "source": "https://en.wikipedia.org/wiki/Immortal_Beloved",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 72,
+  "topic": "Schubert",
+  "text": "Franz Schubert wrote over 600 songs.",
+  "source": "https://en.wikipedia.org/wiki/Franz_Schubert",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 73,
+  "topic": "Schubert",
+  "text": "Schubert died at just 31 in 1828.",
+  "source": "https://en.wikipedia.org/wiki/Franz_Schubert",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 74,
+  "topic": "Schubert",
+  "text": "Schubert's friends held musical evenings called 'Schubertiades'.",
+  "source": "https://en.wikipedia.org/wiki/Schubertiad",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 75,
+  "topic": "Schubert",
+  "text": "Schubert's 'Unfinished' Symphony has only two complete movements.",
+  "source": "https://en.wikipedia.org/wiki/Symphony_No._8_%28Schubert%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Schubert+Unfinished%27+Symphony"
+ },
+ {
+  "id": 76,
+  "topic": "Schubert",
+  "text": "The 'Unfinished' Symphony premiered in 1865, 37 years after Schubert died.",
+  "source": "https://en.wikipedia.org/wiki/List_of_symphony_composers",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Schubert+Unfinished%27+Symphony"
+ },
+ {
+  "id": 77,
+  "topic": "Schubert",
+  "text": "Schubert set Goethe's 'Erlkönig' to music at about age 18.",
+  "source": "https://en.wikipedia.org/wiki/Erlk%C3%B6nig_%28Schubert%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Schubert+Erlk%C3%B6nig"
+ },
+ {
+  "id": 78,
+  "topic": "Schubert",
+  "text": "Schubert was a torchbearer at Beethoven's funeral.",
+  "source": "https://en.wikipedia.org/wiki/Franz_Schubert",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 79,
+  "topic": "Schubert",
+  "text": "Schubert was buried near Beethoven at his own request.",
+  "source": "https://en.wikipedia.org/wiki/Franz_Schubert",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 80,
+  "topic": "Schubert",
+  "text": "Schubert's 'Trout' Quintet uses a double bass instead of a second violin.",
+  "source": "https://en.wikipedia.org/wiki/Double_bass",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Schubert+Trout%27+Quintet"
+ },
+ {
+  "id": 81,
+  "topic": "Schubert",
+  "text": "Schubert's 'Ave Maria' was originally a setting of Walter Scott's poem.",
+  "source": "https://en.wikipedia.org/wiki/Ave_Maria_%28Schubert%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Schubert+Ave+Maria"
+ },
+ {
+  "id": 82,
+  "topic": "Mendelssohn",
+  "text": "Felix Mendelssohn wrote his Octet at age 16.",
+  "source": "https://en.wikipedia.org/wiki/Felix_Mendelssohn",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Mendelssohn+Octet"
+ },
+ {
+  "id": 83,
+  "topic": "Mendelssohn",
+  "text": "Mendelssohn wrote the Midsummer Night's Dream overture at 17.",
+  "source": "https://en.wikipedia.org/wiki/A_Midsummer_Night%27s_Dream_%28Mendelssohn%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Mendelssohn+Midsummer+Night%27s+Dream"
+ },
+ {
+  "id": 84,
+  "topic": "Mendelssohn",
+  "text": "Mendelssohn's 'Wedding March' is from his Midsummer Night's Dream music.",
+  "source": "https://en.wikipedia.org/wiki/Wedding_March_%28Mendelssohn%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Mendelssohn+Midsummer+Night%27s+Dream"
+ },
+ {
+  "id": 85,
+  "topic": "Mendelssohn",
+  "text": "Mendelssohn founded the Leipzig Conservatory in 1843.",
+  "source": "https://en.wikipedia.org/wiki/Felix_Mendelssohn",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 86,
+  "topic": "Mendelssohn",
+  "text": "Mendelssohn's Hebrides Overture was inspired by Fingal's Cave in Scotland.",
+  "source": "https://en.wikipedia.org/wiki/Fingal%27s_Cave",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Mendelssohn+Hebrides+Overture"
+ },
+ {
+  "id": 87,
+  "topic": "Mendelssohn",
+  "text": "Mendelssohn died in 1847, months after his sister Fanny.",
+  "source": "https://en.wikipedia.org/wiki/Fanny_Hensel",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 88,
+  "topic": "Mendelssohn",
+  "text": "Mendelssohn was a favorite composer of Queen Victoria.",
+  "source": "https://en.wikipedia.org/wiki/Arthur_Sullivan",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 89,
+  "topic": "Chopin",
+  "text": "Frédéric Chopin was born near Warsaw in 1810.",
+  "source": "https://en.wikipedia.org/wiki/Fr%C3%A9d%C3%A9ric_Chopin",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 90,
+  "topic": "Chopin",
+  "text": "Almost all of Chopin's music features the piano.",
+  "source": "https://en.wikipedia.org/wiki/Piano_Sonata_No._2_%28Chopin%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 91,
+  "topic": "Chopin",
+  "text": "Chopin's heart was returned to Warsaw and rests in the Holy Cross Church.",
+  "source": "https://en.wikipedia.org/wiki/Heart_of_Fr%C3%A9d%C3%A9ric_Chopin",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 92,
+  "topic": "Chopin",
+  "text": "Chopin had a nearly decade-long relationship with writer George Sand.",
+  "source": "https://en.wikipedia.org/wiki/Victor_Hugo",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 93,
+  "topic": "Chopin",
+  "text": "Chopin gave only about 30 public concerts in his life.",
+  "source": "https://en.wikipedia.org/wiki/Fr%C3%A9d%C3%A9ric_Chopin",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 94,
+  "topic": "Chopin",
+  "text": "Chopin wrote his first published polonaise at age 7.",
+  "source": "https://en.wikipedia.org/wiki/Fr%C3%A9d%C3%A9ric_Chopin",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 95,
+  "topic": "Chopin",
+  "text": "Chopin died in Paris at 39, likely of tuberculosis.",
+  "source": "https://en.wikipedia.org/wiki/Fr%C3%A9d%C3%A9ric_Chopin",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 96,
+  "topic": "Chopin",
+  "text": "Chopin's 'Minute Waltz' takes longer than a minute; 'minute' means small.",
+  "source": "https://en.wikipedia.org/wiki/Just_a_Minute",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Chopin+Minute+Waltz"
+ },
+ {
+  "id": 97,
+  "topic": "Chopin",
+  "text": "Chopin wrote 21 nocturnes.",
+  "source": "https://en.wikipedia.org/wiki/Nocturnes_%28Chopin%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 98,
+  "topic": "Chopin",
+  "text": "Chopin's funeral march is from his Piano Sonata No. 2.",
+  "source": "https://en.wikipedia.org/wiki/Piano_Sonata_No._2_%28Chopin%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Chopin+funeral+march"
+ },
+ {
+  "id": 99,
+  "topic": "Liszt",
+  "text": "Franz Liszt was born in Raiding, then in Hungary, in 1811.",
+  "source": "https://en.wikipedia.org/wiki/Franz_Liszt",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 100,
+  "topic": "Liszt",
+  "text": "Liszt is credited with inventing the solo piano recital.",
+  "source": "https://en.wikipedia.org/wiki/Fr%C3%A9d%C3%A9ric_Chopin",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 101,
+  "topic": "Liszt",
+  "text": "Fans' frenzy at Liszt's concerts was called 'Lisztomania' by poet Heinrich Heine.",
+  "source": "https://en.wikipedia.org/wiki/Lisztomania",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 102,
+  "topic": "Liszt",
+  "text": "Liszt took minor orders in the Catholic Church and was called 'Abbé Liszt'.",
+  "source": "https://en.wikipedia.org/wiki/Franz_Liszt",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 103,
+  "topic": "Liszt",
+  "text": "Liszt's daughter Cosima married Richard Wagner.",
+  "source": "https://en.wikipedia.org/wiki/Cosima_Wagner",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 104,
+  "topic": "Liszt",
+  "text": "Liszt wrote 19 Hungarian Rhapsodies for piano.",
+  "source": "https://en.wikipedia.org/wiki/Franz_Liszt",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Liszt+Hungarian+Rhapsodies"
+ },
+ {
+  "id": 105,
+  "topic": "Liszt",
+  "text": "Liszt coined the term 'symphonic poem'.",
+  "source": "https://en.wikipedia.org/wiki/Symphonic_poems_%28Liszt%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 106,
+  "topic": "Liszt",
+  "text": "Liszt taught many pupils without charging fees.",
+  "source": "https://en.wikipedia.org/wiki/Camille_Saint-Sa%C3%ABns",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 107,
+  "topic": "Schumann",
+  "text": "Robert Schumann injured his hand, ending his hopes as a concert pianist.",
+  "source": "https://en.wikipedia.org/wiki/Clara_Schumann",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 108,
+  "topic": "Schumann",
+  "text": "Robert Schumann founded a music journal, the Neue Zeitschrift für Musik.",
+  "source": "https://en.wikipedia.org/wiki/Robert_Schumann",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 109,
+  "topic": "Schumann",
+  "text": "Clara Schumann was one of the greatest pianists of the 19th century.",
+  "source": "https://en.wikipedia.org/wiki/Fantasie_in_C_%28Schumann%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 110,
+  "topic": "Schumann",
+  "text": "Clara Wieck married Robert Schumann in 1840 after a court battle with her father.",
+  "source": "https://en.wikipedia.org/wiki/Bad_Kreuznach",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 111,
+  "topic": "Schumann",
+  "text": "Schumann wrote about 140 songs in 1840, his 'year of song'.",
+  "source": "https://en.wikipedia.org/wiki/Johannes_Brahms",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 112,
+  "topic": "Schumann",
+  "text": "Clara Schumann appeared on the German 100-mark banknote.",
+  "source": "https://en.wikipedia.org/wiki/Clara_Schumann",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 113,
+  "topic": "Schumann",
+  "text": "Robert Schumann praised the young Brahms in print as a coming genius.",
+  "source": "https://en.wikipedia.org/wiki/Clavier-%C3%9Cbung_III",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 114,
+  "topic": "Brahms",
+  "text": "Johannes Brahms was born in Hamburg in 1833.",
+  "source": "https://en.wikipedia.org/wiki/Johannes_Brahms",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 115,
+  "topic": "Brahms",
+  "text": "Brahms took over 20 years to finish his First Symphony.",
+  "source": "https://en.wikipedia.org/wiki/Clara_Schumann",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Brahms+First+Symphony"
+ },
+ {
+  "id": 116,
+  "topic": "Brahms",
+  "text": "Brahms's First Symphony was nicknamed 'Beethoven's Tenth'.",
+  "source": "https://en.wikipedia.org/wiki/List_of_classical_music_sub-titles%2C_nicknames_and_non-numeric_titles",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Brahms+First+Symphony"
+ },
+ {
+  "id": 117,
+  "topic": "Brahms",
+  "text": "Brahms's famous 'Lullaby' is 'Wiegenlied', Op. 49 No. 4.",
+  "source": "https://en.wikipedia.org/wiki/Wiegenlied_%28Brahms%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Brahms+Lullaby"
+ },
+ {
+  "id": 118,
+  "topic": "Brahms",
+  "text": "Brahms never married but remained devoted to Clara Schumann.",
+  "source": "https://en.wikipedia.org/wiki/Johannes_Brahms",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 119,
+  "topic": "Brahms",
+  "text": "Brahms wrote four symphonies.",
+  "source": "https://en.wikipedia.org/wiki/Johannes_Brahms",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 120,
+  "topic": "Brahms",
+  "text": "Brahms destroyed many works he considered unworthy.",
+  "source": "https://en.wikipedia.org/wiki/Gustav_Mahler",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 121,
+  "topic": "Brahms",
+  "text": "Brahms's Academic Festival Overture thanked the University of Breslau for an honorary degree.",
+  "source": "https://en.wikipedia.org/wiki/Wroc%C5%82aw",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Brahms+Academic+Festival+Overture"
+ },
+ {
+  "id": 122,
+  "topic": "Brahms",
+  "text": "Brahms's German Requiem uses German Bible texts rather than the Latin Mass.",
+  "source": "https://en.wikipedia.org/wiki/A_German_Requiem_%28Brahms%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Brahms+German+Requiem"
+ },
+ {
+  "id": 123,
+  "topic": "Brahms",
+  "text": "Brahms's Hungarian Dances were his biggest commercial success.",
+  "source": "https://en.wikipedia.org/wiki/Music_of_Serbia",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Brahms+Hungarian+Dances"
+ },
+ {
+  "id": 124,
+  "topic": "Wagner",
+  "text": "Richard Wagner wrote both the music and the words for his operas.",
+  "source": "https://en.wikipedia.org/wiki/Controversies_surrounding_Richard_Wagner",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 125,
+  "topic": "Wagner",
+  "text": "Wagner's Ring cycle has four operas and lasts about 15 hours.",
+  "source": "https://en.wikipedia.org/wiki/Richard_Wagner",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Wagner+Ring+cycle"
+ },
+ {
+  "id": 126,
+  "topic": "Wagner",
+  "text": "Wagner built his own theater, the Bayreuth Festspielhaus.",
+  "source": "https://en.wikipedia.org/wiki/Bayreuth",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 127,
+  "topic": "Wagner",
+  "text": "The Bayreuth Festival, devoted to Wagner's works, still runs every summer.",
+  "source": "https://en.wikipedia.org/wiki/Bayreuth",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 128,
+  "topic": "Wagner",
+  "text": "The 'Bridal Chorus' ('Here Comes the Bride') is from Wagner's Lohengrin.",
+  "source": "https://en.wikipedia.org/wiki/Bridal_Chorus",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Wagner+Bridal+Chorus"
+ },
+ {
+  "id": 129,
+  "topic": "Wagner",
+  "text": "Wagner used 'leitmotifs', musical themes tied to characters or ideas.",
+  "source": "https://en.wikipedia.org/wiki/Music_of_Star_Wars",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 130,
+  "topic": "Wagner",
+  "text": "Wagner's 'Ride of the Valkyries' is from Die Walküre.",
+  "source": "https://en.wikipedia.org/wiki/Die_Walk%C3%BCre",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Wagner+Ride+of+the+Valkyries"
+ },
+ {
+  "id": 131,
+  "topic": "Wagner",
+  "text": "Wagner fled Dresden after taking part in the 1849 uprising.",
+  "source": "https://en.wikipedia.org/wiki/Richard_Wagner",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 132,
+  "topic": "Wagner",
+  "text": "The 'Tristan chord' is one of the most discussed chords in music history.",
+  "source": "https://en.wikipedia.org/wiki/Half-diminished_seventh_chord",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 133,
+  "topic": "Wagner",
+  "text": "The Bayreuth orchestra plays in a covered pit hidden from the audience.",
+  "source": "https://en.wikipedia.org/wiki/Richard_Wagner",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 134,
+  "topic": "Verdi",
+  "text": "Giuseppe Verdi wrote 28 operas.",
+  "source": "https://en.wikipedia.org/wiki/Requiem_%28Verdi%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 135,
+  "topic": "Verdi",
+  "text": "Verdi was rejected by the Milan Conservatory as a young man.",
+  "source": "https://en.wikipedia.org/wiki/Giuseppe_Verdi",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 136,
+  "topic": "Verdi",
+  "text": "The chorus 'Va, pensiero' from Nabucco became a symbol of Italian patriotism.",
+  "source": "https://en.wikipedia.org/wiki/Unification_of_Italy",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Verdi+Va%2C+pensiero"
+ },
+ {
+  "id": 137,
+  "topic": "Verdi",
+  "text": "'Viva Verdi' doubled as code for 'Viva Vittorio Emanuele Re D'Italia'.",
+  "source": "https://en.wikipedia.org/wiki/Italy",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 138,
+  "topic": "Verdi",
+  "text": "Verdi's Aida premiered in Cairo in 1871.",
+  "source": "https://en.wikipedia.org/wiki/Aida",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Verdi+Aida"
+ },
+ {
+  "id": 139,
+  "topic": "Verdi",
+  "text": "Verdi wrote Falstaff, a comedy, at nearly 80.",
+  "source": "https://en.wikipedia.org/wiki/Falstaff_%28opera%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Verdi+Falstaff"
+ },
+ {
+  "id": 140,
+  "topic": "Verdi",
+  "text": "Verdi founded a retirement home for musicians in Milan, Casa di Riposo.",
+  "source": "https://en.wikipedia.org/wiki/Giuseppe_Verdi",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 141,
+  "topic": "Verdi",
+  "text": "Verdi and his wife Giuseppina are buried at the Casa di Riposo.",
+  "source": "https://en.wikipedia.org/wiki/Casa_di_Riposo_per_Musicisti",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 142,
+  "topic": "Verdi",
+  "text": "Verdi served as a member of Italy's first parliament.",
+  "source": "https://en.wikipedia.org/wiki/Giuseppe_Verdi",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 143,
+  "topic": "Verdi",
+  "text": "'La donna è mobile' is from Verdi's Rigoletto.",
+  "source": "https://en.wikipedia.org/wiki/La_donna_%C3%A8_mobile",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Verdi+La+donna+%C3%A8+mobile"
+ },
+ {
+  "id": 144,
+  "topic": "Puccini",
+  "text": "Giacomo Puccini came from five generations of church musicians in Lucca.",
+  "source": "https://en.wikipedia.org/wiki/Giacomo_Puccini",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 145,
+  "topic": "Puccini",
+  "text": "Puccini died before finishing Turandot.",
+  "source": "https://en.wikipedia.org/wiki/Turandot",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Puccini+Turandot"
+ },
+ {
+  "id": 146,
+  "topic": "Puccini",
+  "text": "At Turandot's premiere, Toscanini stopped where Puccini's music ended.",
+  "source": "https://en.wikipedia.org/wiki/Turandot",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Puccini+Turandot"
+ },
+ {
+  "id": 147,
+  "topic": "Puccini",
+  "text": "Franco Alfano completed Puccini's Turandot.",
+  "source": "https://en.wikipedia.org/wiki/Giacomo_Puccini",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Puccini+Turandot"
+ },
+ {
+  "id": 148,
+  "topic": "Puccini",
+  "text": "'Nessun dorma' is from Puccini's Turandot.",
+  "source": "https://en.wikipedia.org/wiki/Nessun_dorma",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Puccini+Nessun+dorma"
+ },
+ {
+  "id": 149,
+  "topic": "Puccini",
+  "text": "Madama Butterfly's failed premiere led Puccini to revise it.",
+  "source": "https://en.wikipedia.org/wiki/Giacomo_Puccini",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Puccini+Madama+Butterfly"
+ },
+ {
+  "id": 150,
+  "topic": "Puccini",
+  "text": "Puccini loved fast cars and hunting, and survived a serious car crash in 1903.",
+  "source": "https://en.wikipedia.org/wiki/Giacomo_Puccini",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 151,
+  "topic": "Puccini",
+  "text": "La bohème inspired the Broadway musical Rent.",
+  "source": "https://en.wikipedia.org/wiki/Rent_%28musical%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Puccini+La+boh%C3%A8me"
+ },
+ {
+  "id": 152,
+  "topic": "Tchaikovsky",
+  "text": "Pyotr Ilyich Tchaikovsky studied law before turning to music.",
+  "source": "https://en.wikipedia.org/wiki/Religious_views_of_Pyotr_Ilyich_Tchaikovsky",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 153,
+  "topic": "Tchaikovsky",
+  "text": "Tchaikovsky was among the first graduates of the St Petersburg Conservatory.",
+  "source": "https://en.wikipedia.org/wiki/Pyotr_Ilyich_Tchaikovsky",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 154,
+  "topic": "Tchaikovsky",
+  "text": "Nadezhda von Meck supported Tchaikovsky for 13 years; they agreed never to meet.",
+  "source": "https://en.wikipedia.org/wiki/Pyotr_Ilyich_Tchaikovsky",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 155,
+  "topic": "Tchaikovsky",
+  "text": "Tchaikovsky conducted at the opening of Carnegie Hall in 1891.",
+  "source": "https://en.wikipedia.org/wiki/Carnegie_Hall",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 156,
+  "topic": "Tchaikovsky",
+  "text": "Tchaikovsky's 1812 Overture calls for cannon fire.",
+  "source": "https://en.wikipedia.org/wiki/Cannon",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Tchaikovsky+1812+Overture"
+ },
+ {
+  "id": 157,
+  "topic": "Tchaikovsky",
+  "text": "The Nutcracker introduced many to the celesta, used for the Sugar Plum Fairy.",
+  "source": "https://en.wikipedia.org/wiki/Celesta",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Tchaikovsky+Nutcracker"
+ },
+ {
+  "id": 158,
+  "topic": "Tchaikovsky",
+  "text": "Tchaikovsky died nine days after conducting his Sixth Symphony's premiere.",
+  "source": "https://en.wikipedia.org/wiki/Symphony_No._6_%28Tchaikovsky%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Tchaikovsky+Sixth+Symphony"
+ },
+ {
+  "id": 159,
+  "topic": "Tchaikovsky",
+  "text": "Swan Lake was not a success at its 1877 premiere.",
+  "source": "https://en.wikipedia.org/wiki/Swan_Lake",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Tchaikovsky+Swan+Lake"
+ },
+ {
+  "id": 160,
+  "topic": "Tchaikovsky",
+  "text": "Tchaikovsky wrote three ballets: Swan Lake, Sleeping Beauty and The Nutcracker.",
+  "source": "https://en.wikipedia.org/wiki/Pyotr_Ilyich_Tchaikovsky",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Tchaikovsky+Nutcracker"
+ },
+ {
+  "id": 161,
+  "topic": "Tchaikovsky",
+  "text": "Pianist Nikolai Rubinstein first called Tchaikovsky's Piano Concerto No. 1 unplayable.",
+  "source": "https://en.wikipedia.org/wiki/Piano_Concerto_No._1_%28Tchaikovsky%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Tchaikovsky+Piano+Concerto+No.+1"
+ },
+ {
+  "id": 162,
+  "topic": "Tchaikovsky",
+  "text": "Tchaikovsky's Piano Concerto No. 1 premiered in Boston in 1875.",
+  "source": "https://en.wikipedia.org/wiki/Piano_Concerto_No._1_%28Tchaikovsky%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Tchaikovsky+Piano+Concerto+No.+1"
+ },
+ {
+  "id": 163,
+  "topic": "Dvořák",
+  "text": "Antonín Dvořák was the son of a butcher and innkeeper in Bohemia.",
+  "source": "https://en.wikipedia.org/wiki/Anton%C3%ADn_Dvo%C5%99%C3%A1k",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 164,
+  "topic": "Dvořák",
+  "text": "Dvořák directed the National Conservatory in New York from 1892 to 1895.",
+  "source": "https://en.wikipedia.org/wiki/Symphony_No._9_%28Dvo%C5%99%C3%A1k%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 165,
+  "topic": "Dvořák",
+  "text": "Dvořák spent the summer of 1893 in Spillville, Iowa.",
+  "source": "https://en.wikipedia.org/wiki/Anton%C3%ADn_Dvo%C5%99%C3%A1k",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 166,
+  "topic": "Dvořák",
+  "text": "Dvořák's 'New World' Symphony was written in America.",
+  "source": "https://en.wikipedia.org/wiki/Symphony_No._9_%28Dvo%C5%99%C3%A1k%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Dvo%C5%99%C3%A1k+New+World%27+Symphony"
+ },
+ {
+  "id": 167,
+  "topic": "Dvořák",
+  "text": "Astronaut Neil Armstrong took a recording of the New World Symphony on Apollo 11.",
+  "source": "https://en.wikipedia.org/wiki/Symphony_No._9_%28Dvo%C5%99%C3%A1k%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Dvo%C5%99%C3%A1k+New+World+Symphony"
+ },
+ {
+  "id": 168,
+  "topic": "Dvořák",
+  "text": "Dvořák was a passionate trainspotter.",
+  "source": "https://en.wikipedia.org/wiki/List_of_stock_characters",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 169,
+  "topic": "Dvořák",
+  "text": "Brahms helped Dvořák find a publisher.",
+  "source": "https://en.wikipedia.org/wiki/Anton%C3%ADn_Dvo%C5%99%C3%A1k",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 170,
+  "topic": "Smetana",
+  "text": "Bedřich Smetana's 'Vltava' (The Moldau) depicts a river flowing through Bohemia.",
+  "source": "https://en.wikipedia.org/wiki/Bed%C5%99ich_Smetana",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Smetana+Vltava"
+ },
+ {
+  "id": 171,
+  "topic": "Smetana",
+  "text": "Smetana wrote much of Má vlast after becoming completely deaf.",
+  "source": "https://en.wikipedia.org/wiki/String_Quartet_No._1_%28Smetana%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Smetana+M%C3%A1+vlast"
+ },
+ {
+  "id": 172,
+  "topic": "Grieg",
+  "text": "Edvard Grieg's Piano Concerto in A minor is his only completed concerto.",
+  "source": "https://en.wikipedia.org/wiki/Piano_Concerto_%28Schumann%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Grieg+Piano+Concerto+in+A+minor"
+ },
+ {
+  "id": 173,
+  "topic": "Grieg",
+  "text": "'In the Hall of the Mountain King' is from Grieg's Peer Gynt.",
+  "source": "https://en.wikipedia.org/wiki/Peer_Gynt_%28Grieg%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Grieg+In+the+Hall+of+the+Mountain+King"
+ },
+ {
+  "id": 174,
+  "topic": "Grieg",
+  "text": "Grieg was only about five feet tall.",
+  "source": "https://en.wikipedia.org/wiki/Peer_Gynt",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 175,
+  "topic": "Grieg",
+  "text": "Grieg's home, Troldhaugen near Bergen, is now a museum.",
+  "source": "https://en.wikipedia.org/wiki/Edvard_Grieg",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 176,
+  "topic": "Sibelius",
+  "text": "Jean Sibelius's Finlandia became a symbol of Finnish independence.",
+  "source": "https://en.wikipedia.org/wiki/Jean_Sibelius",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Sibelius+Finlandia"
+ },
+ {
+  "id": 177,
+  "topic": "Sibelius",
+  "text": "Sibelius wrote almost nothing for his last 30 years of life.",
+  "source": "https://en.wikipedia.org/wiki/Kullervo_%28Sibelius%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 178,
+  "topic": "Sibelius",
+  "text": "Sibelius is believed to have destroyed his Eighth Symphony.",
+  "source": "https://en.wikipedia.org/wiki/Symphony_No._8_%28Sibelius%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Sibelius+Eighth"
+ },
+ {
+  "id": 179,
+  "topic": "Sibelius",
+  "text": "Sibelius appeared on the Finnish 100-markka banknote.",
+  "source": "https://en.wikipedia.org/wiki/Carl_Gustaf_Emil_Mannerheim",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 180,
+  "topic": "Mahler",
+  "text": "Gustav Mahler was famous in his lifetime mainly as a conductor.",
+  "source": "https://en.wikipedia.org/wiki/Gustav_Mahler",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 181,
+  "topic": "Mahler",
+  "text": "Mahler directed the Vienna Court Opera from 1897 to 1907.",
+  "source": "https://en.wikipedia.org/wiki/Repertory_of_the_Vienna_Court_Opera_under_Gustav_Mahler",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 182,
+  "topic": "Mahler",
+  "text": "Mahler conducted the New York Philharmonic and the Met late in life.",
+  "source": "https://en.wikipedia.org/wiki/Gustav_Mahler",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 183,
+  "topic": "Mahler",
+  "text": "Mahler's Eighth is called the 'Symphony of a Thousand'.",
+  "source": "https://en.wikipedia.org/wiki/Symphony_No._8_%28Mahler%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Mahler+Eighth"
+ },
+ {
+  "id": 184,
+  "topic": "Mahler",
+  "text": "Mahler composed in small huts in the countryside during summers.",
+  "source": "https://en.wikipedia.org/wiki/Gustav_Mahler",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 185,
+  "topic": "Mahler",
+  "text": "Mahler's wife Alma was also a composer.",
+  "source": "https://en.wikipedia.org/wiki/Alma_Mahler",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 186,
+  "topic": "Mahler",
+  "text": "Mahler famously said a symphony 'must be like the world; it must embrace everything.'",
+  "source": "https://en.wikipedia.org/wiki/List_of_Jewish_atheists_and_agnostics",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 187,
+  "topic": "Bruckner",
+  "text": "Anton Bruckner was an organist who revised his symphonies many times.",
+  "source": "https://en.wikipedia.org/wiki/Anton_Bruckner",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 188,
+  "topic": "Bruckner",
+  "text": "Bruckner dedicated his Ninth Symphony 'to the beloved God'.",
+  "source": "https://en.wikipedia.org/wiki/Symphony_No._9_%28Bruckner%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Bruckner+Ninth+Symphony"
+ },
+ {
+  "id": 189,
+  "topic": "Bruckner",
+  "text": "Bruckner is buried beneath the organ at St Florian Abbey.",
+  "source": "https://en.wikipedia.org/wiki/St._Florian_Monastery",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 190,
+  "topic": "Strauss",
+  "text": "Johann Strauss II was called the 'Waltz King'.",
+  "source": "https://en.wikipedia.org/wiki/Johann_Strauss_II",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 191,
+  "topic": "Strauss",
+  "text": "'The Blue Danube' was written by Johann Strauss II in 1866.",
+  "source": "https://en.wikipedia.org/wiki/The_Blue_Danube",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Strauss+Blue+Danube"
+ },
+ {
+  "id": 192,
+  "topic": "Strauss",
+  "text": "The Vienna New Year's Concert is built around the Strauss family's music.",
+  "source": "https://en.wikipedia.org/wiki/Richard_Strauss",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 193,
+  "topic": "Strauss",
+  "text": "Richard Strauss's 'Also sprach Zarathustra' opens 2001: A Space Odyssey.",
+  "source": "https://en.wikipedia.org/wiki/2001%3A_A_Space_Odyssey_%28soundtrack%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Strauss+Also+sprach+Zarathustra"
+ },
+ {
+  "id": 194,
+  "topic": "Strauss",
+  "text": "Richard Strauss's father was a leading horn player in Munich.",
+  "source": "https://en.wikipedia.org/wiki/Horn_Concerto_No._1_%28Strauss%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 195,
+  "topic": "Debussy",
+  "text": "Claude Debussy's 'Clair de lune' is from his Suite bergamasque.",
+  "source": "https://en.wikipedia.org/wiki/Suite_bergamasque",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Debussy+Clair+de+lune"
+ },
+ {
+  "id": 196,
+  "topic": "Debussy",
+  "text": "Debussy won the Prix de Rome in 1884.",
+  "source": "https://en.wikipedia.org/wiki/L%27enfant_prodigue_%28Debussy%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 197,
+  "topic": "Debussy",
+  "text": "Debussy was fascinated by Javanese gamelan music he heard in Paris in 1889.",
+  "source": "https://en.wikipedia.org/wiki/Claude_Debussy",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 198,
+  "topic": "Debussy",
+  "text": "Debussy's only completed opera is Pelléas et Mélisande.",
+  "source": "https://en.wikipedia.org/wiki/Pell%C3%A9as_et_M%C3%A9lisande_%28opera%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Debussy+Pell%C3%A9as+et+M%C3%A9lisande"
+ },
+ {
+  "id": 199,
+  "topic": "Debussy",
+  "text": "Debussy wrote Children's Corner for his daughter, nicknamed Chouchou.",
+  "source": "https://en.wikipedia.org/wiki/Emma_Bardac",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Debussy+Children%27s+Corner"
+ },
+ {
+  "id": 200,
+  "topic": "Debussy",
+  "text": "The cover of Debussy's La mer used Hokusai's 'Great Wave'.",
+  "source": "https://en.wikipedia.org/wiki/La_mer_%28Debussy%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Debussy+La+mer"
+ },
+ {
+  "id": 201,
+  "topic": "Ravel",
+  "text": "Maurice Ravel's Boléro repeats one melody, growing louder for about 15 minutes.",
+  "source": "https://en.wikipedia.org/wiki/Frank_Zappa",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Ravel+Bol%C3%A9ro"
+ },
+ {
+  "id": 202,
+  "topic": "Ravel",
+  "text": "Ravel called Boléro 'a piece for orchestra without music'.",
+  "source": "https://en.wikipedia.org/wiki/Bol%C3%A9ro",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Ravel+Bol%C3%A9ro"
+ },
+ {
+  "id": 203,
+  "topic": "Ravel",
+  "text": "Ravel orchestrated Mussorgsky's Pictures at an Exhibition in 1922.",
+  "source": "https://en.wikipedia.org/wiki/Pictures_at_an_Exhibition",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Ravel+Pictures+at+an+Exhibition"
+ },
+ {
+  "id": 204,
+  "topic": "Ravel",
+  "text": "Ravel wrote a piano concerto for the left hand for Paul Wittgenstein.",
+  "source": "https://en.wikipedia.org/wiki/Piano_Concerto_in_G_major_%28Ravel%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Ravel+piano+concerto+for+the+left+hand"
+ },
+ {
+  "id": 205,
+  "topic": "Ravel",
+  "text": "Paul Wittgenstein lost his right arm in World War I.",
+  "source": "https://en.wikipedia.org/wiki/Paul_Wittgenstein",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 206,
+  "topic": "Ravel",
+  "text": "Ravel was refused the Prix de Rome several times, causing a scandal in 1905.",
+  "source": "https://en.wikipedia.org/wiki/Maurice_Ravel",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 207,
+  "topic": "Ravel",
+  "text": "Ravel toured the United States in 1928 and met George Gershwin.",
+  "source": "https://en.wikipedia.org/wiki/An_American_in_Paris",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 208,
+  "topic": "Saint-Saëns",
+  "text": "Camille Saint-Saëns wrote The Carnival of the Animals but banned its publication in his lifetime.",
+  "source": "https://en.wikipedia.org/wiki/Paris_in_the_Belle_%C3%89poque",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Saint-Sa%C3%ABns+Carnival+of+the+Animals"
+ },
+ {
+  "id": 209,
+  "topic": "Saint-Saëns",
+  "text": "'The Swan' from Carnival of the Animals was the only movement Saint-Saëns allowed published.",
+  "source": "https://en.wikipedia.org/wiki/Camille_Saint-Sa%C3%ABns",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Saint-Sa%C3%ABns+Carnival+of+the+Animals"
+ },
+ {
+  "id": 210,
+  "topic": "Saint-Saëns",
+  "text": "Saint-Saëns wrote the first film score by a major composer, in 1908.",
+  "source": "https://en.wikipedia.org/wiki/Camille_Saint-Sa%C3%ABns",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 211,
+  "topic": "Saint-Saëns",
+  "text": "Saint-Saëns's Organ Symphony was dedicated to Liszt's memory.",
+  "source": "https://en.wikipedia.org/wiki/Symphony_No._3_%28Saint-Sa%C3%ABns%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Saint-Sa%C3%ABns+Organ+Symphony"
+ },
+ {
+  "id": 212,
+  "topic": "Bizet",
+  "text": "Georges Bizet died at 36, three months after Carmen's premiere.",
+  "source": "https://en.wikipedia.org/wiki/Georges_Bizet",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Bizet+Carmen"
+ },
+ {
+  "id": 213,
+  "topic": "Bizet",
+  "text": "Carmen was considered shocking at its premiere.",
+  "source": "https://en.wikipedia.org/wiki/List_of_banned_films",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Bizet+Carmen"
+ },
+ {
+  "id": 214,
+  "topic": "Bizet",
+  "text": "'Habanera' and the 'Toreador Song' are from Bizet's Carmen.",
+  "source": "https://en.wikipedia.org/wiki/Toreador_Song",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Bizet+Habanera"
+ },
+ {
+  "id": 215,
+  "topic": "Rossini",
+  "text": "Gioachino Rossini wrote The Barber of Seville in about three weeks.",
+  "source": "https://en.wikipedia.org/wiki/The_Barber_of_Seville",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Rossini+Barber+of+Seville"
+ },
+ {
+  "id": 216,
+  "topic": "Rossini",
+  "text": "Rossini largely stopped writing operas at 37, after William Tell.",
+  "source": "https://en.wikipedia.org/wiki/History_of_opera",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Rossini+William+Tell"
+ },
+ {
+  "id": 217,
+  "topic": "Rossini",
+  "text": "Rossini was a famous gourmet; Tournedos Rossini is named after him.",
+  "source": "https://en.wikipedia.org/wiki/List_of_foods_named_after_people",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 218,
+  "topic": "Rossini",
+  "text": "Rossini was born on February 29, 1792.",
+  "source": "https://en.wikipedia.org/wiki/February_29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 219,
+  "topic": "Rossini",
+  "text": "The William Tell Overture became the theme of The Lone Ranger.",
+  "source": "https://en.wikipedia.org/wiki/William_Tell_Overture",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Rossini+William+Tell+Overture"
+ },
+ {
+  "id": 220,
+  "topic": "Berlioz",
+  "text": "Hector Berlioz's Symphonie fantastique was inspired by actress Harriet Smithson.",
+  "source": "https://en.wikipedia.org/wiki/Hector_Berlioz",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Berlioz+Symphonie+fantastique"
+ },
+ {
+  "id": 221,
+  "topic": "Berlioz",
+  "text": "Berlioz later married Harriet Smithson.",
+  "source": "https://en.wikipedia.org/wiki/Harriet_Smithson",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 222,
+  "topic": "Berlioz",
+  "text": "Berlioz wrote an influential treatise on orchestration.",
+  "source": "https://en.wikipedia.org/wiki/Hector_Berlioz",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 223,
+  "topic": "Berlioz",
+  "text": "Berlioz trained in medicine before switching to music.",
+  "source": "https://en.wikipedia.org/wiki/Paris_under_Louis-Philippe",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 224,
+  "topic": "Mussorgsky",
+  "text": "Modest Mussorgsky wrote Pictures at an Exhibition after visiting a memorial show of Viktor Hartmann's art.",
+  "source": "https://en.wikipedia.org/wiki/Pictures_at_an_Exhibition",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Mussorgsky+Pictures+at+an+Exhibition"
+ },
+ {
+  "id": 225,
+  "topic": "Mussorgsky",
+  "text": "Mussorgsky was part of 'The Five', a group of Russian nationalist composers.",
+  "source": "https://en.wikipedia.org/wiki/The_Five_%28composers%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 226,
+  "topic": "Rimsky-Korsakov",
+  "text": "Nikolai Rimsky-Korsakov served as a naval officer while composing.",
+  "source": "https://en.wikipedia.org/wiki/Nikolai_Rimsky-Korsakov",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 227,
+  "topic": "Rimsky-Korsakov",
+  "text": "'Flight of the Bumblebee' is from Rimsky-Korsakov's opera Tsar Saltan.",
+  "source": "https://en.wikipedia.org/wiki/Flight_of_the_Bumblebee",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Rimsky-Korsakov+Flight+of+the+Bumblebee"
+ },
+ {
+  "id": 228,
+  "topic": "Rimsky-Korsakov",
+  "text": "Rimsky-Korsakov taught the young Igor Stravinsky.",
+  "source": "https://en.wikipedia.org/wiki/Nikolai_Rimsky-Korsakov",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 229,
+  "topic": "Borodin",
+  "text": "Alexander Borodin was a chemist as well as a composer.",
+  "source": "https://en.wikipedia.org/wiki/Alexander_Borodin",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 230,
+  "topic": "Borodin",
+  "text": "The musical Kismet borrowed melodies from Borodin.",
+  "source": "https://en.wikipedia.org/wiki/Kismet_%28musical%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 231,
+  "topic": "Rachmaninoff",
+  "text": "Sergei Rachmaninoff had very large hands that could span a 13th on the keyboard.",
+  "source": "https://en.wikipedia.org/wiki/Nikolai_Kapustin",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 232,
+  "topic": "Rachmaninoff",
+  "text": "Rachmaninoff dedicated his Second Piano Concerto to his therapist, Dr Nikolai Dahl.",
+  "source": "https://en.wikipedia.org/wiki/Piano_Concerto_No._2_%28Rachmaninoff%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Rachmaninoff+Second+Piano+Concerto"
+ },
+ {
+  "id": 233,
+  "topic": "Rachmaninoff",
+  "text": "Rachmaninoff left Russia after the 1917 revolution and later settled in the US.",
+  "source": "https://en.wikipedia.org/wiki/Sergei_Rachmaninoff",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 234,
+  "topic": "Rachmaninoff",
+  "text": "Rachmaninoff became a US citizen weeks before he died in 1943.",
+  "source": "https://en.wikipedia.org/wiki/Sergei_Rachmaninoff",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 235,
+  "topic": "Rachmaninoff",
+  "text": "The failed premiere of his First Symphony sent Rachmaninoff into depression.",
+  "source": "https://en.wikipedia.org/wiki/Sergei_Rachmaninoff",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Rachmaninoff+First+Symphony"
+ },
+ {
+  "id": 236,
+  "topic": "Stravinsky",
+  "text": "The premiere of Stravinsky's The Rite of Spring in 1913 caused an uproar in Paris.",
+  "source": "https://en.wikipedia.org/wiki/The_Rite_of_Spring",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Stravinsky+Rite+of+Spring"
+ },
+ {
+  "id": 237,
+  "topic": "Stravinsky",
+  "text": "Stravinsky wrote three major ballets for Diaghilev's Ballets Russes.",
+  "source": "https://en.wikipedia.org/wiki/Coco_Chanel_%26_Igor_Stravinsky",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 238,
+  "topic": "Stravinsky",
+  "text": "Stravinsky became a US citizen in 1945.",
+  "source": "https://en.wikipedia.org/wiki/Igor_Stravinsky",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 239,
+  "topic": "Stravinsky",
+  "text": "Stravinsky is buried in Venice, near Diaghilev.",
+  "source": "https://en.wikipedia.org/wiki/Igor_Stravinsky",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 240,
+  "topic": "Stravinsky",
+  "text": "Stravinsky wrote a circus polka for an elephant ballet with Ringling Brothers.",
+  "source": "https://en.wikipedia.org/wiki/Circus_Polka",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 241,
+  "topic": "Prokofiev",
+  "text": "Sergei Prokofiev wrote Peter and the Wolf to introduce children to the orchestra.",
+  "source": "https://en.wikipedia.org/wiki/Peter_and_the_Wolf",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Prokofiev+Peter+and+the+Wolf"
+ },
+ {
+  "id": 242,
+  "topic": "Prokofiev",
+  "text": "Prokofiev died on the same day as Joseph Stalin in 1953.",
+  "source": "https://en.wikipedia.org/wiki/Sergei_Prokofiev",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 243,
+  "topic": "Prokofiev",
+  "text": "Prokofiev was also a strong chess player.",
+  "source": "https://en.wikipedia.org/wiki/Handicap_%28chess%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 244,
+  "topic": "Prokofiev",
+  "text": "Prokofiev wrote his first opera at age 9.",
+  "source": "https://en.wikipedia.org/wiki/Sergei_Prokofiev",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 245,
+  "topic": "Shostakovich",
+  "text": "Dmitri Shostakovich's Seventh Symphony premiered in besieged Leningrad in 1942.",
+  "source": "https://en.wikipedia.org/wiki/Symphony_No._7_%28Shostakovich%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Shostakovich+Seventh+Symphony"
+ },
+ {
+  "id": 246,
+  "topic": "Shostakovich",
+  "text": "Shostakovich was a volunteer firefighter during the siege of Leningrad.",
+  "source": "https://en.wikipedia.org/wiki/Dmitri_Shostakovich",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 247,
+  "topic": "Shostakovich",
+  "text": "Shostakovich was a lifelong soccer fan and a qualified referee.",
+  "source": "https://en.wikipedia.org/wiki/Dmitri_Shostakovich",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 248,
+  "topic": "Shostakovich",
+  "text": "Shostakovich wrote 15 symphonies and 15 string quartets.",
+  "source": "https://en.wikipedia.org/wiki/String_Quartet_No._8_%28Shostakovich%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 249,
+  "topic": "Elgar",
+  "text": "Edward Elgar's Enigma Variations portray his friends.",
+  "source": "https://en.wikipedia.org/wiki/Enigma_Variations",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Elgar+Enigma+Variations"
+ },
+ {
+  "id": 250,
+  "topic": "Elgar",
+  "text": "'Nimrod' from the Enigma Variations depicts Elgar's friend August Jaeger.",
+  "source": "https://en.wikipedia.org/wiki/Enigma_Variations",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Elgar+Enigma+Variations"
+ },
+ {
+  "id": 251,
+  "topic": "Elgar",
+  "text": "'Land of Hope and Glory' uses the tune of Elgar's Pomp and Circumstance March No. 1.",
+  "source": "https://en.wikipedia.org/wiki/Pomp_and_Circumstance_Marches",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Elgar+Land+of+Hope+and+Glory"
+ },
+ {
+  "id": 252,
+  "topic": "Elgar",
+  "text": "In the US, Elgar's Pomp and Circumstance is played at graduations.",
+  "source": "https://en.wikipedia.org/wiki/Pomp_and_Circumstance_Marches",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Elgar+Pomp+and+Circumstance"
+ },
+ {
+  "id": 253,
+  "topic": "Elgar",
+  "text": "Elgar was largely self-taught as a composer.",
+  "source": "https://en.wikipedia.org/wiki/Edward_Elgar",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 254,
+  "topic": "Holst",
+  "text": "Gustav Holst's The Planets has seven movements; Earth is not included.",
+  "source": "https://en.wikipedia.org/wiki/Gustav_Holst",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Holst+The+Planets"
+ },
+ {
+  "id": 255,
+  "topic": "Holst",
+  "text": "Pluto was discovered in 1930, after Holst wrote The Planets.",
+  "source": "https://en.wikipedia.org/wiki/Cultural_influence_of_Holst%27s_The_Planets",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Holst+The+Planets"
+ },
+ {
+  "id": 256,
+  "topic": "Holst",
+  "text": "Holst's 'Jupiter' supplied the hymn tune 'I Vow to Thee, My Country'.",
+  "source": "https://en.wikipedia.org/wiki/I_Vow_to_Thee%2C_My_Country",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Holst+Jupiter"
+ },
+ {
+  "id": 257,
+  "topic": "Vaughan Williams",
+  "text": "Ralph Vaughan Williams collected English folk songs in the countryside.",
+  "source": "https://en.wikipedia.org/wiki/Gustav_Holst",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 258,
+  "topic": "Vaughan Williams",
+  "text": "Vaughan Williams edited The English Hymnal.",
+  "source": "https://en.wikipedia.org/wiki/Ralph_Vaughan_Williams",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 259,
+  "topic": "Vaughan Williams",
+  "text": "Vaughan Williams served as an ambulance driver in World War I.",
+  "source": "https://en.wikipedia.org/wiki/List_of_ambulance_drivers_during_World_War_I",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 260,
+  "topic": "Gershwin",
+  "text": "George Gershwin's Rhapsody in Blue opens with a famous clarinet glissando.",
+  "source": "https://en.wikipedia.org/wiki/Rhapsody_in_Blue",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Gershwin+Rhapsody+in+Blue"
+ },
+ {
+  "id": 261,
+  "topic": "Gershwin",
+  "text": "Rhapsody in Blue premiered at Aeolian Hall in New York in 1924.",
+  "source": "https://en.wikipedia.org/wiki/Rhapsody_in_Blue",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Gershwin+Rhapsody+in+Blue"
+ },
+ {
+  "id": 262,
+  "topic": "Gershwin",
+  "text": "Gershwin's Porgy and Bess premiered in 1935.",
+  "source": "https://en.wikipedia.org/wiki/Porgy_and_Bess",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Gershwin+Porgy+and+Bess"
+ },
+ {
+  "id": 263,
+  "topic": "Gershwin",
+  "text": "Gershwin died of a brain tumor at 38.",
+  "source": "https://en.wikipedia.org/wiki/George_Gershwin",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 264,
+  "topic": "Gershwin",
+  "text": "An American in Paris uses real taxi horns.",
+  "source": "https://en.wikipedia.org/wiki/An_American_in_Paris",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Gershwin+An+American+in+Paris"
+ },
+ {
+  "id": 265,
+  "topic": "Copland",
+  "text": "Aaron Copland's Appalachian Spring won the 1945 Pulitzer Prize for Music.",
+  "source": "https://en.wikipedia.org/wiki/Pulitzer_Prize_for_Music",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Copland+Appalachian+Spring"
+ },
+ {
+  "id": 266,
+  "topic": "Copland",
+  "text": "Appalachian Spring uses the Shaker song 'Simple Gifts'.",
+  "source": "https://en.wikipedia.org/wiki/Simple_Gifts",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Copland+Appalachian+Spring"
+ },
+ {
+  "id": 267,
+  "topic": "Copland",
+  "text": "Copland's 'Hoe-Down' from Rodeo became famous in beef commercials.",
+  "source": "https://en.wikipedia.org/wiki/Rodeo_%28ballet%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Copland+Hoe-Down"
+ },
+ {
+  "id": 268,
+  "topic": "Copland",
+  "text": "Copland studied in Paris with Nadia Boulanger.",
+  "source": "https://en.wikipedia.org/wiki/Nadia_Boulanger",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 269,
+  "topic": "Copland",
+  "text": "Copland wrote Fanfare for the Common Man in 1942.",
+  "source": "https://en.wikipedia.org/wiki/Fanfare_for_the_Common_Man",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Copland+Fanfare+for+the+Common+Man"
+ },
+ {
+  "id": 270,
+  "topic": "Barber",
+  "text": "Samuel Barber's Adagio for Strings began as a movement of his String Quartet.",
+  "source": "https://en.wikipedia.org/wiki/Samuel_Barber",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Barber+Adagio+for+Strings"
+ },
+ {
+  "id": 271,
+  "topic": "Barber",
+  "text": "Barber's Adagio was played at the funerals of FDR and Princess Grace.",
+  "source": "https://en.wikipedia.org/wiki/Adagio_for_Strings",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 272,
+  "topic": "Barber",
+  "text": "Barber wrote his first opera at age 10.",
+  "source": "https://en.wikipedia.org/wiki/Samuel_Barber",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 273,
+  "topic": "Bernstein",
+  "text": "Leonard Bernstein became famous overnight in 1943 when he substituted for Bruno Walter.",
+  "source": "https://en.wikipedia.org/wiki/Leonard_Bernstein",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 274,
+  "topic": "Bernstein",
+  "text": "Bernstein's Young People's Concerts were televised by CBS.",
+  "source": "https://en.wikipedia.org/wiki/Leonard_Bernstein",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 275,
+  "topic": "Bernstein",
+  "text": "Bernstein was the first American-born music director of the New York Philharmonic.",
+  "source": "https://en.wikipedia.org/wiki/Elmer_Bernstein",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 276,
+  "topic": "Bernstein",
+  "text": "Bernstein conducted Beethoven's Ninth in Berlin in 1989, singing 'Freiheit' (freedom).",
+  "source": "https://en.wikipedia.org/wiki/Symphony_No._9_%28Beethoven%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Bernstein+Beethoven%27s+Ninth"
+ },
+ {
+  "id": 277,
+  "topic": "Joplin",
+  "text": "Scott Joplin was awarded a posthumous Pulitzer Prize in 1976.",
+  "source": "https://en.wikipedia.org/wiki/Scott_Joplin",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 278,
+  "topic": "Joplin",
+  "text": "Joplin's 'The Entertainer' became popular again through the film The Sting (1973).",
+  "source": "https://en.wikipedia.org/wiki/Ragtime",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Joplin+The+Entertainer"
+ },
+ {
+  "id": 279,
+  "topic": "Ives",
+  "text": "Charles Ives ran a successful insurance agency while composing.",
+  "source": "https://en.wikipedia.org/wiki/Colorado_River",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 280,
+  "topic": "Ives",
+  "text": "Ives's Third Symphony won the 1947 Pulitzer Prize.",
+  "source": "https://en.wikipedia.org/wiki/Samuel_Barber",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Ives+Third+Symphony"
+ },
+ {
+  "id": 281,
+  "topic": "Monteverdi",
+  "text": "Claudio Monteverdi's L'Orfeo (1607) is among the earliest operas still performed.",
+  "source": "https://en.wikipedia.org/wiki/Claudio_Monteverdi",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Monteverdi+L%27Orfeo"
+ },
+ {
+  "id": 282,
+  "topic": "Purcell",
+  "text": "Henry Purcell's Dido and Aeneas is one of the earliest English operas.",
+  "source": "https://en.wikipedia.org/wiki/Dido_and_Aeneas",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Purcell+Dido+and+Aeneas"
+ },
+ {
+  "id": 283,
+  "topic": "Purcell",
+  "text": "Purcell is buried in Westminster Abbey beneath the organ.",
+  "source": "https://en.wikipedia.org/wiki/Westminster_Abbey",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 284,
+  "topic": "Pachelbel",
+  "text": "Johann Pachelbel was a friend of Bach's family and taught Bach's older brother.",
+  "source": "https://en.wikipedia.org/wiki/Johann_Pachelbel",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 285,
+  "topic": "Pachelbel",
+  "text": "Pachelbel's Canon was little known until a 1968 recording made it famous.",
+  "source": "https://en.wikipedia.org/wiki/Pachelbel%27s_Canon",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Pachelbel+Canon"
+ },
+ {
+  "id": 286,
+  "topic": "Telemann",
+  "text": "Georg Philipp Telemann is one of the most prolific composers ever, with over 3,000 works.",
+  "source": "https://en.wikipedia.org/wiki/Music",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 287,
+  "topic": "Scarlatti",
+  "text": "Domenico Scarlatti wrote 555 keyboard sonatas.",
+  "source": "https://en.wikipedia.org/wiki/Domenico_Scarlatti",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 288,
+  "topic": "Scarlatti",
+  "text": "Domenico Scarlatti spent much of his career in Spain at the royal court.",
+  "source": "https://en.wikipedia.org/wiki/Domenico_Scarlatti",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 289,
+  "topic": "Gluck",
+  "text": "Christoph Willibald Gluck reformed opera to make drama more important than vocal display.",
+  "source": "https://en.wikipedia.org/wiki/Christoph_Willibald_Gluck",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 290,
+  "topic": "Paganini",
+  "text": "Niccolò Paganini was the most famous violin virtuoso of his time.",
+  "source": "https://en.wikipedia.org/wiki/Niccol%C3%B2_Paganini",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 291,
+  "topic": "Paganini",
+  "text": "Paganini's Caprice No. 24 inspired variations by Brahms and Rachmaninoff.",
+  "source": "https://en.wikipedia.org/wiki/Niccol%C3%B2_Paganini",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Paganini+Caprice+No.+24"
+ },
+ {
+  "id": 292,
+  "topic": "Paganini",
+  "text": "Paganini's violin, 'Il Cannone', is kept in Genoa.",
+  "source": "https://en.wikipedia.org/wiki/Genoa",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 293,
+  "topic": "Offenbach",
+  "text": "Offenbach's 'Infernal Galop' is the music for the can-can.",
+  "source": "https://en.wikipedia.org/wiki/Can-can",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Offenbach+Infernal+Galop"
+ },
+ {
+  "id": 294,
+  "topic": "Gounod",
+  "text": "Charles Gounod's 'Ave Maria' adds a melody over Bach's first Prelude.",
+  "source": "https://en.wikipedia.org/wiki/Ave_Maria_%28Bach/Gounod%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Gounod+Ave+Maria"
+ },
+ {
+  "id": 295,
+  "topic": "Fauré",
+  "text": "Gabriel Fauré's Requiem is gentle, leaving out the fearsome Dies irae.",
+  "source": "https://en.wikipedia.org/wiki/Requiem_%28Faur%C3%A9%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Faur%C3%A9+Requiem"
+ },
+ {
+  "id": 296,
+  "topic": "Fauré",
+  "text": "Fauré became deaf late in life, like Beethoven.",
+  "source": "https://en.wikipedia.org/wiki/Gabriel_Faur%C3%A9",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 297,
+  "topic": "Satie",
+  "text": "Erik Satie's Gymnopédies were written in 1888.",
+  "source": "https://en.wikipedia.org/wiki/Erik_Satie",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Satie+Gymnop%C3%A9dies"
+ },
+ {
+  "id": 298,
+  "topic": "Satie",
+  "text": "Satie's 'Vexations' comes with a note suggesting it be played 840 times.",
+  "source": "https://en.wikipedia.org/wiki/Vexations",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Satie+Vexations"
+ },
+ {
+  "id": 299,
+  "topic": "Franck",
+  "text": "César Franck's only symphony is in D minor.",
+  "source": "https://en.wikipedia.org/wiki/Symphony_in_D_minor_%28Franck%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Franck+symphony+is+in+D+minor"
+ },
+ {
+  "id": 300,
+  "topic": "Bach",
+  "text": "Bach's Air on the G String is an arrangement of a movement from his Orchestral Suite No. 3.",
+  "source": "https://en.wikipedia.org/wiki/Orchestral_suites_%28Bach%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Bach+Air+on+the+G+String"
+ },
+ {
+  "id": 301,
+  "topic": "Albinoni",
+  "text": "The famous 'Albinoni Adagio' was largely written by Remo Giazotto in the 20th century.",
+  "source": "https://en.wikipedia.org/wiki/Tomaso_Albinoni",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Albinoni+Albinoni+Adagio"
+ },
+ {
+  "id": 302,
+  "topic": "Hildegard",
+  "text": "Hildegard of Bingen, a 12th-century abbess, is one of the earliest composers known by name.",
+  "source": "https://en.wikipedia.org/wiki/Hildegard_of_Bingen",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 303,
+  "topic": "Orchestra",
+  "text": "The modern orchestra tunes to an A, usually played by the oboe.",
+  "source": "https://en.wikipedia.org/wiki/Oboe",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 304,
+  "topic": "Orchestra",
+  "text": "Standard concert pitch today is A = 440 Hz.",
+  "source": "https://en.wikipedia.org/wiki/Concert_pitch",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 305,
+  "topic": "Orchestra",
+  "text": "The Leipzig Gewandhaus Orchestra traces its roots to 1743.",
+  "source": "https://en.wikipedia.org/wiki/Leipzig",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 306,
+  "topic": "Orchestra",
+  "text": "The New York Philharmonic, founded in 1842, is the oldest US orchestra.",
+  "source": "https://en.wikipedia.org/wiki/New_York_Philharmonic",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 307,
+  "topic": "Orchestra",
+  "text": "The Vienna Philharmonic was founded in 1842.",
+  "source": "https://en.wikipedia.org/wiki/Vienna_Philharmonic",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 308,
+  "topic": "Orchestra",
+  "text": "The Berlin Philharmonic was founded in 1882.",
+  "source": "https://en.wikipedia.org/wiki/Berlin_Philharmonic",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 309,
+  "topic": "Orchestra",
+  "text": "The Boston Symphony Orchestra was founded in 1881.",
+  "source": "https://en.wikipedia.org/wiki/Boston_Symphony_Orchestra",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 310,
+  "topic": "Orchestra",
+  "text": "The conductor's baton came into general use in the 19th century.",
+  "source": "https://en.wikipedia.org/wiki/Conducting",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 311,
+  "topic": "Orchestra",
+  "text": "Jean-Baptiste Lully died after striking his foot with his conducting staff.",
+  "source": "https://en.wikipedia.org/wiki/Chevalier_de_Saint-Georges",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 312,
+  "topic": "Instruments",
+  "text": "The piano was invented by Bartolomeo Cristofori in Italy around 1700.",
+  "source": "https://en.wikipedia.org/wiki/Piano",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 313,
+  "topic": "Instruments",
+  "text": "'Piano' is short for 'pianoforte', meaning soft-loud.",
+  "source": "https://en.wikipedia.org/wiki/Piano",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 314,
+  "topic": "Instruments",
+  "text": "A standard modern piano has 88 keys.",
+  "source": "https://en.wikipedia.org/wiki/Piano",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 315,
+  "topic": "Instruments",
+  "text": "Antonio Stradivari made violins in Cremona; about 650 of his instruments survive.",
+  "source": "https://en.wikipedia.org/wiki/Antonio_Stradivari",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 316,
+  "topic": "Instruments",
+  "text": "The saxophone was invented by Adolphe Sax in the 1840s.",
+  "source": "https://en.wikipedia.org/wiki/Adolphe_Sax",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 317,
+  "topic": "Instruments",
+  "text": "The clarinet was developed around 1700 by Johann Christoph Denner.",
+  "source": "https://en.wikipedia.org/wiki/Clarinet",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 318,
+  "topic": "Instruments",
+  "text": "A modern harp has 47 strings and 7 pedals.",
+  "source": "https://en.wikipedia.org/wiki/Pedal_harp",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 319,
+  "topic": "Instruments",
+  "text": "The celesta was patented by Auguste Mustel in Paris in 1886.",
+  "source": "https://en.wikipedia.org/wiki/Celesta",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 320,
+  "topic": "Instruments",
+  "text": "The theremin, invented around 1920, is played without being touched.",
+  "source": "https://en.wikipedia.org/wiki/Theremin",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 321,
+  "topic": "Venues",
+  "text": "Carnegie Hall opened in 1891 with Tchaikovsky as guest conductor.",
+  "source": "https://en.wikipedia.org/wiki/Carnegie_Hall",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 322,
+  "topic": "Venues",
+  "text": "La Scala in Milan opened in 1778.",
+  "source": "https://en.wikipedia.org/wiki/La_Scala",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 323,
+  "topic": "Venues",
+  "text": "The Sydney Opera House opened in 1973.",
+  "source": "https://en.wikipedia.org/wiki/Sydney_Opera_House",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 324,
+  "topic": "Venues",
+  "text": "The Metropolitan Opera opened in 1883 with Gounod's Faust.",
+  "source": "https://en.wikipedia.org/wiki/Faust_%28opera%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 325,
+  "topic": "Venues",
+  "text": "The Met moved to Lincoln Center in 1966.",
+  "source": "https://en.wikipedia.org/wiki/Metropolitan_Opera_House_%28Lincoln_Center%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 326,
+  "topic": "Venues",
+  "text": "Vienna's Musikverein is famous for its 'Golden Hall'.",
+  "source": "https://en.wikipedia.org/wiki/Vienna_New_Year%27s_Concert",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 327,
+  "topic": "Venues",
+  "text": "The Paris Opéra's Palais Garnier opened in 1875.",
+  "source": "https://en.wikipedia.org/wiki/Palais_Garnier",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 328,
+  "topic": "Venues",
+  "text": "The Royal Albert Hall in London opened in 1871.",
+  "source": "https://en.wikipedia.org/wiki/Royal_Albert_Hall",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 329,
+  "topic": "Venues",
+  "text": "The BBC Proms began in 1895 at Queen's Hall in London.",
+  "source": "https://en.wikipedia.org/wiki/BBC_Proms",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 330,
+  "topic": "Performers",
+  "text": "Enrico Caruso was one of the first singers to become a recording star.",
+  "source": "https://en.wikipedia.org/wiki/Enrico_Caruso",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 331,
+  "topic": "Performers",
+  "text": "Marian Anderson sang at the Lincoln Memorial on Easter Sunday 1939 to 75,000 people.",
+  "source": "https://en.wikipedia.org/wiki/Marian_Anderson",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 332,
+  "topic": "Performers",
+  "text": "Marian Anderson was the first Black singer to perform at the Met, in 1955.",
+  "source": "https://en.wikipedia.org/wiki/Marian_Anderson",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 333,
+  "topic": "Performers",
+  "text": "Van Cliburn won the first International Tchaikovsky Competition in Moscow in 1958.",
+  "source": "https://en.wikipedia.org/wiki/International_Tchaikovsky_Competition",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 334,
+  "topic": "Performers",
+  "text": "Van Cliburn received a ticker-tape parade in New York after his 1958 win.",
+  "source": "https://en.wikipedia.org/wiki/Van_Cliburn",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 335,
+  "topic": "Performers",
+  "text": "Vladimir Horowitz returned to the USSR to perform in 1986 after 61 years away.",
+  "source": "https://en.wikipedia.org/wiki/History_of_the_Jews_in_Russia",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 336,
+  "topic": "Performers",
+  "text": "Arturo Toscanini conducted from memory because of poor eyesight.",
+  "source": "https://en.wikipedia.org/wiki/Neville_Cardus",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 337,
+  "topic": "Performers",
+  "text": "Toscanini led the NBC Symphony Orchestra, created for him in 1937.",
+  "source": "https://en.wikipedia.org/wiki/Arturo_Toscanini",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 338,
+  "topic": "Performers",
+  "text": "Jascha Heifetz made his Carnegie Hall debut in 1917 at age 16.",
+  "source": "https://en.wikipedia.org/wiki/Jascha_Heifetz",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 339,
+  "topic": "Performers",
+  "text": "Pablo Casals revived Bach's Cello Suites after finding the music in a shop as a teenager.",
+  "source": "https://en.wikipedia.org/wiki/Cello_Suites_%28Bach%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Cello+Suites"
+ },
+ {
+  "id": 340,
+  "topic": "Performers",
+  "text": "Casals played for President Kennedy at the White House in 1961.",
+  "source": "https://en.wikipedia.org/wiki/Jacqueline_Kennedy_Onassis",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 341,
+  "topic": "Performers",
+  "text": "Yo-Yo Ma performed for President Kennedy as a child in 1962.",
+  "source": "https://en.wikipedia.org/wiki/Yo-Yo_Ma",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 342,
+  "topic": "Performers",
+  "text": "Itzhak Perlman contracted polio at age 4 and performs seated.",
+  "source": "https://en.wikipedia.org/wiki/Itzhak_Perlman",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 343,
+  "topic": "Performers",
+  "text": "Luciano Pavarotti, Plácido Domingo and José Carreras first sang as the Three Tenors in 1990.",
+  "source": "https://en.wikipedia.org/wiki/Luciano_Pavarotti",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 344,
+  "topic": "Performers",
+  "text": "Maria Callas was born in New York City to Greek parents.",
+  "source": "https://en.wikipedia.org/wiki/Maria_Callas",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 345,
+  "topic": "Performers",
+  "text": "Jacqueline du Pré's recording of Elgar's Cello Concerto is legendary.",
+  "source": "https://en.wikipedia.org/wiki/Itzhak_Perlman",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Elgar%27s+Cello+Concerto"
+ },
+ {
+  "id": 346,
+  "topic": "Performers",
+  "text": "Glenn Gould's 1955 Goldberg Variations recording made him famous.",
+  "source": "https://en.wikipedia.org/wiki/Bach%3A_The_Goldberg_Variations_%28Glenn_Gould_album%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Goldberg+Variations"
+ },
+ {
+  "id": 347,
+  "topic": "Performers",
+  "text": "Glenn Gould retired from live concerts at 31 to focus on recording.",
+  "source": "https://en.wikipedia.org/wiki/Glenn_Gould",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 348,
+  "topic": "Performers",
+  "text": "Arthur Rubinstein gave concerts into his late 80s.",
+  "source": "https://en.wikipedia.org/wiki/Arthur_Rubinstein",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 349,
+  "topic": "Performers",
+  "text": "Leopold Stokowski conducted and appeared in Disney's Fantasia.",
+  "source": "https://en.wikipedia.org/wiki/Leopold_Stokowski",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Fantasia"
+ },
+ {
+  "id": 350,
+  "topic": "Performers",
+  "text": "Nadia Boulanger taught Copland, Glass, Piazzolla and Quincy Jones.",
+  "source": "https://en.wikipedia.org/wiki/Nadia_Boulanger",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 351,
+  "topic": "Performers",
+  "text": "Nadia Boulanger was the first woman to conduct the New York Philharmonic, in 1939.",
+  "source": "https://en.wikipedia.org/wiki/Leonard_Bernstein",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 352,
+  "topic": "Performers",
+  "text": "Andrés Segovia brought the classical guitar to the concert hall.",
+  "source": "https://en.wikipedia.org/wiki/Julian_Bream",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 353,
+  "topic": "Performers",
+  "text": "Clara Schumann was among the first pianists to perform from memory.",
+  "source": "https://en.wikipedia.org/wiki/Clara_Schumann",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 354,
+  "topic": "Terms",
+  "text": "'Sonata' comes from Italian for 'sounded', meaning played rather than sung.",
+  "source": "https://en.wikipedia.org/wiki/Glossary_of_music_terminology",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 355,
+  "topic": "Terms",
+  "text": "'Cantata' comes from Italian for 'sung'.",
+  "source": "https://en.wikipedia.org/wiki/List_of_Italian_musical_terms_used_in_English",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 356,
+  "topic": "Terms",
+  "text": "A 'symphony' usually has four movements.",
+  "source": "https://en.wikipedia.org/wiki/Symphony",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 357,
+  "topic": "Terms",
+  "text": "'Opus' is Latin for 'work'; opus numbers order a composer's publications.",
+  "source": "https://en.wikipedia.org/wiki/Opus_number",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 358,
+  "topic": "Terms",
+  "text": "'Allegro' means fast and cheerful; 'adagio' means slow and at ease.",
+  "source": "https://en.wikipedia.org/wiki/Joseph_Haydn",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 359,
+  "topic": "Terms",
+  "text": "A 'cadenza' is a showy solo passage, often near the end of a concerto movement.",
+  "source": "https://en.wikipedia.org/wiki/Glossary_of_music_terminology",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 360,
+  "topic": "Terms",
+  "text": "'Pizzicato' means plucking a string instead of bowing.",
+  "source": "https://en.wikipedia.org/wiki/String_instrument",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 361,
+  "topic": "Terms",
+  "text": "'A cappella' means singing without instruments.",
+  "source": "https://en.wikipedia.org/wiki/Overtone",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 362,
+  "topic": "Terms",
+  "text": "A 'nocturne' is a dreamy piece evoking night; John Field invented the piano form.",
+  "source": "https://en.wikipedia.org/wiki/Nocturne",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 363,
+  "topic": "Terms",
+  "text": "'Bel canto' means 'beautiful singing' and describes early 19th-century Italian opera.",
+  "source": "https://en.wikipedia.org/wiki/Bel_canto",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 364,
+  "topic": "Terms",
+  "text": "An 'overture' is the instrumental opening of an opera.",
+  "source": "https://en.wikipedia.org/wiki/Overture",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 365,
+  "topic": "Terms",
+  "text": "A 'libretto' is the text of an opera, Italian for 'little book'.",
+  "source": "https://en.wikipedia.org/wiki/Opera",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 366,
+  "topic": "Terms",
+  "text": "A 'fugue' weaves several voices imitating one main theme.",
+  "source": "https://en.wikipedia.org/wiki/24_Preludes_and_Fugues_%28Shostakovich%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 367,
+  "topic": "Terms",
+  "text": "A 'requiem' is a Mass for the dead.",
+  "source": "https://en.wikipedia.org/wiki/Requiem",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 368,
+  "topic": "Terms",
+  "text": "'Prima donna' means 'first lady', the leading soprano in an opera.",
+  "source": "https://en.wikipedia.org/wiki/The_Phantom_of_the_Opera_%28novel%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 369,
+  "topic": "Terms",
+  "text": "'Encore' is French for 'again'.",
+  "source": "https://en.wikipedia.org/wiki/Pour_que_tu_m%27aimes_encore",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 370,
+  "topic": "Terms",
+  "text": "'Bravo' is for a man, 'brava' for a woman, and 'bravi' for a group.",
+  "source": "https://en.wikipedia.org/wiki/Mika_%28singer%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 371,
+  "topic": "Terms",
+  "text": "A 'leitmotif' is a recurring theme for a character or idea.",
+  "source": "https://en.wikipedia.org/wiki/Leitmotif",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 372,
+  "topic": "Terms",
+  "text": "'Tempo' is Italian for 'time' and means the speed of music.",
+  "source": "https://en.wikipedia.org/wiki/Tempo",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 373,
+  "topic": "Terms",
+  "text": "'Crescendo' means gradually getting louder.",
+  "source": "https://en.wikipedia.org/wiki/Glossary_of_music_terminology",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 374,
+  "topic": "Misc",
+  "text": "The earliest known complete surviving song with notation is the Seikilos epitaph, about 2,000 years old.",
+  "source": "https://en.wikipedia.org/wiki/Seikilos_epitaph",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Seikilos+epitaph"
+ },
+ {
+  "id": 375,
+  "topic": "Misc",
+  "text": "Guido of Arezzo developed early music notation around 1000 AD.",
+  "source": "https://en.wikipedia.org/wiki/Medieval_music",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 376,
+  "topic": "Misc",
+  "text": "'Do-re-mi' syllables come from a medieval hymn to St John the Baptist.",
+  "source": "https://en.wikipedia.org/wiki/John_the_Baptist",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 377,
+  "topic": "Misc",
+  "text": "Thomas Edison recorded 'Mary Had a Little Lamb' on his phonograph in 1877.",
+  "source": "https://en.wikipedia.org/wiki/Mary_Had_a_Little_Lamb",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 378,
+  "topic": "Misc",
+  "text": "The Pulitzer Prize for Music was first awarded in 1943, to William Schuman.",
+  "source": "https://en.wikipedia.org/wiki/Pulitzer_Prize_for_Music",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 379,
+  "topic": "Misc",
+  "text": "John Cage's 4′33″ is performed with no notes played.",
+  "source": "https://en.wikipedia.org/wiki/4%E2%80%B233%E2%80%B3",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=4%E2%80%B233%E2%80%B3"
+ },
+ {
+  "id": 380,
+  "topic": "Misc",
+  "text": "Hymn tune 'Amazing Grace' words were written by John Newton, a former slave trader.",
+  "source": "https://en.wikipedia.org/wiki/English_Americans",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 381,
+  "topic": "Misc",
+  "text": "'Silent Night' was first performed on Christmas Eve 1818 in Oberndorf, Austria.",
+  "source": "https://en.wikipedia.org/wiki/Silent_Night",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Silent+Night"
+ },
+ {
+  "id": 382,
+  "topic": "Misc",
+  "text": "'Silent Night' was first accompanied on guitar.",
+  "source": "https://en.wikipedia.org/wiki/Silent_Planet",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Silent+Night"
+ },
+ {
+  "id": 383,
+  "topic": "Misc",
+  "text": "Handel's Messiah is traditionally sung at Christmas, though it premiered at Easter time.",
+  "source": "https://en.wikipedia.org/wiki/Christmas_music",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Messiah"
+ },
+ {
+  "id": 384,
+  "topic": "Misc",
+  "text": "The Tchaikovsky Competition is held about every four years in Moscow.",
+  "source": "https://en.wikipedia.org/wiki/Van_Cliburn",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 385,
+  "topic": "Misc",
+  "text": "The Chopin Competition in Warsaw is held every five years.",
+  "source": "https://en.wikipedia.org/wiki/International_Chopin_Piano_Competition",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 386,
+  "topic": "Misc",
+  "text": "Disney's Fantasia (1940) featured music by Bach, Tchaikovsky, Stravinsky and others.",
+  "source": "https://en.wikipedia.org/wiki/Music_of_Fantasia_%281940_film%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Fantasia"
+ },
+ {
+  "id": 387,
+  "topic": "Misc",
+  "text": "The Looney Tunes cartoon 'What's Opera, Doc?' parodies Wagner.",
+  "source": "https://en.wikipedia.org/wiki/What%27s_Opera%2C_Doc%3F",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 388,
+  "topic": "Misc",
+  "text": "Bugs Bunny's 'The Rabbit of Seville' parodies Rossini's Barber of Seville.",
+  "source": "https://en.wikipedia.org/wiki/The_Barber_of_Seville_%281944_film%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Barber+of+Seville"
+ },
+ {
+  "id": 389,
+  "topic": "Misc",
+  "text": "Mozart's 'Twinkle' variations are on a French tune, 'Ah vous dirai-je, maman'.",
+  "source": "https://en.wikipedia.org/wiki/Ah%21_vous_dirai-je%2C_maman",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Twinkle"
+ },
+ {
+  "id": 390,
+  "topic": "Misc",
+  "text": "'Twinkle, Twinkle', the ABC song and 'Baa Baa Black Sheep' share the same melody.",
+  "source": "https://en.wikipedia.org/wiki/Twinkle%2C_Twinkle%2C_Little_Star",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Twinkle"
+ },
+ {
+  "id": 391,
+  "topic": "Misc",
+  "text": "Brahms, Bach and Beethoven are called 'the Three Bs'.",
+  "source": "https://en.wikipedia.org/wiki/Johannes_Brahms",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 392,
+  "topic": "Misc",
+  "text": "Haydn's head was stolen after his burial and only reunited with his body in 1954.",
+  "source": "https://en.wikipedia.org/wiki/Joseph_Haydn",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 393,
+  "topic": "Misc",
+  "text": "Mozart and Haydn were close friends and played string quartets together.",
+  "source": "https://en.wikipedia.org/wiki/String_Quartets%2C_Op._20_%28Haydn%29",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 394,
+  "topic": "Misc",
+  "text": "Bach and Handel were born a month apart, about 80 miles apart, but never met.",
+  "source": "https://en.wikipedia.org/wiki/Johann_Sebastian_Bach",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 395,
+  "topic": "Misc",
+  "text": "Liszt and Chopin were friends in Paris in the 1830s.",
+  "source": "https://en.wikipedia.org/wiki/Fr%C3%A9d%C3%A9ric_Chopin",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 396,
+  "topic": "Misc",
+  "text": "Mahler, Bruckner and Brahms all lived in Vienna at the same time.",
+  "source": "https://en.wikipedia.org/wiki/Gustav_Mahler",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 397,
+  "topic": "Misc",
+  "text": "Stravinsky and Rachmaninoff both lived in Los Angeles in the 1940s.",
+  "source": "https://en.wikipedia.org/wiki/Garden_of_Allah_Hotel",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 398,
+  "topic": "Misc",
+  "text": "Schoenberg and Gershwin played tennis together in Los Angeles.",
+  "source": "https://en.wikipedia.org/wiki/George_Gershwin",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 399,
+  "topic": "Misc",
+  "text": "Johann Strauss II and Brahms were friends; Brahms admired the Blue Danube.",
+  "source": "https://en.wikipedia.org/wiki/Johannes_Brahms",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Blue+Danube"
+ },
+ {
+  "id": 400,
+  "topic": "Misc",
+  "text": "Mendelssohn's Wedding March was played at the 1858 wedding of Victoria, Princess Royal.",
+  "source": "https://en.wikipedia.org/wiki/Wedding_March_%28Mendelssohn%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Wedding+March"
+ },
+ {
+  "id": 401,
+  "topic": "Women",
+  "text": "Fanny Mendelssohn published some of her songs under her brother Felix's name.",
+  "source": "https://en.wikipedia.org/wiki/Felix_Mendelssohn",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 402,
+  "topic": "Women",
+  "text": "Florence Price was the first African-American woman to have a symphony played by a major US orchestra, in 1933.",
+  "source": "https://en.wikipedia.org/wiki/Florence_Price",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 403,
+  "topic": "Women",
+  "text": "Amy Beach was the first American woman to have a symphony published, the 'Gaelic' (1896).",
+  "source": "https://en.wikipedia.org/wiki/Amy_Beach",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Gaelic"
+ },
+ {
+  "id": 404,
+  "topic": "Women",
+  "text": "Lili Boulanger was the first woman to win the Prix de Rome, in 1913.",
+  "source": "https://en.wikipedia.org/wiki/Lili_Boulanger",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 405,
+  "topic": "Women",
+  "text": "Ethel Smyth's 'The March of the Women' became an anthem for the suffragettes.",
+  "source": "https://en.wikipedia.org/wiki/Ethel_Smyth",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 406,
+  "topic": "Women",
+  "text": "Barbara Strozzi published more secular music than any composer of her time in Venice.",
+  "source": "https://en.wikipedia.org/wiki/Barbara_Strozzi",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 407,
+  "topic": "Women",
+  "text": "Cécile Chaminade was the first female composer awarded France's Legion of Honour.",
+  "source": "https://en.wikipedia.org/wiki/C%C3%A9cile_Chaminade",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 408,
+  "topic": "Women",
+  "text": "Marin Alsop became the first woman to conduct the Last Night of the Proms, in 2013.",
+  "source": "https://en.wikipedia.org/wiki/Marin_Alsop",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 409,
+  "topic": "Women",
+  "text": "Jennifer Higdon won the 2010 Pulitzer Prize for her Violin Concerto.",
+  "source": "https://en.wikipedia.org/wiki/Jennifer_Higdon",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Violin+Concerto"
+ },
+ {
+  "id": 410,
+  "topic": "Women",
+  "text": "Ellen Taaffe Zwilich was the first woman to win the Pulitzer Prize for Music, in 1983.",
+  "source": "https://en.wikipedia.org/wiki/Ellen_Taaffe_Zwilich",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 411,
+  "topic": "Modern",
+  "text": "Philip Glass's opera Einstein on the Beach (1976) lasts about five hours.",
+  "source": "https://en.wikipedia.org/wiki/Philip_Glass",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Einstein+on+the+Beach"
+ },
+ {
+  "id": 412,
+  "topic": "Modern",
+  "text": "John Williams has received over 50 Oscar nominations.",
+  "source": "https://en.wikipedia.org/wiki/Oscar_Isaac",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 413,
+  "topic": "Modern",
+  "text": "Arvo Pärt's 'tintinnabuli' style imitates the ringing of bells.",
+  "source": "https://en.wikipedia.org/wiki/Tintinnabuli",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 414,
+  "topic": "Modern",
+  "text": "Steve Reich's Music for 18 Musicians is a landmark of minimalism.",
+  "source": "https://en.wikipedia.org/wiki/Steve_Reich",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Music+for+18+Musicians"
+ },
+ {
+  "id": 415,
+  "topic": "Modern",
+  "text": "John Adams's Nixon in China premiered at Houston Grand Opera in 1987.",
+  "source": "https://en.wikipedia.org/wiki/Nixon_in_China",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Nixon+in+China"
+ },
+ {
+  "id": 416,
+  "topic": "Modern",
+  "text": "Olivier Messiaen wrote Quartet for the End of Time in a prisoner-of-war camp.",
+  "source": "https://en.wikipedia.org/wiki/Olivier_Messiaen",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Quartet+for+the+End+of+Time"
+ },
+ {
+  "id": 417,
+  "topic": "Modern",
+  "text": "Messiaen transcribed hundreds of bird songs into music.",
+  "source": "https://en.wikipedia.org/wiki/%C3%89clairs_sur_l%27Au-Del%C3%A0...",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 418,
+  "topic": "Modern",
+  "text": "Arnold Schoenberg developed the twelve-tone method.",
+  "source": "https://en.wikipedia.org/wiki/Twelve-tone_technique",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 419,
+  "topic": "Modern",
+  "text": "Schoenberg had a strong fear of the number 13.",
+  "source": "https://en.wikipedia.org/wiki/Arnold_Schoenberg",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 420,
+  "topic": "Modern",
+  "text": "Béla Bartók collected thousands of folk songs from Hungary and beyond.",
+  "source": "https://en.wikipedia.org/wiki/Folk_music",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 421,
+  "topic": "Modern",
+  "text": "Bartók's Concerto for Orchestra was commissioned by Serge Koussevitzky in 1943.",
+  "source": "https://en.wikipedia.org/wiki/Concerto_for_Orchestra_%28Bart%C3%B3k%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Concerto+for+Orchestra"
+ },
+ {
+  "id": 422,
+  "topic": "Modern",
+  "text": "Benjamin Britten founded the Aldeburgh Festival in 1948.",
+  "source": "https://en.wikipedia.org/wiki/Aldeburgh",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 423,
+  "topic": "Modern",
+  "text": "Britten's War Requiem was written for the consecration of the new Coventry Cathedral in 1962.",
+  "source": "https://en.wikipedia.org/wiki/War_Requiem",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=War+Requiem"
+ },
+ {
+  "id": 424,
+  "topic": "Modern",
+  "text": "Carl Orff's 'O Fortuna' opens and closes Carmina Burana.",
+  "source": "https://en.wikipedia.org/wiki/O_Fortuna_%28Orff%29",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Carmina+Burana"
+ },
+ {
+  "id": 425,
+  "topic": "Modern",
+  "text": "Heitor Villa-Lobos wrote nine Bachianas Brasileiras blending Bach with Brazilian music.",
+  "source": "https://en.wikipedia.org/wiki/Heitor_Villa-Lobos",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Bachianas+Brasileiras"
+ },
+ {
+  "id": 426,
+  "topic": "Modern",
+  "text": "Astor Piazzolla brought tango to the concert hall.",
+  "source": "https://en.wikipedia.org/wiki/Tango_music",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 427,
+  "topic": "Modern",
+  "text": "Erich Korngold was a child prodigy who later won Oscars for Hollywood scores.",
+  "source": "https://en.wikipedia.org/wiki/Erich_Wolfgang_Korngold",
+  "verified": "wikipedia-keyword-match"
+ },
+ {
+  "id": 428,
+  "topic": "Modern",
+  "text": "Sergei Prokofiev's music for Alexander Nevsky was a landmark film score.",
+  "source": "https://en.wikipedia.org/wiki/Sergei_Prokofiev",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Alexander+Nevsky"
+ },
+ {
+  "id": 429,
+  "topic": "Modern",
+  "text": "Bernard Herrmann wrote the shrieking strings for Hitchcock's Psycho.",
+  "source": "https://en.wikipedia.org/wiki/Bernard_Herrmann",
+  "verified": "wikipedia-keyword-match",
+  "listen_url": "https://www.youtube.com/results?search_query=Psycho"
+ },
+ {
+  "id": 430,
+  "topic": "Mendelssohn",
+  "text": "Mendelssohn's sister Fanny was also a gifted composer, writing over 450 works.",
+  "source": "https://en.wikipedia.org/wiki/Fanny_Mendelssohn",
+  "verified": "wikipedia-keyword-match"
+ }
+]
