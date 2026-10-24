@@ -5,6 +5,10 @@ import {
   connectToKnownDevice, connectToMatrix, monitorMatrix, writeLive, BleError,
 } from "./ble";
 
+const BACKEND = process.env.EXPO_PUBLIC_BACKEND_URL || "https://info-wall-api.vercel.app";
+const HOME = { lat: 35.58, lon: -80.82 };   // 28117 (Mooresville, NC)
+const KEY_SET_SENT = "momwall.sentOnce";
+
 const KEY_DEV = "momwall.device";
 const KEY_SET = "momwall.settings";
 let connected = false;
@@ -24,6 +28,14 @@ export async function ensureConnected(): Promise<void> {
   }
   await AsyncStorage.setItem(KEY_DEV, dev.id);
   connected = true;
+  // First connect (or a new wall): push the full setup once automatically so
+  // Mom never has to open Wall Settings for the wall to start working.
+  if ((await AsyncStorage.getItem(KEY_SET_SENT)) !== dev.id) {
+    try {
+      await applyToggles(await loadToggles());
+      await AsyncStorage.setItem(KEY_SET_SENT, dev.id);
+    } catch { /* retried on the next connect */ }
+  }
 }
 
 export async function send(obj: Record<string, unknown>): Promise<void> {
@@ -53,9 +65,13 @@ export async function loadToggles(): Promise<Toggles> {
 /** Push every toggle (simple mode on) — small commands, each fits one BLE frame. */
 export async function applyToggles(t: Toggles): Promise<void> {
   await AsyncStorage.setItem(KEY_SET, JSON.stringify(t));
+  // The Mom app is the only app this wall may ever see, so it must also give
+  // the wall its backend URL and location (28117); without them a 1.2.0/1.2.1
+  // wall fetches nothing (blank weather, no daily slides).
+  await send({ command: "server", url: BACKEND });
   await send({ command: "simple", simpleMode: true, planes: t.planes, tv: false, born: t.born,
     word: t.word, cfact: t.cfact, ctoday: t.ctoday, math: t.math, family: t.family });
-  await send({ command: "weather", showWeather: t.weather, showForecast: t.weather, showMoon: t.moon });
+  await send({ command: "weather", lat: HOME.lat, lon: HOME.lon, showWeather: t.weather, showForecast: t.weather, showMoon: t.moon });
   await send({ command: "sky", showMap: t.map, showIss: false, vipAlert: false });
   await send({ command: "clock", showBigClock: t.clock });
   await send({ command: "settime", epoch: Math.floor(Date.now() / 1000) });

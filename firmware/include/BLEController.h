@@ -246,6 +246,13 @@ inline void applyForecast(JsonArrayConst fc) {
 extern volatile bool g_settingsDirty;
 
 // ===========================================================================
+// Mom Wall defaults (1.2.2): backend URL + 28117 location when unset.
+inline void simpleDefaults() {
+  if (!g_settings.simpleMode) return;
+  if (g_settings.apiBase.length() == 0) g_settings.apiBase = "https://info-wall-api.vercel.app";
+  if (g_settings.lat == 0.0f && g_settings.lon == 0.0f) { g_settings.lat = 35.58f; g_settings.lon = -80.82f; }
+}
+
 class BLEController {
  public:
   void begin();
@@ -668,6 +675,10 @@ inline void BLEController::handleJson(const String &raw) {
     g_settings.smCToday   = doc["ctoday"]     | g_settings.smCToday;
     g_settings.smMath     = doc["math"]       | g_settings.smMath;
     g_settings.smFamily   = doc["family"]     | g_settings.smFamily;
+    // 1.2.2: a wall set up only with the Mom app never got the backend URL or
+    // a location (the main app sends those), so it fetched nothing. Default
+    // them when simple mode is on and they're unset.
+    simpleDefaults();
     notify(String("{\"simple\":") + (g_settings.simpleMode ? 1 : 0) + "}");
 
   } else if (strcmp(cmd, "clock") == 0) {

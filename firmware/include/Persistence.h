@@ -233,7 +233,7 @@ inline void loadSettings() {
   if (deserializeJson(d, blob) == DeserializationError::Ok) {
     applySettings(d);
     Serial.println("[NVS] restored saved config");
-    if (g_settings.simpleMode) loadDaily();
+    if (g_settings.simpleMode) { loadDaily(); simpleDefaults(); }
   }
 }
 
