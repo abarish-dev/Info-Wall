@@ -42,6 +42,7 @@ struct DyData {
   const char *cfact, *ctoday, *ctDesc, *ckind; int ctYear;
   const char *mathBig, *mathText;
   const char *fam, *famFrom;
+  const char *earthT, *earthTopic, *earthText;   // 1.2.21
 };
 
 // "^2" -> DY_SUP2 (a small raised "2"); everything else 1:1.
@@ -125,7 +126,7 @@ template <class G> void dyBody(G &g, const char *s, int firstY, int per, int sub
 template <class G> void dyTitle(G &g, const char *t, DyRGB c) { dyCenter(g, t, 1, c); dyRule(g, 10, DY_FAINT); }
 
 // Sub-pages per module (index matches dyDraw's `which`).
-enum DyPage { DY_BORN, DY_WORD, DY_ORIGIN, DY_CFACT, DY_CTODAY, DY_MATH, DY_FAMILY };
+enum DyPage { DY_BORN, DY_WORD, DY_ORIGIN, DY_CFACT, DY_CTODAY, DY_MATH, DY_FAMILY, DY_EARTH };
 inline int dyPages(int which, const DyData &d) {
   int n = 1;
   switch (which) {
@@ -135,6 +136,7 @@ inline int dyPages(int which, const DyData &d) {
     case DY_FAMILY: n = (dyLineCount(d.fam) + 3) / 4; break;
     case DY_BORN:   n = 1; break;
     case DY_WORD:   n = d.origin[0] ? 2 : 1; break;
+    case DY_EARTH:  n = (dyLineCount(d.earthText) + 4) / 5; break;
   }
   return n < 1 ? 1 : n;
 }
@@ -229,6 +231,17 @@ template <class G> void dyDraw(G &g, int which, const DyData &d, int sub) {
         dyBody(g, d.mathText, 14, 6, sub, DY_SOFT);
       }
       break;
+    case DY_EARTH: {   // 1.2.21: GEOGRAPHY / GEOLOGY - topic (amber) + fact
+      dyTitle(g, d.earthT[0] ? d.earthT : "EARTH FACT", DY_AMBER);
+      DyRGB amb = g_momPal ? DyRGB{255, 176, 0} : DY_SKY;
+      if (d.earthTopic[0]) {
+        dyCenter(g, d.earthTopic, 13, amb);
+        dyBody(g, d.earthText, 23, 5, sub, DY_SOFT);
+      } else {
+        dyBody(g, d.earthText, 14, 6, sub, DY_SOFT);
+      }
+      break;
+    }
     case DY_FAMILY: {
       dyTitle(g, "FROM YOUR FAMILY", DY_ROSE);
       dyBody(g, d.fam, 15, 4, sub, DY_SOFT);

@@ -377,7 +377,7 @@ class DisplayManager {
         h = mix(h, g_settings.clock24 ? 1u : 0u);
         break;
       case M_BORN: case M_WORD: case M_ORIGIN: case M_CFACT:
-      case M_CTODAY: case M_MATH: case M_FAMILY:
+      case M_CTODAY: case M_MATH: case M_FAMILY: case M_EARTH:
         h = mixStr(h, g_settings.dyDate);
         h = mixStr(h, g_settings.dyFam);
         h = mixStr(h, g_settings.dyFamFrom);
@@ -488,7 +488,7 @@ class DisplayManager {
                 M_TV, M_STOCKS, M_COUNTDOWN, M_REMINDERS, M_LKN, M_FOLLY, M_FORECAST,
                 M_MOON, M_ISS, M_MAP, M_VIP, M_CLOCK,
                 // 1.2.0 simple mode (Mom Wall) daily slides
-                M_BORN, M_WORD, M_ORIGIN, M_CFACT, M_CTODAY, M_MATH, M_FAMILY };
+                M_BORN, M_WORD, M_ORIGIN, M_CFACT, M_CTODAY, M_MATH, M_FAMILY, M_EARTH };
 
   MatrixPanel_I2S_DMA *dma_ = nullptr;
   // 1.2.4: every page draws through gfx_. Normally gfx_ == dma_; in simple
@@ -611,6 +611,7 @@ class DisplayManager {
     if (g_settings.smMath && g_settings.dyMathText.length()) out[n++] = M_MATH;
     if (g_settings.smFamily && g_settings.dyFam.length()) out[n++] = M_FAMILY;
     if (g_settings.smLake && g_settings.lakeLvl.length()) out[n++] = M_LKN;   // 1.2.4
+    if (g_settings.dyEarthText.length()) out[n++] = M_EARTH;   // 1.2.21 geography / geology
     return n;
   }
   int infoModules(Module *out) {
@@ -798,12 +799,13 @@ class DisplayManager {
     }
   };
   // ---- Daily slides (1.2.0 simple mode) ------------------------------------
-  static bool isDaily(Module m) { return m >= M_BORN && m <= M_FAMILY; }
+  static bool isDaily(Module m) { return m >= M_BORN && m <= M_EARTH; }
   static int dyWhich(Module m) {
     switch (m) {
       case M_BORN: return DY_BORN;     case M_WORD: return DY_WORD;   case M_ORIGIN: return DY_ORIGIN;
       case M_CFACT: return DY_CFACT;   case M_CTODAY: return DY_CTODAY;
-      case M_MATH: return DY_MATH;     default: return DY_FAMILY;
+      case M_MATH: return DY_MATH;     case M_EARTH: return DY_EARTH;
+      default: return DY_FAMILY;
     }
   }
   DyData dyData() {
@@ -816,7 +818,8 @@ class DisplayManager {
                   g_settings.dyCFact.c_str(), g_settings.dyCToday.c_str(), g_settings.dyCDesc.c_str(),
                   g_settings.dyCKind.c_str(), g_settings.dyCTYear,
                   g_settings.dyMathBig.c_str(), g_settings.dyMathText.c_str(),
-                  g_settings.dyFam.c_str(), g_settings.dyFamFrom.c_str()};
+                  g_settings.dyFam.c_str(), g_settings.dyFamFrom.c_str(),
+                  g_settings.dyEarthT.c_str(), g_settings.dyEarthTopic.c_str(), g_settings.dyEarthText.c_str()};
   }
   int dailyPages(Module m) {
     DyData d = dyData(); int n = dyPages(dyWhich(m), d);
@@ -1154,7 +1157,7 @@ class DisplayManager {
       case M_VIP:       drawVip();     break;
       case M_CLOCK:     drawBigClock(); break;
       case M_BORN: case M_WORD: case M_ORIGIN: case M_CFACT:
-      case M_CTODAY: case M_MATH: case M_FAMILY:
+      case M_CTODAY: case M_MATH: case M_FAMILY: case M_EARTH:
                         drawDaily(m); break;
     }
   }

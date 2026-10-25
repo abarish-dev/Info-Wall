@@ -1,0 +1,626 @@
+{
+ "geography": [
+  {
+   "topic": "Lake Baikal",
+   "text": "Russia's Lake Baikal is the deepest lake on Earth, holding about a fifth of all lake and river water.",
+   "source": "https://en.wikipedia.org/wiki/Lake_Baikal"
+  },
+  {
+   "topic": "The Nile",
+   "text": "The Nile flows north through Egypt and empties into the Mediterranean Sea.",
+   "source": "https://en.wikipedia.org/wiki/Nile"
+  },
+  {
+   "topic": "The Amazon",
+   "text": "The Amazon carries more water than any other river on Earth.",
+   "source": "https://en.wikipedia.org/wiki/Amazon_River"
+  },
+  {
+   "topic": "Mount Everest",
+   "text": "Mount Everest sits on the border of Nepal and China and is the highest peak above sea level.",
+   "source": "https://en.wikipedia.org/wiki/Mount_Everest"
+  },
+  {
+   "topic": "The Dead Sea",
+   "text": "The shore of the Dead Sea is the lowest land on Earth, over 400 m below sea level.",
+   "source": "https://en.wikipedia.org/wiki/Dead_Sea"
+  },
+  {
+   "topic": "Vatican City",
+   "text": "Vatican City, inside Rome, is the smallest country in the world by area.",
+   "source": "https://en.wikipedia.org/wiki/Vatican_City"
+  },
+  {
+   "topic": "Russia",
+   "text": "Russia is the largest country in the world and spans 11 time zones.",
+   "source": "https://en.wikipedia.org/wiki/Russia"
+  },
+  {
+   "topic": "Canberra",
+   "text": "Australia's capital is Canberra, built as a compromise between rivals Sydney and Melbourne.",
+   "source": "https://en.wikipedia.org/wiki/Canberra"
+  },
+  {
+   "topic": "Istanbul",
+   "text": "Istanbul is split by the Bosphorus, so the city lies in both Europe and Asia.",
+   "source": "https://en.wikipedia.org/wiki/Istanbul"
+  },
+  {
+   "topic": "Danube",
+   "text": "The Danube flows through more countries than any other river, about ten in all.",
+   "source": "https://en.wikipedia.org/wiki/Danube"
+  },
+  {
+   "topic": "Lesotho",
+   "text": "Lesotho is completely surrounded by South Africa.",
+   "source": "https://en.wikipedia.org/wiki/Lesotho"
+  },
+  {
+   "topic": "Canada",
+   "text": "Canada has the longest coastline of any country in the world.",
+   "source": "https://en.wikipedia.org/wiki/Canada"
+  },
+  {
+   "topic": "Angel Falls",
+   "text": "Venezuela's Angel Falls is the world's tallest uninterrupted waterfall.",
+   "source": "https://en.wikipedia.org/wiki/Angel_Falls"
+  },
+  {
+   "topic": "Sahara",
+   "text": "The Sahara is the largest hot desert on Earth, about the size of the United States.",
+   "source": "https://en.wikipedia.org/wiki/Sahara"
+  },
+  {
+   "topic": "Antarctica",
+   "text": "Antarctica is the coldest, windiest and driest continent. Much of it is technically a desert.",
+   "source": "https://en.wikipedia.org/wiki/Antarctica"
+  },
+  {
+   "topic": "Atacama",
+   "text": "Chile's Atacama is one of the driest places on Earth. Some weather stations have never recorded rain.",
+   "source": "https://en.wikipedia.org/wiki/Atacama_Desert"
+  },
+  {
+   "topic": "La Paz",
+   "text": "La Paz, Bolivia, at about 3,600 m, is the highest seat of government in the world.",
+   "source": "https://en.wikipedia.org/wiki/La_Paz"
+  },
+  {
+   "topic": "Greenland",
+   "text": "Greenland is the world's largest island that is not a continent.",
+   "source": "https://en.wikipedia.org/wiki/Greenland"
+  },
+  {
+   "topic": "Indonesia",
+   "text": "Indonesia is made of more than 17,000 islands.",
+   "source": "https://en.wikipedia.org/wiki/Indonesia"
+  },
+  {
+   "topic": "Lake Titicaca",
+   "text": "Lake Titicaca, on the Peru-Bolivia border, is often called the highest navigable lake in the world.",
+   "source": "https://en.wikipedia.org/wiki/Lake_Titicaca"
+  },
+  {
+   "topic": "Panama Canal",
+   "text": "Ships in the Panama Canal are lifted about 26 m by locks to cross Gatun Lake.",
+   "source": "https://en.wikipedia.org/wiki/Panama_Canal"
+  },
+  {
+   "topic": "Suez Canal",
+   "text": "The Suez Canal opened in 1869, linking the Mediterranean and Red Seas.",
+   "source": "https://en.wikipedia.org/wiki/Suez_Canal"
+  },
+  {
+   "topic": "Great Wall",
+   "text": "The Great Wall of China is not one wall but many walls built over about 2,000 years.",
+   "source": "https://en.wikipedia.org/wiki/Great_Wall_of_China"
+  },
+  {
+   "topic": "Machu Picchu",
+   "text": "Machu Picchu was built by the Inca in the 1400s high in the Andes of Peru.",
+   "source": "https://en.wikipedia.org/wiki/Machu_Picchu"
+  },
+  {
+   "topic": "Petra",
+   "text": "Petra in Jordan is a city carved into rose-colored sandstone cliffs.",
+   "source": "https://en.wikipedia.org/wiki/Petra"
+  },
+  {
+   "topic": "Angkor Wat",
+   "text": "Cambodia's Angkor Wat is the largest religious monument in the world and appears on its flag.",
+   "source": "https://en.wikipedia.org/wiki/Angkor_Wat"
+  },
+  {
+   "topic": "Reykjavik",
+   "text": "Reykjavik, Iceland, is the northernmost capital of a sovereign country.",
+   "source": "https://en.wikipedia.org/wiki/Reykjavik"
+  },
+  {
+   "topic": "Wellington",
+   "text": "Wellington, New Zealand, is the southernmost capital of a sovereign country.",
+   "source": "https://en.wikipedia.org/wiki/Wellington"
+  },
+  {
+   "topic": "Pacific Ocean",
+   "text": "The Pacific is the largest ocean, bigger than all the land on Earth combined.",
+   "source": "https://en.wikipedia.org/wiki/Pacific_Ocean"
+  },
+  {
+   "topic": "Mariana Trench",
+   "text": "The Mariana Trench in the Pacific is the deepest part of the ocean, nearly 11 km down.",
+   "source": "https://en.wikipedia.org/wiki/Mariana_Trench"
+  },
+  {
+   "topic": "Equator",
+   "text": "The equator crosses about a dozen countries, including Ecuador, which is named for it.",
+   "source": "https://en.wikipedia.org/wiki/Equator"
+  },
+  {
+   "topic": "Mont Blanc",
+   "text": "Mont Blanc, on the France-Italy border, is the highest mountain in the Alps.",
+   "source": "https://en.wikipedia.org/wiki/Mont_Blanc"
+  },
+  {
+   "topic": "Kilimanjaro",
+   "text": "Kilimanjaro in Tanzania is Africa's highest peak and the tallest free-standing mountain.",
+   "source": "https://en.wikipedia.org/wiki/Mount_Kilimanjaro"
+  },
+  {
+   "topic": "Andes",
+   "text": "The Andes are the longest continental mountain range in the world.",
+   "source": "https://en.wikipedia.org/wiki/Andes"
+  },
+  {
+   "topic": "Venice",
+   "text": "Venice is built on more than 100 small islands linked by about 400 bridges.",
+   "source": "https://en.wikipedia.org/wiki/Venice"
+  },
+  {
+   "topic": "Netherlands",
+   "text": "About a quarter of the Netherlands lies below sea level, protected by dikes.",
+   "source": "https://en.wikipedia.org/wiki/Netherlands"
+  },
+  {
+   "topic": "Norway fjords",
+   "text": "Norway's coast is lined with fjords, deep sea inlets carved by Ice Age glaciers.",
+   "source": "https://en.wikipedia.org/wiki/Fjord"
+  },
+  {
+   "topic": "Mississippi",
+   "text": "Together, the Mississippi and Missouri form one of the longest river systems in the world.",
+   "source": "https://en.wikipedia.org/wiki/Mississippi_River"
+  },
+  {
+   "topic": "Great Lakes",
+   "text": "Lake Superior is the largest freshwater lake in the world by surface area.",
+   "source": "https://en.wikipedia.org/wiki/Lake_Superior"
+  },
+  {
+   "topic": "Grand Canyon",
+   "text": "The Colorado River carved Arizona's Grand Canyon, which is over 1.6 km deep in places.",
+   "source": "https://en.wikipedia.org/wiki/Grand_Canyon"
+  },
+  {
+   "topic": "Four Corners",
+   "text": "Four Corners is the only spot where four US states meet: Arizona, Colorado, New Mexico and Utah.",
+   "source": "https://en.wikipedia.org/wiki/Four_Corners"
+  },
+  {
+   "topic": "Alaska",
+   "text": "Alaska's Denali is the highest mountain in North America.",
+   "source": "https://en.wikipedia.org/wiki/Denali"
+  },
+  {
+   "topic": "Hawaii",
+   "text": "Hawaii is the only US state made entirely of islands.",
+   "source": "https://en.wikipedia.org/wiki/Hawaii"
+  },
+  {
+   "topic": "Australia",
+   "text": "Australia is the only country that is also a whole continent.",
+   "source": "https://en.wikipedia.org/wiki/Australia"
+  },
+  {
+   "topic": "Great Barrier Reef",
+   "text": "The Great Barrier Reef off Australia is the largest coral reef system in the world.",
+   "source": "https://en.wikipedia.org/wiki/Great_Barrier_Reef"
+  },
+  {
+   "topic": "Madagascar",
+   "text": "Most of Madagascar's wildlife, like its lemurs, is found nowhere else on Earth.",
+   "source": "https://en.wikipedia.org/wiki/Madagascar"
+  },
+  {
+   "topic": "Victoria Falls",
+   "text": "Victoria Falls lies on the Zambezi River between Zambia and Zimbabwe.",
+   "source": "https://en.wikipedia.org/wiki/Victoria_Falls"
+  },
+  {
+   "topic": "Nile vs Amazon",
+   "text": "The Nile and Amazon are the longest rivers. Which wins depends on how you measure.",
+   "source": "https://en.wikipedia.org/wiki/Nile"
+  },
+  {
+   "topic": "Monaco",
+   "text": "Monaco is the second-smallest country in the world and the most densely populated.",
+   "source": "https://en.wikipedia.org/wiki/Monaco"
+  },
+  {
+   "topic": "San Marino",
+   "text": "San Marino, inside Italy, claims to be the oldest republic in the world.",
+   "source": "https://en.wikipedia.org/wiki/San_Marino"
+  },
+  {
+   "topic": "Portugal",
+   "text": "Cabo da Roca in Portugal is the westernmost point of mainland Europe.",
+   "source": "https://en.wikipedia.org/wiki/Cabo_da_Roca"
+  },
+  {
+   "topic": "Strait of Gibraltar",
+   "text": "Only about 14 km of water separate Spain and Morocco at the Strait of Gibraltar.",
+   "source": "https://en.wikipedia.org/wiki/Strait_of_Gibraltar"
+  },
+  {
+   "topic": "Caspian Sea",
+   "text": "The Caspian Sea is the largest inland body of water on Earth.",
+   "source": "https://en.wikipedia.org/wiki/Caspian_Sea"
+  },
+  {
+   "topic": "Chile",
+   "text": "Chile is over 4,000 km long but nowhere more than about 350 km wide.",
+   "source": "https://en.wikipedia.org/wiki/Chile"
+  },
+  {
+   "topic": "Brazil",
+   "text": "Brazil borders every South American country except Chile and Ecuador.",
+   "source": "https://en.wikipedia.org/wiki/Brazil"
+  },
+  {
+   "topic": "Japan",
+   "text": "Japan is made of four main islands and thousands of smaller ones.",
+   "source": "https://en.wikipedia.org/wiki/Japan"
+  },
+  {
+   "topic": "Mongolia",
+   "text": "Mongolia is the most sparsely populated country in the world.",
+   "source": "https://en.wikipedia.org/wiki/Mongolia"
+  },
+  {
+   "topic": "Ural Mountains",
+   "text": "The Ural Mountains are the traditional boundary between Europe and Asia.",
+   "source": "https://en.wikipedia.org/wiki/Ural_Mountains"
+  },
+  {
+   "topic": "Prime Meridian",
+   "text": "The Prime Meridian, 0 degrees longitude, runs through Greenwich in London.",
+   "source": "https://en.wikipedia.org/wiki/Prime_meridian"
+  },
+  {
+   "topic": "Mount Fuji",
+   "text": "Mount Fuji is Japan's highest peak and an active volcano that last erupted in 1707.",
+   "source": "https://en.wikipedia.org/wiki/Mount_Fuji"
+  },
+  {
+   "topic": "Uluru",
+   "text": "Uluru is a huge sandstone rock in Australia's outback, sacred to the Anangu people.",
+   "source": "https://en.wikipedia.org/wiki/Uluru"
+  },
+  {
+   "topic": "Galapagos",
+   "text": "Ecuador's Galapagos Islands inspired Charles Darwin's ideas on evolution.",
+   "source": "https://en.wikipedia.org/wiki/Galapagos_Islands"
+  }
+ ],
+ "geology": [
+  {
+   "topic": "Rock cycle",
+   "text": "Igneous rock forms from magma, sedimentary from layers, metamorphic from heat.",
+   "source": "https://en.wikipedia.org/wiki/Rock_cycle"
+  },
+  {
+   "topic": "Granite",
+   "text": "Granite cooled slowly deep underground, which gave it its large, visible crystals.",
+   "source": "https://en.wikipedia.org/wiki/Granite"
+  },
+  {
+   "topic": "Basalt",
+   "text": "Basalt is the most common rock on the ocean floor. It forms from fast-cooling lava.",
+   "source": "https://en.wikipedia.org/wiki/Basalt"
+  },
+  {
+   "topic": "Obsidian",
+   "text": "Obsidian is volcanic glass. Lava cooled so fast that crystals had no time to grow.",
+   "source": "https://en.wikipedia.org/wiki/Obsidian"
+  },
+  {
+   "topic": "Pumice",
+   "text": "Pumice is so full of gas bubbles that it can float on water.",
+   "source": "https://en.wikipedia.org/wiki/Pumice"
+  },
+  {
+   "topic": "Marble",
+   "text": "Marble is limestone changed by heat and pressure. Michelangelo's David is Carrara marble.",
+   "source": "https://en.wikipedia.org/wiki/Marble"
+  },
+  {
+   "topic": "Diamond",
+   "text": "Diamond is the hardest natural mineral, a 10 on the Mohs scale. It is pure carbon.",
+   "source": "https://en.wikipedia.org/wiki/Diamond"
+  },
+  {
+   "topic": "Graphite",
+   "text": "Graphite in pencils is also pure carbon, just like diamond, with its atoms arranged differently.",
+   "source": "https://en.wikipedia.org/wiki/Graphite"
+  },
+  {
+   "topic": "Mohs scale",
+   "text": "The Mohs scale ranks minerals from talc, the softest at 1, to diamond, the hardest at 10.",
+   "source": "https://en.wikipedia.org/wiki/Mohs_scale"
+  },
+  {
+   "topic": "Quartz",
+   "text": "Quartz is one of the most common minerals in Earth's crust and is used in watches.",
+   "source": "https://en.wikipedia.org/wiki/Quartz"
+  },
+  {
+   "topic": "Feldspar",
+   "text": "Feldspars are the most abundant group of minerals in Earth's crust.",
+   "source": "https://en.wikipedia.org/wiki/Feldspar"
+  },
+  {
+   "topic": "Earth's crust",
+   "text": "Oxygen is the most common element in Earth's crust, followed by silicon.",
+   "source": "https://en.wikipedia.org/wiki/Abundance_of_elements_in_Earth%27s_crust"
+  },
+  {
+   "topic": "Earth's core",
+   "text": "Earth's core is mostly iron and nickel. The inner core is solid; the outer core is liquid.",
+   "source": "https://en.wikipedia.org/wiki/Earth%27s_inner_core"
+  },
+  {
+   "topic": "Magnetic field",
+   "text": "Swirling liquid iron in the outer core creates Earth's magnetic field.",
+   "source": "https://en.wikipedia.org/wiki/Earth%27s_magnetic_field"
+  },
+  {
+   "topic": "Pangaea",
+   "text": "About 250 million years ago all the continents were joined as one: Pangaea.",
+   "source": "https://en.wikipedia.org/wiki/Pangaea"
+  },
+  {
+   "topic": "Continental drift",
+   "text": "Alfred Wegener proposed continental drift in 1912, noting how South America and Africa fit together.",
+   "source": "https://en.wikipedia.org/wiki/Continental_drift"
+  },
+  {
+   "topic": "Plate tectonics",
+   "text": "Earth's plates move a few centimeters a year, about as fast as your fingernails grow.",
+   "source": "https://en.wikipedia.org/wiki/Plate_tectonics"
+  },
+  {
+   "topic": "Ring of Fire",
+   "text": "The Pacific Ring of Fire is home to most of the world's active volcanoes and largest earthquakes.",
+   "source": "https://en.wikipedia.org/wiki/Ring_of_Fire"
+  },
+  {
+   "topic": "Himalayas",
+   "text": "The Himalayas formed when India collided with Asia, and they are still rising.",
+   "source": "https://en.wikipedia.org/wiki/Himalayas"
+  },
+  {
+   "topic": "Everest fossils",
+   "text": "The summit of Everest is made of limestone holding fossils of ancient sea creatures.",
+   "source": "https://en.wikipedia.org/wiki/Mount_Everest"
+  },
+  {
+   "topic": "Mid-Atlantic Ridge",
+   "text": "The Atlantic widens a few centimeters a year as plates spread apart along this ridge.",
+   "source": "https://en.wikipedia.org/wiki/Mid-Atlantic_Ridge"
+  },
+  {
+   "topic": "Iceland rift",
+   "text": "Iceland sits on the Mid-Atlantic Ridge. At Thingvellir you can walk between two plates.",
+   "source": "https://en.wikipedia.org/wiki/Thingvellir"
+  },
+  {
+   "topic": "San Andreas",
+   "text": "Here the Pacific and North American plates grind past each other in California.",
+   "source": "https://en.wikipedia.org/wiki/San_Andreas_Fault"
+  },
+  {
+   "topic": "Mauna Kea",
+   "text": "Measured from its base on the sea floor, Hawaii's Mauna Kea is taller than Everest.",
+   "source": "https://en.wikipedia.org/wiki/Mauna_Kea"
+  },
+  {
+   "topic": "Mauna Loa",
+   "text": "Hawaii's Mauna Loa is the largest active volcano on Earth by volume.",
+   "source": "https://en.wikipedia.org/wiki/Mauna_Loa"
+  },
+  {
+   "topic": "Shield volcanoes",
+   "text": "Shield volcanoes, like those in Hawaii, have gentle slopes built from runny lava flows.",
+   "source": "https://en.wikipedia.org/wiki/Shield_volcano"
+  },
+  {
+   "topic": "Vesuvius",
+   "text": "Mount Vesuvius buried Pompeii and Herculaneum in ash in the year 79 AD.",
+   "source": "https://en.wikipedia.org/wiki/Mount_Vesuvius"
+  },
+  {
+   "topic": "Krakatoa",
+   "text": "The 1883 eruption of Krakatoa was heard nearly 5,000 km away.",
+   "source": "https://en.wikipedia.org/wiki/1883_eruption_of_Krakatoa"
+  },
+  {
+   "topic": "Mount St. Helens",
+   "text": "Mount St. Helens erupted in 1980, and its north side collapsed in a huge landslide.",
+   "source": "https://en.wikipedia.org/wiki/1980_eruption_of_Mount_St._Helens"
+  },
+  {
+   "topic": "Yellowstone",
+   "text": "Yellowstone sits on a supervolcano and has about half the world's geysers.",
+   "source": "https://en.wikipedia.org/wiki/Yellowstone_National_Park"
+  },
+  {
+   "topic": "Old Faithful",
+   "text": "Old Faithful geyser in Yellowstone erupts about every hour and a half.",
+   "source": "https://en.wikipedia.org/wiki/Old_Faithful"
+  },
+  {
+   "topic": "Geysers",
+   "text": "The word geyser comes from Geysir, a hot spring in Iceland.",
+   "source": "https://en.wikipedia.org/wiki/Geysir"
+  },
+  {
+   "topic": "Etna",
+   "text": "Sicily's Mount Etna is one of the most active volcanoes in the world.",
+   "source": "https://en.wikipedia.org/wiki/Mount_Etna"
+  },
+  {
+   "topic": "Surtsey",
+   "text": "Surtsey, off Iceland, is a new island born from an undersea eruption in 1963.",
+   "source": "https://en.wikipedia.org/wiki/Surtsey"
+  },
+  {
+   "topic": "Paricutin",
+   "text": "In 1943 the Paricutin volcano grew out of a Mexican cornfield, witnessed from its birth.",
+   "source": "https://en.wikipedia.org/wiki/Paricutin"
+  },
+  {
+   "topic": "Giant's Causeway",
+   "text": "Northern Ireland's Giant's Causeway is made of about 40,000 basalt columns from ancient lava.",
+   "source": "https://en.wikipedia.org/wiki/Giant%27s_Causeway"
+  },
+  {
+   "topic": "Stalactites",
+   "text": "Stalactites hang from cave ceilings; stalagmites rise from the floor.",
+   "source": "https://en.wikipedia.org/wiki/Stalactite"
+  },
+  {
+   "topic": "Limestone caves",
+   "text": "Most caves form when slightly acidic water slowly dissolves limestone.",
+   "source": "https://en.wikipedia.org/wiki/Cave"
+  },
+  {
+   "topic": "Mammoth Cave",
+   "text": "Kentucky's Mammoth Cave is the longest known cave system in the world.",
+   "source": "https://en.wikipedia.org/wiki/Mammoth_Cave_National_Park"
+  },
+  {
+   "topic": "Glaciers",
+   "text": "Glaciers carve U-shaped valleys, while rivers cut V-shaped ones.",
+   "source": "https://en.wikipedia.org/wiki/U-shaped_valley"
+  },
+  {
+   "topic": "Great Lakes ice",
+   "text": "The Great Lakes were scooped out by Ice Age glaciers.",
+   "source": "https://en.wikipedia.org/wiki/Great_Lakes"
+  },
+  {
+   "topic": "Grand Canyon rocks",
+   "text": "The oldest rocks at the bottom of the Grand Canyon are nearly 2 billion years old.",
+   "source": "https://en.wikipedia.org/wiki/Geology_of_the_Grand_Canyon_area"
+  },
+  {
+   "topic": "Earth's age",
+   "text": "Earth is about 4.5 billion years old.",
+   "source": "https://en.wikipedia.org/wiki/Age_of_Earth"
+  },
+  {
+   "topic": "Oldest minerals",
+   "text": "Zircons from Australia's Jack Hills are 4.4 billion years old: Earth's oldest crystals.",
+   "source": "https://en.wikipedia.org/wiki/Jack_Hills"
+  },
+  {
+   "topic": "Fossils",
+   "text": "Fossils are found mainly in sedimentary rocks like limestone, shale and sandstone.",
+   "source": "https://en.wikipedia.org/wiki/Fossil"
+  },
+  {
+   "topic": "Amber",
+   "text": "Amber is fossilized tree resin and sometimes holds insects millions of years old.",
+   "source": "https://en.wikipedia.org/wiki/Amber"
+  },
+  {
+   "topic": "Petrified wood",
+   "text": "In petrified wood, minerals replaced the wood so precisely that tree rings still show.",
+   "source": "https://en.wikipedia.org/wiki/Petrified_wood"
+  },
+  {
+   "topic": "Coal",
+   "text": "Coal formed from swamp plants buried hundreds of millions of years ago.",
+   "source": "https://en.wikipedia.org/wiki/Coal"
+  },
+  {
+   "topic": "Gold",
+   "text": "Gold is so soft and malleable that one gram can be beaten into a sheet about a square meter.",
+   "source": "https://en.wikipedia.org/wiki/Gold"
+  },
+  {
+   "topic": "Ruby and sapphire",
+   "text": "Rubies and sapphires are the same mineral, corundum. Only their trace elements differ.",
+   "source": "https://en.wikipedia.org/wiki/Corundum"
+  },
+  {
+   "topic": "Emerald",
+   "text": "Emerald is a green variety of the mineral beryl, colored by chromium or vanadium.",
+   "source": "https://en.wikipedia.org/wiki/Emerald"
+  },
+  {
+   "topic": "Amethyst",
+   "text": "Amethyst is purple quartz, colored by traces of iron and natural radiation.",
+   "source": "https://en.wikipedia.org/wiki/Amethyst"
+  },
+  {
+   "topic": "Geodes",
+   "text": "Geodes look like plain rocks outside but are hollow and lined with crystals inside.",
+   "source": "https://en.wikipedia.org/wiki/Geode"
+  },
+  {
+   "topic": "Halite",
+   "text": "Table salt is the mineral halite. Its crystals form perfect little cubes.",
+   "source": "https://en.wikipedia.org/wiki/Halite"
+  },
+  {
+   "topic": "Mica",
+   "text": "Mica splits into thin, clear sheets and was once used for windows in stoves.",
+   "source": "https://en.wikipedia.org/wiki/Mica"
+  },
+  {
+   "topic": "Quake magnitude",
+   "text": "Each step up on the magnitude scale means about 32 times more energy released.",
+   "source": "https://en.wikipedia.org/wiki/Moment_magnitude_scale"
+  },
+  {
+   "topic": "Chile 1960",
+   "text": "The strongest earthquake ever recorded struck Chile in 1960, at magnitude 9.5.",
+   "source": "https://en.wikipedia.org/wiki/1960_Valdivia_earthquake"
+  },
+  {
+   "topic": "Tsunami",
+   "text": "Tsunamis are usually caused by undersea earthquakes and can cross whole oceans.",
+   "source": "https://en.wikipedia.org/wiki/Tsunami"
+  },
+  {
+   "topic": "Meteor Crater",
+   "text": "Arizona's Meteor Crater was blasted out by a meteorite about 50,000 years ago.",
+   "source": "https://en.wikipedia.org/wiki/Meteor_Crater"
+  },
+  {
+   "topic": "Hoodoos",
+   "text": "Utah's Bryce Canyon is famous for hoodoos, tall rock spires shaped by frost and rain.",
+   "source": "https://en.wikipedia.org/wiki/Hoodoo_(geology)"
+  },
+  {
+   "topic": "Sand",
+   "text": "Most beach sand is tiny grains of quartz worn down from rocks over time.",
+   "source": "https://en.wikipedia.org/wiki/Sand"
+  },
+  {
+   "topic": "Hawaii beaches",
+   "text": "Hawaii has black sand beaches made from basalt lava that shattered on hitting the sea.",
+   "source": "https://en.wikipedia.org/wiki/Black_sand"
+  }
+ ]
+}

@@ -38,6 +38,7 @@ WORDS = _load("words.json")
 CFACTS = _load("classical_facts.json")
 COTD = _load("classical_on_this_day.json")
 MATH = _load("math_facts.json")
+EARTH = _load("earth_facts.json")  # Mom Wall 1.2.21: geography + geology
 
 _cache: dict = {}
 _lock = threading.Lock()
@@ -115,6 +116,15 @@ def pick_math(d):
         return sp
     f = MATH[(_doy(d) - 1) % len(MATH)]
     return {"big": "", "text": f["text"], "source": f["source"], "kind": "fact"}
+
+
+def pick_earth(d):
+    """Geography on odd days-of-year, geology on even; each list walks in order."""
+    doy = _doy(d)
+    kind = "geography" if doy % 2 else "geology"
+    lst = EARTH[kind]
+    f = lst[((doy - 1) // 2) % len(lst)]
+    return {"kind": kind, "title": kind.upper(), "topic": f["topic"], "text": f["text"], "source": f["source"]}
 
 
 def _is_pyth(x):
@@ -324,7 +334,7 @@ def daily(d: _dt.date | None = None) -> dict:
         if key in _cache:
             return _cache[key]
     out = {"date": key, "word": pick_word(d), "classical_fact": pick_fact(d),
-           "classical_today": pick_classical_today(d), "math": pick_math(d)}
+           "classical_today": pick_classical_today(d), "math": pick_math(d), "earth": pick_earth(d)}
     try:
         out["born"] = pick_born(d)
     except Exception:  # noqa: BLE001
@@ -353,5 +363,6 @@ def device_daily(d: _dt.date | None = None, wall: str = "mom") -> dict:
         "cx": ascii_(ct.get("description", "")) if ct else "", "cy": (ct or {}).get("year") or 0,
         "ck": (ct or {}).get("kind", ""),
         "mb": ascii_(m["big"]), "mt": ascii_(m["text"]),
+        "gt": ascii_(x["earth"]["title"]), "gs": ascii_(x["earth"]["topic"]), "gx": ascii_(x["earth"]["text"]),
         "fm": ascii_(fam.get("text", "")), "ff": ascii_(fam.get("from", "")),
     }

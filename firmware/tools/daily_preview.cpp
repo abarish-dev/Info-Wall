@@ -18,15 +18,17 @@ static const char *E(const char *k, const char *def) { const char *v = getenv(k)
 
 int main(int argc, char **argv) {
   const char *dir = argc > 1 ? argv[1] : ".";
+  if (getenv("MOM")) g_momPal = true;   // Mom Wall palette
   DyData d{E("w", "orrery"), E("wp", "OR-er-ee"), E("ws", "noun"), E("wd", "a clockwork solar-system model"),
            E("wo", "after the Earl of Orrery"), E("wx", "The brass orrery showed the planets circling the Sun."),
            E("bn", "Kevin Kline"), E("bd", "American actor"), atoi(E("by", "1947")), atoi(E("age", "79")),
            E("cf", "Erik Satie's Gymnopedies were written in 1888."),
            E("ct", "Luciano Berio"), E("cx", "Italian composer"), E("ck", "composer_born"), atoi(E("cy", "1925")),
            E("mb", "10^2+24^2=26^2"), E("mt", "10/24/26: the last right-triangle date this century!"),
-           E("fm", "Love you Mom! Dinner Sunday at 5."), E("ff", "Adam")};
-  const char *names[] = {"born", "word", "origin", "cfact", "ctoday", "math", "family"};
-  for (int w = 0; w < 7; w++)
+           E("fm", "Love you Mom! Dinner Sunday at 5."), E("ff", "Adam"),
+           E("gt", "GEOGRAPHY"), E("gs", "Lake Baikal"), E("gx", "Russia's Lake Baikal is the deepest lake on Earth.")};
+  const char *names[] = {"born", "word", "origin", "cfact", "ctoday", "math", "family", "earth"};
+  for (int w = 0; w < 8; w++)
     for (int s = 0; s < dyPages(w, d); s++) {
       Canvas c; dyDraw(c, w, d, s);
       char p[256]; snprintf(p, sizeof(p), "%s/%s_%d.rgb", dir, names[w], s);
