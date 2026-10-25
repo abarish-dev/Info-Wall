@@ -22,6 +22,7 @@
 #include "Persistence.h"
 #include "NetworkData.h"
 #include "WifiKeeper.h"
+#include "DeviceId.h"
 
 // Global instances used across the firmware.
 MatrixSettings g_settings;
@@ -126,6 +127,7 @@ static OtaResult simpleInstall(bool fromApp) {
     String q = base + "/api/firmware/latest?current=" INFOWALL_FW_VERSION;
     if (g_settings.simpleMode) q += "&channel=simple";   // 1.3.0: main walls ask the main channel
     if (!h.begin(c, q)) { r.err = -1; r.msg = "begin"; return r; }
+    h.setUserAgent(iwUserAgent());
     int code = h.GET();
     PSRAM_JSON(doc);
     DeserializationError je = code == 200 ? deserializeJson(doc, h.getStream()) : DeserializationError::Ok;
@@ -154,6 +156,7 @@ static OtaResult simpleInstall(bool fromApp) {
   WiFiClientSecure c; c.setInsecure();
   HTTPClient h; h.setTimeout(20000); h.setReuse(false);
   if (!h.begin(c, url)) { r.err = -1; r.msg = "begin"; return r; }
+  h.setUserAgent(iwUserAgent());
   int code = h.GET();
   if (code != 200) { h.end(); r.err = code; r.msg = code < 0 ? HTTPClient::errorToString(code) : String("HTTP ") + code; return r; }
   if (h.getSize() != size) { r.err = -4; r.msg = String("len ") + h.getSize(); h.end(); return r; }
@@ -230,6 +233,7 @@ static void otaCheck() {
       otaFailNotify({false, false, "check", -1, "begin", ""});
       return;
     }
+    http.setUserAgent(iwUserAgent());
     int code = http.GET();
     PSRAM_JSON(doc);
     bool ok = code == 200 && !deserializeJson(doc, http.getStream());

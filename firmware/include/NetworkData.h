@@ -30,6 +30,7 @@
 #include "DisplayManager.h"
 #include "WifiKeeper.h"
 #include "Persistence.h"
+#include "DeviceId.h"
 
 extern DisplayManager g_display;
 
@@ -233,6 +234,7 @@ class NetworkData {
       }
       http.setReuse(false);
       http.setTimeout(12000);
+      http.setUserAgent(iwUserAgent());   // 1.2.22 / 1.3.1
       int code = http.GET();
       if (code == 200) {
         // Parse straight from the socket into a PSRAM-backed document, keeping

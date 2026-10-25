@@ -282,6 +282,53 @@ def _kv():
     return (url.rstrip("/"), tok) if url and tok else None
 
 
+# ---- Wall "last seen" (1.2.22 / 1.3.1 User-Agent) ---------------------------
+_UA_RE = re.compile(r"InfoWall/([\w.\-]+) \((simple|main); id=([0-9a-f]{6})\)")
+_seen_local: dict = {}
+_seen_last_write: dict = {}
+SEEN_WRITE_EVERY = 600  # s per wall per instance: keeps KV use tiny
+
+
+def seen_note(ua: str, path: str) -> None:
+    """Record {id: version, mode, path, time} from an InfoWall User-Agent.
+    Only the 6-hex hashed id is stored - no IPs, no Wi-Fi names."""
+    m = _UA_RE.search(ua or "")
+    if not m:
+        return
+    ver, mode, wid = m.groups()
+    now = _dt.datetime.now(ET)
+    rec = {"id": wid, "mode": mode, "fw": ver, "path": path, "seen": now.isoformat(timespec="seconds")}
+    _seen_local[wid] = rec
+    t = now.timestamp()
+    if t - _seen_last_write.get(wid, 0) < SEEN_WRITE_EVERY:
+        return
+    _seen_last_write[wid] = t
+    kv = _kv()
+    if not kv:
+        return
+    try:
+        requests.post(f"{kv[0]}/hset/walls:seen/{wid}", headers={"Authorization": f"Bearer {kv[1]}"},
+                      data=json.dumps(rec), timeout=3)
+    except Exception:  # noqa: BLE001 - never fail a wall request over logging
+        pass
+
+
+def seen_all() -> list:
+    out = dict(_seen_local)
+    kv = _kv()
+    if kv:
+        try:
+            r = requests.get(f"{kv[0]}/hgetall/walls:seen", headers={"Authorization": f"Bearer {kv[1]}"}, timeout=5)
+            flat = r.json().get("result") or []
+            for k, v in zip(flat[::2], flat[1::2]):
+                rec = json.loads(v)
+                if k not in out or out[k]["seen"] < rec["seen"]:
+                    out[k] = rec
+        except Exception:  # noqa: BLE001
+            pass
+    return sorted(out.values(), key=lambda r: r["seen"], reverse=True)
+
+
 def family_get(wall: str = "mom") -> dict:
     kv = _kv()
     try:

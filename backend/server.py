@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi import FastAPI, APIRouter, HTTPException, Header
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 import logging
@@ -2731,12 +2731,13 @@ _FW_SIMPLE_DIR = _FW_DIR / "simple"   # Mom Wall (simple mode, 1.2.x) channel
 
 
 @api_router.get("/firmware/latest")
-def firmware_latest(current: str = "", channel: str = ""):
+def firmware_latest(current: str = "", channel: str = "", user_agent: str = Header(default="")):
     """The panel (BLE "ota" command) and the app ask this for the latest
     firmware. `update` is true when a build is hosted and its version differs
     from `current`; the firmware itself only installs a strictly newer one.
     channel=simple serves the separate Mom Wall build from public/fw/simple/
     so 1.2.x never reaches main-channel (1.1.x) walls and vice versa."""
+    _daily.seen_note(user_agent, "fw")   # defined below; resolved at call time
     if channel == "simple":
         meta, binp = _FW_SIMPLE_DIR / "meta.json", _FW_SIMPLE_DIR / "firmware.bin"
         try:
@@ -2803,8 +2804,9 @@ def api_daily(date: str = ""):
 
 
 @api_router.get("/device/daily")
-def device_daily(date: str = "", wall: str = "mom"):
+def device_daily(date: str = "", wall: str = "mom", user_agent: str = Header(default="")):
     """Compact ASCII version for the panel's simple-mode slides."""
+    _daily.seen_note(user_agent, "daily")
     import datetime as _d
     return _daily.device_daily(_d.date.fromisoformat(date) if date else None, wall)
 
@@ -2813,6 +2815,12 @@ class FamilyMsg(BaseModel):
     text: str
     sender: str = ""
     wall: str = "mom"
+
+
+@api_router.get("/device/seen")
+def device_seen():
+    """Which walls have checked in: hashed id, simple/main, firmware, last time (ET)."""
+    return {"walls": _daily.seen_all()}
 
 
 @api_router.get("/family")
