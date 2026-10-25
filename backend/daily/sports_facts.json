@@ -1,0 +1,810 @@
+{
+ "olympics": [
+  {
+   "topic": "Modern Games",
+   "text": "The first modern Olympic Games were held in Athens, Greece, in 1896.",
+   "source": "https://en.wikipedia.org/wiki/1896_Summer_Olympics"
+  },
+  {
+   "topic": "Founder",
+   "text": "Pierre de Coubertin of France founded the International Olympic Committee in 1894.",
+   "source": "https://en.wikipedia.org/wiki/Pierre_de_Coubertin"
+  },
+  {
+   "topic": "Olympic rings",
+   "text": "The five Olympic rings stand for the five inhabited continents joined together.",
+   "source": "https://en.wikipedia.org/wiki/Olympic_symbols"
+  },
+  {
+   "topic": "Ancient Games",
+   "text": "The ancient Olympics were held at Olympia, Greece, starting in 776 BC by tradition.",
+   "source": "https://en.wikipedia.org/wiki/Ancient_Olympic_Games"
+  },
+  {
+   "topic": "Winter Games",
+   "text": "The first Winter Olympics were held in Chamonix, France, in 1924.",
+   "source": "https://en.wikipedia.org/wiki/1924_Winter_Olympics"
+  },
+  {
+   "topic": "Olympic flame",
+   "text": "The Olympic flame is lit by the sun's rays at Olympia, Greece, before each Games.",
+   "source": "https://en.wikipedia.org/wiki/Olympic_flame"
+  },
+  {
+   "topic": "Torch relay",
+   "text": "The modern Olympic torch relay began at the 1936 Berlin Games.",
+   "source": "https://en.wikipedia.org/wiki/Olympic_flame"
+  },
+  {
+   "topic": "Jesse Owens",
+   "text": "Jesse Owens won four gold medals at the 1936 Berlin Olympics.",
+   "source": "https://en.wikipedia.org/wiki/Jesse_Owens"
+  },
+  {
+   "topic": "Michael Phelps",
+   "text": "Michael Phelps won 8 gold medals at the 2008 Beijing Games, a record for one Olympics.",
+   "source": "https://en.wikipedia.org/wiki/Michael_Phelps"
+  },
+  {
+   "topic": "Phelps total",
+   "text": "Michael Phelps won 28 Olympic medals, 23 of them gold, the most of any athlete.",
+   "source": "https://en.wikipedia.org/wiki/Michael_Phelps"
+  },
+  {
+   "topic": "Mark Spitz",
+   "text": "Swimmer Mark Spitz won 7 gold medals at the 1972 Munich Olympics.",
+   "source": "https://en.wikipedia.org/wiki/Mark_Spitz"
+  },
+  {
+   "topic": "Perfect 10",
+   "text": "Nadia Comaneci scored the first perfect 10 in Olympic gymnastics in 1976.",
+   "source": "https://en.wikipedia.org/wiki/Nadia_Comaneci"
+  },
+  {
+   "topic": "Miracle on Ice",
+   "text": "In 1980 US college players beat the Soviet hockey team at Lake Placid: the Miracle on Ice.",
+   "source": "https://en.wikipedia.org/wiki/Miracle_on_Ice"
+  },
+  {
+   "topic": "Dream Team",
+   "text": "The 1992 US basketball Dream Team had Michael Jordan, Magic Johnson and Larry Bird.",
+   "source": "https://en.wikipedia.org/wiki/1992_United_States_men%27s_Olympic_basketball_team"
+  },
+  {
+   "topic": "Usain Bolt",
+   "text": "Usain Bolt won the 100 m and 200 m at three straight Olympics: 2008, 2012 and 2016.",
+   "source": "https://en.wikipedia.org/wiki/Usain_Bolt"
+  },
+  {
+   "topic": "Bob Beamon",
+   "text": "Bob Beamon's 1968 long jump of 8.90 m stood as the world record for nearly 23 years.",
+   "source": "https://en.wikipedia.org/wiki/Bob_Beamon"
+  },
+  {
+   "topic": "Carl Lewis",
+   "text": "Carl Lewis won the Olympic long jump four times in a row, 1984 to 1996.",
+   "source": "https://en.wikipedia.org/wiki/Carl_Lewis"
+  },
+  {
+   "topic": "Fosbury Flop",
+   "text": "Dick Fosbury won 1968 high jump gold going over the bar backward: the Fosbury Flop.",
+   "source": "https://en.wikipedia.org/wiki/Dick_Fosbury"
+  },
+  {
+   "topic": "Jim Thorpe",
+   "text": "Jim Thorpe won the pentathlon and decathlon at the 1912 Stockholm Olympics.",
+   "source": "https://en.wikipedia.org/wiki/Jim_Thorpe"
+  },
+  {
+   "topic": "Abebe Bikila",
+   "text": "Ethiopia's Abebe Bikila won the 1960 Olympic marathon running barefoot.",
+   "source": "https://en.wikipedia.org/wiki/Abebe_Bikila"
+  },
+  {
+   "topic": "Marathon",
+   "text": "The marathon is 42.195 km (26.2 miles), the distance run at the 1908 London Games.",
+   "source": "https://en.wikipedia.org/wiki/Marathon"
+  },
+  {
+   "topic": "Cassius Clay",
+   "text": "Muhammad Ali, then Cassius Clay, won boxing gold at the 1960 Rome Olympics.",
+   "source": "https://en.wikipedia.org/wiki/Muhammad_Ali"
+  },
+  {
+   "topic": "Eric Heiden",
+   "text": "Speed skater Eric Heiden won all five men's events at the 1980 Winter Olympics.",
+   "source": "https://en.wikipedia.org/wiki/Eric_Heiden"
+  },
+  {
+   "topic": "Three-time hosts",
+   "text": "London is the only city to host the Summer Olympics three times: 1908, 1948, 2012.",
+   "source": "https://en.wikipedia.org/wiki/London"
+  },
+  {
+   "topic": "Gold medals",
+   "text": "Olympic gold medals are mostly silver, plated with at least 6 grams of gold.",
+   "source": "https://en.wikipedia.org/wiki/Olympic_medal"
+  },
+  {
+   "topic": "Women compete",
+   "text": "Women first competed in the Olympics at the 1900 Paris Games.",
+   "source": "https://en.wikipedia.org/wiki/1900_Summer_Olympics"
+  },
+  {
+   "topic": "Paralympics",
+   "text": "The first Paralympic Games were held in Rome in 1960.",
+   "source": "https://en.wikipedia.org/wiki/1960_Summer_Paralympics"
+  },
+  {
+   "topic": "Olympic motto",
+   "text": "The Olympic motto is Citius, Altius, Fortius: Faster, Higher, Stronger.",
+   "source": "https://en.wikipedia.org/wiki/Olympic_motto"
+  },
+  {
+   "topic": "Greece first",
+   "text": "At the opening ceremony Greece always marches in first, honoring the ancient Games.",
+   "source": "https://en.wikipedia.org/wiki/Parade_of_Nations"
+  },
+  {
+   "topic": "Jamaican bobsled",
+   "text": "Jamaica's bobsled team debuted at Calgary in 1988, inspiring the film Cool Runnings.",
+   "source": "https://en.wikipedia.org/wiki/Jamaica_national_bobsleigh_team"
+  },
+  {
+   "topic": "Sonja Henie",
+   "text": "Norway's Sonja Henie won figure skating gold at three straight Olympics, 1928 to 1936.",
+   "source": "https://en.wikipedia.org/wiki/Sonja_Henie"
+  },
+  {
+   "topic": "Greg Louganis",
+   "text": "Greg Louganis won both diving golds at the 1984 and 1988 Olympics.",
+   "source": "https://en.wikipedia.org/wiki/Greg_Louganis"
+  },
+  {
+   "topic": "Wartime",
+   "text": "The 1916, 1940 and 1944 Olympics were canceled because of the World Wars.",
+   "source": "https://en.wikipedia.org/wiki/Olympic_Games"
+  },
+  {
+   "topic": "Tokyo 2020",
+   "text": "The Tokyo 2020 Olympics were held in 2021, delayed a year by the pandemic.",
+   "source": "https://en.wikipedia.org/wiki/2020_Summer_Olympics"
+  },
+  {
+   "topic": "Boycotts",
+   "text": "The US led a boycott of the 1980 Moscow Games; the Soviets skipped Los Angeles in 1984.",
+   "source": "https://en.wikipedia.org/wiki/1980_Summer_Olympics_boycott"
+  },
+  {
+   "topic": "Larisa Latynina",
+   "text": "Soviet gymnast Larisa Latynina won 18 Olympic medals from 1956 to 1964.",
+   "source": "https://en.wikipedia.org/wiki/Larisa_Latynina"
+  },
+  {
+   "topic": "Decathlon",
+   "text": "The decathlon has 10 events over two days; its winner is often called the world's greatest athlete.",
+   "source": "https://en.wikipedia.org/wiki/Decathlon"
+  },
+  {
+   "topic": "Lake Placid",
+   "text": "Lake Placid, New York, hosted the Winter Olympics in 1932 and 1980.",
+   "source": "https://en.wikipedia.org/wiki/Lake_Placid,_New_York"
+  },
+  {
+   "topic": "Los Angeles",
+   "text": "Los Angeles hosted the Summer Olympics in 1932 and 1984 and will again in 2028.",
+   "source": "https://en.wikipedia.org/wiki/2028_Summer_Olympics"
+  },
+  {
+   "topic": "Kerri Strug",
+   "text": "Kerri Strug landed a vault on an injured ankle to help the US win team gold in 1996.",
+   "source": "https://en.wikipedia.org/wiki/Kerri_Strug"
+  }
+ ],
+ "nfl": [
+  {
+   "topic": "Super Bowl I",
+   "text": "The Green Bay Packers won Super Bowl I in January 1967, beating the Kansas City Chiefs.",
+   "source": "https://en.wikipedia.org/wiki/Super_Bowl_I"
+  },
+  {
+   "topic": "Lombardi Trophy",
+   "text": "The Super Bowl trophy is named for Packers coach Vince Lombardi.",
+   "source": "https://en.wikipedia.org/wiki/Vince_Lombardi_Trophy"
+  },
+  {
+   "topic": "Perfect season",
+   "text": "The 1972 Miami Dolphins are the only NFL team to finish a full season and playoffs unbeaten.",
+   "source": "https://en.wikipedia.org/wiki/1972_Miami_Dolphins_season"
+  },
+  {
+   "topic": "NFL founded",
+   "text": "The NFL was founded in 1920 in Canton, Ohio, as the American Professional Football Association.",
+   "source": "https://en.wikipedia.org/wiki/National_Football_League"
+  },
+  {
+   "topic": "Hall of Fame",
+   "text": "The Pro Football Hall of Fame is in Canton, Ohio, where the league was born.",
+   "source": "https://en.wikipedia.org/wiki/Pro_Football_Hall_of_Fame"
+  },
+  {
+   "topic": "Joe Namath",
+   "text": "Joe Namath guaranteed a win before Super Bowl III, and his Jets upset the Colts.",
+   "source": "https://en.wikipedia.org/wiki/Super_Bowl_III"
+  },
+  {
+   "topic": "Immaculate Reception",
+   "text": "Franco Harris's Immaculate Reception beat the Raiders in a 1972 playoff game.",
+   "source": "https://en.wikipedia.org/wiki/Immaculate_Reception"
+  },
+  {
+   "topic": "The Catch",
+   "text": "Dwight Clark's leaping grab from Joe Montana, The Catch, sent the 49ers to the 1982 Super Bowl.",
+   "source": "https://en.wikipedia.org/wiki/The_Catch_(American_football)"
+  },
+  {
+   "topic": "Ice Bowl",
+   "text": "The 1967 NFL title game in Green Bay, the Ice Bowl, was played at 15 below zero.",
+   "source": "https://en.wikipedia.org/wiki/Ice_Bowl"
+  },
+  {
+   "topic": "Packers owners",
+   "text": "The Green Bay Packers are owned by their fans, a rarity in US pro sports.",
+   "source": "https://en.wikipedia.org/wiki/Green_Bay_Packers"
+  },
+  {
+   "topic": "Super Bowl name",
+   "text": "Chiefs owner Lamar Hunt suggested the name Super Bowl, inspired by a child's Super Ball.",
+   "source": "https://en.wikipedia.org/wiki/Lamar_Hunt"
+  },
+  {
+   "topic": "Roman numerals",
+   "text": "Super Bowls use Roman numerals, except Super Bowl 50 in 2016.",
+   "source": "https://en.wikipedia.org/wiki/Super_Bowl_50"
+  },
+  {
+   "topic": "Field size",
+   "text": "An NFL field is 100 yards long plus two 10-yard end zones.",
+   "source": "https://en.wikipedia.org/wiki/American_football_field"
+  },
+  {
+   "topic": "Touchdown",
+   "text": "A touchdown is worth 6 points, a field goal 3 and a safety 2.",
+   "source": "https://en.wikipedia.org/wiki/Scoring_in_American_football"
+  },
+  {
+   "topic": "Two-point try",
+   "text": "The NFL adopted the two-point conversion in 1994.",
+   "source": "https://en.wikipedia.org/wiki/Two-point_conversion"
+  },
+  {
+   "topic": "AFL merger",
+   "text": "The NFL and the rival AFL merged in 1970, forming the AFC and NFC.",
+   "source": "https://en.wikipedia.org/wiki/AFL%E2%80%93NFL_merger"
+  },
+  {
+   "topic": "Walter Payton",
+   "text": "Walter Payton, Sweetness, was a Chicago Bears running back from 1975 to 1987.",
+   "source": "https://en.wikipedia.org/wiki/Walter_Payton"
+  },
+  {
+   "topic": "Jim Brown",
+   "text": "Jim Brown led the NFL in rushing in 8 of his 9 seasons, then retired at 29 to act.",
+   "source": "https://en.wikipedia.org/wiki/Jim_Brown"
+  },
+  {
+   "topic": "Jerry Rice",
+   "text": "Jerry Rice holds the NFL career records for catches, receiving yards and touchdowns.",
+   "source": "https://en.wikipedia.org/wiki/Jerry_Rice"
+  },
+  {
+   "topic": "Tom Brady",
+   "text": "Tom Brady won seven Super Bowls, the most of any player.",
+   "source": "https://en.wikipedia.org/wiki/Tom_Brady"
+  },
+  {
+   "topic": "Montana",
+   "text": "Joe Montana won four Super Bowls with the 49ers and was never intercepted in one.",
+   "source": "https://en.wikipedia.org/wiki/Joe_Montana"
+  },
+  {
+   "topic": "Steel Curtain",
+   "text": "The Pittsburgh Steelers won four Super Bowls in six seasons, 1974 to 1979.",
+   "source": "https://en.wikipedia.org/wiki/Steel_Curtain"
+  },
+  {
+   "topic": "Monday Night",
+   "text": "Monday Night Football first aired on ABC in 1970.",
+   "source": "https://en.wikipedia.org/wiki/Monday_Night_Football"
+  },
+  {
+   "topic": "Thanksgiving",
+   "text": "The Detroit Lions have played on Thanksgiving nearly every year since 1934.",
+   "source": "https://en.wikipedia.org/wiki/Thanksgiving_Day_football"
+  },
+  {
+   "topic": "Draft",
+   "text": "The first NFL Draft was held in 1936. Jay Berwanger was the first pick.",
+   "source": "https://en.wikipedia.org/wiki/1936_NFL_draft"
+  },
+  {
+   "topic": "Heisman",
+   "text": "Jay Berwanger, the first NFL draft pick, also won the first Heisman Trophy in 1935.",
+   "source": "https://en.wikipedia.org/wiki/Heisman_Trophy"
+  },
+  {
+   "topic": "Vince Lombardi",
+   "text": "Vince Lombardi's Packers won the first two Super Bowls.",
+   "source": "https://en.wikipedia.org/wiki/Vince_Lombardi"
+  },
+  {
+   "topic": "Don Shula",
+   "text": "Don Shula has the most wins of any NFL head coach, 347.",
+   "source": "https://en.wikipedia.org/wiki/Don_Shula"
+  },
+  {
+   "topic": "Buffalo Bills",
+   "text": "The Buffalo Bills reached four straight Super Bowls, 1991 to 1994, and lost all four.",
+   "source": "https://en.wikipedia.org/wiki/Buffalo_Bills"
+  },
+  {
+   "topic": "Wide Right",
+   "text": "Scott Norwood's missed field goal in Super Bowl XXV became known as Wide Right.",
+   "source": "https://en.wikipedia.org/wiki/Super_Bowl_XXV"
+  },
+  {
+   "topic": "Helmet logo",
+   "text": "The Los Angeles Rams were the first NFL team with a logo on their helmets, in 1948.",
+   "source": "https://en.wikipedia.org/wiki/Los_Angeles_Rams"
+  },
+  {
+   "topic": "Gatorade shower",
+   "text": "Dumping Gatorade on the winning coach became a tradition with the 1980s New York Giants.",
+   "source": "https://en.wikipedia.org/wiki/Gatorade_shower"
+  },
+  {
+   "topic": "Lambeau Leap",
+   "text": "Packers players celebrate touchdowns by jumping into the stands: the Lambeau Leap.",
+   "source": "https://en.wikipedia.org/wiki/Lambeau_Leap"
+  },
+  {
+   "topic": "Chicago Bears",
+   "text": "The 1985 Chicago Bears, with the Super Bowl Shuffle, won Super Bowl XX.",
+   "source": "https://en.wikipedia.org/wiki/1985_Chicago_Bears_season"
+  },
+  {
+   "topic": "Halas",
+   "text": "George Halas founded and coached the Chicago Bears. The NFC title trophy bears his name.",
+   "source": "https://en.wikipedia.org/wiki/George_Halas"
+  },
+  {
+   "topic": "Brett Favre",
+   "text": "Brett Favre started 297 straight regular-season games at quarterback.",
+   "source": "https://en.wikipedia.org/wiki/Brett_Favre"
+  },
+  {
+   "topic": "Hail Mary",
+   "text": "Roger Staubach coined Hail Mary for a desperate long pass after a 1975 playoff win.",
+   "source": "https://en.wikipedia.org/wiki/Hail_Mary_pass"
+  },
+  {
+   "topic": "Music City",
+   "text": "The Music City Miracle was a 1999 playoff kickoff return by the Tennessee Titans.",
+   "source": "https://en.wikipedia.org/wiki/Music_City_Miracle"
+  },
+  {
+   "topic": "Overtime",
+   "text": "The 1958 Colts-Giants title game, won in overtime, is called the Greatest Game Ever Played.",
+   "source": "https://en.wikipedia.org/wiki/1958_NFL_Championship_Game"
+  },
+  {
+   "topic": "Pro Bowl",
+   "text": "The Pro Bowl is the NFL's all-star game.",
+   "source": "https://en.wikipedia.org/wiki/Pro_Bowl"
+  }
+ ],
+ "mlb": [
+  {
+   "topic": "First pro team",
+   "text": "The 1869 Cincinnati Red Stockings were the first openly all-professional baseball team.",
+   "source": "https://en.wikipedia.org/wiki/Cincinnati_Red_Stockings"
+  },
+  {
+   "topic": "World Series",
+   "text": "The first modern World Series was played in 1903; Boston beat Pittsburgh.",
+   "source": "https://en.wikipedia.org/wiki/1903_World_Series"
+  },
+  {
+   "topic": "Babe Ruth",
+   "text": "Babe Ruth hit 60 home runs in 1927, a record that stood for 34 years.",
+   "source": "https://en.wikipedia.org/wiki/Babe_Ruth"
+  },
+  {
+   "topic": "Curse",
+   "text": "The Red Sox sold Babe Ruth to the Yankees in 1920, then waited 86 years for a title.",
+   "source": "https://en.wikipedia.org/wiki/Curse_of_the_Bambino"
+  },
+  {
+   "topic": "2004 Red Sox",
+   "text": "The 2004 Red Sox came back from 0-3 down against the Yankees, then won the World Series.",
+   "source": "https://en.wikipedia.org/wiki/2004_American_League_Championship_Series"
+  },
+  {
+   "topic": "Cubs 2016",
+   "text": "The Chicago Cubs won the 2016 World Series, their first title since 1908.",
+   "source": "https://en.wikipedia.org/wiki/2016_World_Series"
+  },
+  {
+   "topic": "Jackie Robinson",
+   "text": "Jackie Robinson broke MLB's color line with the Brooklyn Dodgers in 1947.",
+   "source": "https://en.wikipedia.org/wiki/Jackie_Robinson"
+  },
+  {
+   "topic": "Number 42",
+   "text": "MLB retired Jackie Robinson's number 42 for every team in 1997.",
+   "source": "https://en.wikipedia.org/wiki/Jackie_Robinson_Day"
+  },
+  {
+   "topic": "Lou Gehrig",
+   "text": "Lou Gehrig played 2,130 straight games and called himself the luckiest man on earth.",
+   "source": "https://en.wikipedia.org/wiki/Lou_Gehrig"
+  },
+  {
+   "topic": "Cal Ripken Jr.",
+   "text": "Cal Ripken Jr. broke Gehrig's streak in 1995 and ran it to 2,632 games.",
+   "source": "https://en.wikipedia.org/wiki/Cal_Ripken_Jr."
+  },
+  {
+   "topic": "Joe DiMaggio",
+   "text": "Joe DiMaggio got a hit in 56 straight games in 1941, a record still standing.",
+   "source": "https://en.wikipedia.org/wiki/Joe_DiMaggio%27s_56-game_hitting_streak"
+  },
+  {
+   "topic": "Ted Williams",
+   "text": "Ted Williams hit .406 in 1941, the last major leaguer to hit .400.",
+   "source": "https://en.wikipedia.org/wiki/Ted_Williams"
+  },
+  {
+   "topic": "Hank Aaron",
+   "text": "Hank Aaron passed Babe Ruth with his 715th home run in 1974 and finished with 755.",
+   "source": "https://en.wikipedia.org/wiki/Hank_Aaron"
+  },
+  {
+   "topic": "Cy Young",
+   "text": "Cy Young won 511 games, the most ever. Baseball's top pitching award bears his name.",
+   "source": "https://en.wikipedia.org/wiki/Cy_Young"
+  },
+  {
+   "topic": "Nolan Ryan",
+   "text": "Nolan Ryan threw seven no-hitters and struck out 5,714 batters, both records.",
+   "source": "https://en.wikipedia.org/wiki/Nolan_Ryan"
+  },
+  {
+   "topic": "Perfect game",
+   "text": "Don Larsen threw the only perfect game in World Series history in 1956.",
+   "source": "https://en.wikipedia.org/wiki/Don_Larsen%27s_perfect_game"
+  },
+  {
+   "topic": "Shot Heard",
+   "text": "Bobby Thomson's 1951 pennant-winning homer is called the Shot Heard 'Round the World.",
+   "source": "https://en.wikipedia.org/wiki/Shot_Heard_%27Round_the_World_(baseball)"
+  },
+  {
+   "topic": "Cooperstown",
+   "text": "The Baseball Hall of Fame in Cooperstown, New York, opened in 1939.",
+   "source": "https://en.wikipedia.org/wiki/National_Baseball_Hall_of_Fame_and_Museum"
+  },
+  {
+   "topic": "First class",
+   "text": "The first Hall of Fame class in 1936: Cobb, Ruth, Wagner, Mathewson and Johnson.",
+   "source": "https://en.wikipedia.org/wiki/National_Baseball_Hall_of_Fame_and_Museum"
+  },
+  {
+   "topic": "Ty Cobb",
+   "text": "Ty Cobb has the highest career batting average in MLB history, about .367.",
+   "source": "https://en.wikipedia.org/wiki/Ty_Cobb"
+  },
+  {
+   "topic": "Pete Rose",
+   "text": "Pete Rose has the most hits in MLB history, 4,256.",
+   "source": "https://en.wikipedia.org/wiki/Pete_Rose"
+  },
+  {
+   "topic": "Fenway Park",
+   "text": "Boston's Fenway Park opened in 1912 and is the oldest MLB ballpark still in use.",
+   "source": "https://en.wikipedia.org/wiki/Fenway_Park"
+  },
+  {
+   "topic": "Green Monster",
+   "text": "Fenway's 37-foot left field wall is called the Green Monster.",
+   "source": "https://en.wikipedia.org/wiki/Green_Monster"
+  },
+  {
+   "topic": "Wrigley ivy",
+   "text": "Ivy has covered Wrigley Field's outfield walls since 1937.",
+   "source": "https://en.wikipedia.org/wiki/Wrigley_Field"
+  },
+  {
+   "topic": "Night baseball",
+   "text": "The first MLB night game was played in Cincinnati in 1935.",
+   "source": "https://en.wikipedia.org/wiki/Crosley_Field"
+  },
+  {
+   "topic": "Seventh-inning",
+   "text": "Take Me Out to the Ball Game was written in 1908 by men who had never seen a game.",
+   "source": "https://en.wikipedia.org/wiki/Take_Me_Out_to_the_Ball_Game"
+  },
+  {
+   "topic": "Designated hitter",
+   "text": "The American League adopted the designated hitter in 1973; the NL followed in 2022.",
+   "source": "https://en.wikipedia.org/wiki/Designated_hitter"
+  },
+  {
+   "topic": "Mr. October",
+   "text": "Reggie Jackson hit three home runs on three pitches in Game 6 of the 1977 World Series.",
+   "source": "https://en.wikipedia.org/wiki/Reggie_Jackson"
+  },
+  {
+   "topic": "Yogi Berra",
+   "text": "Yogi Berra won 10 World Series rings as a player, the most ever.",
+   "source": "https://en.wikipedia.org/wiki/Yogi_Berra"
+  },
+  {
+   "topic": "Yankees titles",
+   "text": "The New York Yankees have won more World Series titles than any other team.",
+   "source": "https://en.wikipedia.org/wiki/New_York_Yankees"
+  },
+  {
+   "topic": "Sandy Koufax",
+   "text": "Dodgers lefty Sandy Koufax threw four no-hitters, including a perfect game in 1965.",
+   "source": "https://en.wikipedia.org/wiki/Sandy_Koufax"
+  },
+  {
+   "topic": "Roberto Clemente",
+   "text": "Roberto Clemente's 3,000th hit in 1972 was the last regular-season hit of his career.",
+   "source": "https://en.wikipedia.org/wiki/Roberto_Clemente"
+  },
+  {
+   "topic": "Willie Mays",
+   "text": "Willie Mays made The Catch, an over-the-shoulder grab, in the 1954 World Series.",
+   "source": "https://en.wikipedia.org/wiki/The_Catch_(baseball)"
+  },
+  {
+   "topic": "Bill Mazeroski",
+   "text": "Bill Mazeroski's 1960 homer won the World Series, the first to end a Game 7.",
+   "source": "https://en.wikipedia.org/wiki/1960_World_Series"
+  },
+  {
+   "topic": "Kirk Gibson",
+   "text": "An injured Kirk Gibson hit a walk-off homer in Game 1 of the 1988 World Series.",
+   "source": "https://en.wikipedia.org/wiki/Kirk_Gibson%27s_1988_World_Series_home_run"
+  },
+  {
+   "topic": "1969 Mets",
+   "text": "The Miracle Mets went from last place to win the 1969 World Series.",
+   "source": "https://en.wikipedia.org/wiki/1969_New_York_Mets_season"
+  },
+  {
+   "topic": "Baseball size",
+   "text": "A baseball has exactly 108 double stitches, sewn by hand.",
+   "source": "https://en.wikipedia.org/wiki/Baseball_(ball)"
+  },
+  {
+   "topic": "Pitching distance",
+   "text": "The pitcher's mound is 60 feet, 6 inches from home plate, set in 1893.",
+   "source": "https://en.wikipedia.org/wiki/Pitcher%27s_mound"
+  },
+  {
+   "topic": "Triple Crown",
+   "text": "A batting Triple Crown means leading the league in average, home runs and RBIs.",
+   "source": "https://en.wikipedia.org/wiki/Triple_Crown_(baseball)"
+  },
+  {
+   "topic": "Girls League",
+   "text": "The All-American Girls Professional Baseball League ran from 1943 to 1954.",
+   "source": "https://en.wikipedia.org/wiki/All-American_Girls_Professional_Baseball_League"
+  }
+ ],
+ "ufc": [
+  {
+   "topic": "UFC 1",
+   "text": "UFC 1 was held in Denver, Colorado, on November 12, 1993.",
+   "source": "https://en.wikipedia.org/wiki/UFC_1"
+  },
+  {
+   "topic": "Royce Gracie",
+   "text": "Royce Gracie won three of the first four UFC tournaments using Brazilian jiu-jitsu.",
+   "source": "https://en.wikipedia.org/wiki/Royce_Gracie"
+  },
+  {
+   "topic": "The Octagon",
+   "text": "UFC fights take place in an eight-sided cage called the Octagon.",
+   "source": "https://en.wikipedia.org/wiki/Octagon_(UFC)"
+  },
+  {
+   "topic": "Dana White",
+   "text": "Dana White became UFC president in 2001 after the Fertitta brothers bought it.",
+   "source": "https://en.wikipedia.org/wiki/Dana_White"
+  },
+  {
+   "topic": "Zuffa",
+   "text": "Frank and Lorenzo Fertitta bought the UFC in 2001 for about $2 million.",
+   "source": "https://en.wikipedia.org/wiki/Zuffa"
+  },
+  {
+   "topic": "Ultimate Fighter",
+   "text": "The Ultimate Fighter reality show debuted in 2005 and helped make the UFC mainstream.",
+   "source": "https://en.wikipedia.org/wiki/The_Ultimate_Fighter"
+  },
+  {
+   "topic": "Griffin-Bonnar",
+   "text": "The 2005 Forrest Griffin vs Stephan Bonnar fight is credited with saving the UFC.",
+   "source": "https://en.wikipedia.org/wiki/Forrest_Griffin_vs._Stephan_Bonnar"
+  },
+  {
+   "topic": "Unified Rules",
+   "text": "MMA's Unified Rules were first adopted by New Jersey's athletic commission in 2000.",
+   "source": "https://en.wikipedia.org/wiki/Unified_Rules_of_Mixed_Martial_Arts"
+  },
+  {
+   "topic": "Round length",
+   "text": "UFC rounds last five minutes. Title fights go five rounds; most others go three.",
+   "source": "https://en.wikipedia.org/wiki/Ultimate_Fighting_Championship"
+  },
+  {
+   "topic": "Weight classes",
+   "text": "Early UFC events had no weight classes; a big man could face a much smaller one.",
+   "source": "https://en.wikipedia.org/wiki/UFC_1"
+  },
+  {
+   "topic": "Ronda Rousey",
+   "text": "Ronda Rousey was the UFC's first female champion, in 2012.",
+   "source": "https://en.wikipedia.org/wiki/Ronda_Rousey"
+  },
+  {
+   "topic": "Women in UFC",
+   "text": "The first women's UFC fight was Ronda Rousey vs Liz Carmouche at UFC 157 in 2013.",
+   "source": "https://en.wikipedia.org/wiki/UFC_157"
+  },
+  {
+   "topic": "Olympic roots",
+   "text": "Ronda Rousey won a judo bronze at the 2008 Olympics, the first for a US woman.",
+   "source": "https://en.wikipedia.org/wiki/Ronda_Rousey"
+  },
+  {
+   "topic": "Anderson Silva",
+   "text": "Anderson Silva defended the UFC middleweight title 10 times, 2006 to 2013.",
+   "source": "https://en.wikipedia.org/wiki/Anderson_Silva"
+  },
+  {
+   "topic": "Georges St-Pierre",
+   "text": "Canada's Georges St-Pierre held UFC titles at welterweight and middleweight.",
+   "source": "https://en.wikipedia.org/wiki/Georges_St-Pierre"
+  },
+  {
+   "topic": "Chuck Liddell",
+   "text": "Chuck Liddell, The Iceman, was UFC light heavyweight champ and a Hall of Famer.",
+   "source": "https://en.wikipedia.org/wiki/Chuck_Liddell"
+  },
+  {
+   "topic": "Randy Couture",
+   "text": "Randy Couture won UFC titles at heavyweight and light heavyweight.",
+   "source": "https://en.wikipedia.org/wiki/Randy_Couture"
+  },
+  {
+   "topic": "Hall of Fame",
+   "text": "The UFC Hall of Fame began in 2003 with Royce Gracie and Ken Shamrock.",
+   "source": "https://en.wikipedia.org/wiki/UFC_Hall_of_Fame"
+  },
+  {
+   "topic": "Conor McGregor",
+   "text": "Conor McGregor became the first UFC fighter to hold two titles at once, in 2016.",
+   "source": "https://en.wikipedia.org/wiki/Conor_McGregor"
+  },
+  {
+   "topic": "13 seconds",
+   "text": "Conor McGregor knocked out Jose Aldo in 13 seconds at UFC 194 in 2015.",
+   "source": "https://en.wikipedia.org/wiki/UFC_194"
+  },
+  {
+   "topic": "Amanda Nunes",
+   "text": "Amanda Nunes was the first woman to hold two UFC titles at the same time.",
+   "source": "https://en.wikipedia.org/wiki/Amanda_Nunes"
+  },
+  {
+   "topic": "Khabib",
+   "text": "Khabib Nurmagomedov retired unbeaten at 29-0 as UFC lightweight champion.",
+   "source": "https://en.wikipedia.org/wiki/Khabib_Nurmagomedov"
+  },
+  {
+   "topic": "Jon Jones",
+   "text": "Jon Jones became the youngest UFC champion at 23 in 2011.",
+   "source": "https://en.wikipedia.org/wiki/Jon_Jones"
+  },
+  {
+   "topic": "Holly Holm",
+   "text": "Holly Holm, a boxing champion, knocked out Ronda Rousey with a head kick in 2015.",
+   "source": "https://en.wikipedia.org/wiki/Holly_Holm"
+  },
+  {
+   "topic": "MMA",
+   "text": "MMA stands for mixed martial arts: striking and grappling from many styles.",
+   "source": "https://en.wikipedia.org/wiki/Mixed_martial_arts"
+  },
+  {
+   "topic": "Ways to win",
+   "text": "A UFC fight can end by knockout, submission or the judges' decision.",
+   "source": "https://en.wikipedia.org/wiki/Mixed_martial_arts"
+  },
+  {
+   "topic": "Tapping out",
+   "text": "Fighters tap the mat or their opponent to submit and end the fight.",
+   "source": "https://en.wikipedia.org/wiki/Submission_(combat_sports)"
+  },
+  {
+   "topic": "Rear-naked choke",
+   "text": "The rear-naked choke is one of the most common submissions in the UFC.",
+   "source": "https://en.wikipedia.org/wiki/Rear_naked_choke"
+  },
+  {
+   "topic": "Judges",
+   "text": "Most MMA fights are scored by three judges using the 10-point must system.",
+   "source": "https://en.wikipedia.org/wiki/10-point_must_system"
+  },
+  {
+   "topic": "Pride FC",
+   "text": "Japan's Pride FC was a big UFC rival until the UFC's owners bought it in 2007.",
+   "source": "https://en.wikipedia.org/wiki/Pride_Fighting_Championships"
+  },
+  {
+   "topic": "Strikeforce",
+   "text": "The UFC's parent company bought rival Strikeforce in 2011.",
+   "source": "https://en.wikipedia.org/wiki/Strikeforce_(mixed_martial_arts)"
+  },
+  {
+   "topic": "Las Vegas",
+   "text": "The UFC is based in Las Vegas, home of its Apex event center.",
+   "source": "https://en.wikipedia.org/wiki/UFC_Apex"
+  },
+  {
+   "topic": "New York",
+   "text": "New York legalized pro MMA in 2016, the last US state to do so.",
+   "source": "https://en.wikipedia.org/wiki/UFC_205"
+  },
+  {
+   "topic": "UFC 205",
+   "text": "UFC 205 in 2016 was the first UFC event at Madison Square Garden.",
+   "source": "https://en.wikipedia.org/wiki/UFC_205"
+  },
+  {
+   "topic": "Fox deal",
+   "text": "The UFC's first network TV event aired on Fox in 2011.",
+   "source": "https://en.wikipedia.org/wiki/UFC_on_Fox"
+  },
+  {
+   "topic": "Brazilian jiu-jitsu",
+   "text": "The Gracie family developed Brazilian jiu-jitsu from judo in the early 1900s.",
+   "source": "https://en.wikipedia.org/wiki/Brazilian_jiu-jitsu"
+  },
+  {
+   "topic": "Gloves",
+   "text": "UFC fighters wear 4-ounce open-finger gloves so they can grapple.",
+   "source": "https://en.wikipedia.org/wiki/Mixed_martial_arts"
+  },
+  {
+   "topic": "Ken Shamrock",
+   "text": "Ken Shamrock was the first UFC Superfight champion, in 1995.",
+   "source": "https://en.wikipedia.org/wiki/Ken_Shamrock"
+  },
+  {
+   "topic": "Bruce Lee",
+   "text": "UFC president Dana White has called Bruce Lee the father of mixed martial arts.",
+   "source": "https://en.wikipedia.org/wiki/Bruce_Lee"
+  },
+  {
+   "topic": "Fight of the Night",
+   "text": "UFC pays bonuses for Fight of the Night and Performance of the Night.",
+   "source": "https://en.wikipedia.org/wiki/Ultimate_Fighting_Championship"
+  }
+ ]
+}

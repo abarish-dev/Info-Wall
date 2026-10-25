@@ -27,6 +27,7 @@ inline void applyDaily(JsonObjectConst y) {
   g_settings.dyCKind = s("ck"); g_settings.dyCTYear = y["cy"] | 0;
   g_settings.dyMathBig = s("mb"); g_settings.dyMathText = s("mt");
   g_settings.dyEarthT = s("gt"); g_settings.dyEarthTopic = s("gs"); g_settings.dyEarthText = s("gx");
+  g_settings.dySpT = s("pt"); g_settings.dySpTopic = s("ps"); g_settings.dySpText = s("px");
   g_settings.dyFam = s("fm"); g_settings.dyFamFrom = s("ff");
 }
 

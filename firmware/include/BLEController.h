@@ -194,7 +194,8 @@ struct MatrixSettings {
   // /api/device/daily (persisted so the slides show right after a reboot)
   String dyDate, dyWord, dyPron, dyPos, dyDef, dyOrigin, dyEx;
   String dyBorn, dyBornDesc, dyCFact, dyCToday, dyCDesc, dyCKind, dyMathBig, dyMathText, dyFam, dyFamFrom;
-  String dyEarthT, dyEarthTopic, dyEarthText;   // 1.2.21 geography / geology fact
+  String dyEarthT, dyEarthTopic, dyEarthText;
+  String dySpT, dySpTopic, dySpText;   // 1.3.2 sports trivia (main walls)   // 1.2.21 geography / geology fact
   int dyBornYear = 0, dyCTYear = 0;
 
   // Dog walk-by (a sprite of Adam's dachshund crosses the bottom of the panel)
