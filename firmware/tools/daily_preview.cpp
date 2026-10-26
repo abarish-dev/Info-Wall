@@ -1,7 +1,8 @@
 // Host preview of the 1.2.0 simple-mode daily pages using the firmware's own
 // DailyDraw.h. Feed it /api/device/daily JSON as key=value env vars or use
 // the built-in Oct 24 2026 sample:
-//   g++ -O2 -I../include -I"<Adafruit GFX dir>" daily_preview.cpp -o /tmp/dyprev && /tmp/dyprev OUTDIR
+//   g++ -O2 -I../include -I"../.pio/libdeps/mom_simple/Adafruit GFX Library" daily_preview.cpp -o /tmp/dyprev && /tmp/dyprev OUTDIR
+//   (quote the GFX dir: it contains spaces; it holds glcdfont.c)
 // Writes <page>_<sub>.rgb (128x64 RGB888).
 #include <stdio.h>
 #include <stdlib.h>

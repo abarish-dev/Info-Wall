@@ -232,14 +232,21 @@ template <class G> void dyDraw(G &g, int which, const DyData &d, int sub) {
       }
       break;
     case DY_EARTH: {   // 1.2.21: GEOGRAPHY / GEOLOGY - topic (amber) + fact
-      dyTitle(g, d.earthT[0] ? d.earthT : "EARTH FACT", DY_AMBER);
-      DyRGB amb = g_momPal ? DyRGB{255, 176, 0} : DY_SKY;
-      if (d.earthTopic[0]) {
-        dyCenter(g, d.earthTopic, 13, amb);
-        dyBody(g, d.earthText, 23, 5, sub, DY_SOFT);
-      } else {
-        dyBody(g, d.earthText, 14, 6, sub, DY_SOFT);
+      // 1.2.23 (Mom Wall only): centre title + topic + this page's lines
+      // vertically in the 64 px panel. Main walls keep the top-anchored layout.
+      bool tp = d.earthTopic[0];
+      int first = tp ? 23 : 14, per = tp ? 5 : 6, oy = 0;
+      if (g_momPal) {
+        int n = dyLineCount(d.earthText) - sub * per;
+        n = n < 0 ? 0 : (n > per ? per : n);
+        int bottom = n ? first + (n - 1) * 8 + 7 : (tp ? 13 + 7 : 10);
+        oy = (64 - bottom) / 2 - 1;   // block spans y=1..bottom -> equal top/bottom margins
+        if (oy < 0) oy = 0;
       }
+      dyCenter(g, d.earthT[0] ? d.earthT : "EARTH FACT", 1 + oy, DY_AMBER); dyRule(g, 10 + oy, DY_FAINT);
+      DyRGB amb = g_momPal ? DyRGB{255, 176, 0} : DY_SKY;
+      if (tp) dyCenter(g, d.earthTopic, 13 + oy, amb);
+      dyBody(g, d.earthText, first + oy, per, sub, DY_SOFT);
       break;
     }
     case DY_FAMILY: {
