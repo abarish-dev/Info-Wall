@@ -10,7 +10,7 @@
 #ifdef INFOWALL_SIMPLE_BUILD
 #define INFOWALL_FW_VERSION "1.2.23"
 #else
-#define INFOWALL_FW_VERSION "1.3.2"
+#define INFOWALL_FW_VERSION "1.3.3"
 #endif
 // Build-variant suffix shown on the boot screen only (not used for OTA).
 #ifndef INFOWALL_FW_TAG

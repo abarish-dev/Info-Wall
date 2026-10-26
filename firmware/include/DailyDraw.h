@@ -232,11 +232,11 @@ template <class G> void dyDraw(G &g, int which, const DyData &d, int sub) {
       }
       break;
     case DY_EARTH: {   // 1.2.21: GEOGRAPHY / GEOLOGY - topic (amber) + fact
-      // 1.2.23 (Mom Wall only): centre title + topic + this page's lines
-      // vertically in the 64 px panel. Main walls keep the top-anchored layout.
+      // 1.2.23 Mom Wall, 1.3.3 main walls: centre title + topic + this page's lines
+      // vertically in the 64 px panel (every fact page).
       bool tp = d.earthTopic[0];
       int first = tp ? 23 : 14, per = tp ? 5 : 6, oy = 0;
-      if (g_momPal) {
+      {   // 1.3.3: main walls centre too (sports / Yiddish / history)
         int n = dyLineCount(d.earthText) - sub * per;
         n = n < 0 ? 0 : (n > per ? per : n);
         int bottom = n ? first + (n - 1) * 8 + 7 : (tp ? 13 + 7 : 10);

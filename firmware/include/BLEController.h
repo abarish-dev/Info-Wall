@@ -189,6 +189,7 @@ struct MatrixSettings {
   // which keeps its own sm* toggles. Defaults: all on except Math.
   bool tvOn = true, tvBorn = true, tvComposer = true, tvMusicDay = true, tvWord = true,
        tvOrigin = true, tvCFact = true, tvMath = false;
+  bool tvYid = true, tvHist = true;   // 1.3.3 Learn Yiddish / This Day in History (main walls)
   // 1.3.0: nightly (~3 AM + jitter) SHA-verified self-update on the wall's own
   // channel (main, or simple for Mom Wall). Default on.
   bool autoUpdate = true;
@@ -707,6 +708,8 @@ inline void BLEController::handleJson(const String &raw) {
     g_settings.tvOrigin   = doc["origin"]   | g_settings.tvOrigin;
     g_settings.tvCFact    = doc["cfact"]    | g_settings.tvCFact;
     g_settings.tvMath     = doc["math"]     | g_settings.tvMath;
+    g_settings.tvYid      = doc["yiddish"]  | g_settings.tvYid;    // 1.3.3
+    g_settings.tvHist     = doc["history"]  | g_settings.tvHist;
     notify(String("{\"trivia\":") + (g_settings.tvOn ? 1 : 0) + "}");
 
   } else if (strcmp(cmd, "autoupdate") == 0) {
