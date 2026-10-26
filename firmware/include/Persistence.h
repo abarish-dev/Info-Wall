@@ -91,7 +91,7 @@ inline void serializeSettings(JsonDocument &d) {
   d["tvF"] = (g_settings.tvOn ? 1 : 0) | (g_settings.tvBorn ? 2 : 0) | (g_settings.tvComposer ? 4 : 0) |
              (g_settings.tvMusicDay ? 8 : 0) | (g_settings.tvWord ? 16 : 0) | (g_settings.tvOrigin ? 32 : 0) |
              (g_settings.tvCFact ? 64 : 0) | (g_settings.tvMath ? 128 : 0);
-  d["tvX"] = (g_settings.tvYid ? 1 : 0) | (g_settings.tvHist ? 2 : 0);   // 1.3.3, own key so old saves default on
+  d["tvX"] = (g_settings.tvYid ? 1 : 0) | (g_settings.tvHist ? 2 : 0) | (g_settings.tvEarth ? 4 : 0);   // 1.3.3, own key so old saves default on
   d["auU"] = g_settings.autoUpdate;
   d["dogMin"] = g_settings.dogMinMin;
   d["dogMax"] = g_settings.dogMaxMin;
@@ -187,7 +187,7 @@ inline void applySettings(JsonDocument &d) {
     g_settings.tvOn = f & 1; g_settings.tvBorn = f & 2; g_settings.tvComposer = f & 4; g_settings.tvMusicDay = f & 8;
     g_settings.tvWord = f & 16; g_settings.tvOrigin = f & 32; g_settings.tvCFact = f & 64; g_settings.tvMath = f & 128;
   }
-  { int x = d["tvX"] | 3; g_settings.tvYid = x & 1; g_settings.tvHist = x & 2; }
+  { int x = d["tvX"] | 7; g_settings.tvYid = x & 1; g_settings.tvHist = x & 2; g_settings.tvEarth = x & 4; }
   g_settings.autoUpdate = d["auU"] | true;
   g_settings.dogMinMin = d["dogMin"] | g_settings.dogMinMin;
   g_settings.dogMaxMin = d["dogMax"] | g_settings.dogMaxMin;

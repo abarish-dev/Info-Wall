@@ -639,6 +639,7 @@ class DisplayManager {
       if (g_settings.dyCToday.length() && (comp ? g_settings.tvComposer : g_settings.tvMusicDay)) out[n++] = M_CTODAY;
       if (g_settings.tvMath && g_settings.dyMathText.length()) out[n++] = M_MATH;
       if (g_settings.dySpText.length()) out[n++] = M_SPTRIV;   // 1.3.2: server-fed; master Trivia toggle
+      if (g_settings.tvEarth && g_settings.dyEarthText.length()) out[n++] = M_EARTH; // 1.3.3 geo/geology
       if (g_settings.tvYid && g_settings.dyYidText.length()) out[n++] = M_YID;     // 1.3.3 Learn Yiddish
       if (g_settings.tvHist && g_settings.dyHisText.length()) out[n++] = M_HIST;   // 1.3.3 This Day in History
     }
