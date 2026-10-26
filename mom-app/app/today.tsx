@@ -93,6 +93,36 @@ export default function Today() {
         <Btn label="Read more" onPress={() => open(d.math.source)} color={C.blue} />
       </Card>
 
+      {!!d.earth && (
+        <Card title={d.earth.kind === "geology" ? "Geology" : "Geography"} color={C.green}>
+          <Text style={s.big}>{d.earth.topic}</Text>
+          <Text style={s.body}>{d.earth.text}</Text>
+          <Btn label="Read more" onPress={() => open(d.earth.source)} color={C.blue} />
+        </Card>
+      )}
+
+      {!!d.yiddish && (
+        <Card title="Learn Yiddish" color={C.accent}>
+          <Text style={s.word}>{d.yiddish.word}</Text>
+          <Text style={s.body}>{d.yiddish.meaning}</Text>
+          <View style={s.row}>
+            <Btn label="🔊 Hear it" onPress={() => {
+              Speech.stop();
+              Speech.speak(`${d.yiddish.word}. ${d.yiddish.meaning}`, { rate: 0.85 });
+            }} />
+            <Btn label="More" onPress={() => open(d.yiddish.source)} color={C.blue} />
+          </View>
+        </Card>
+      )}
+
+      {d.history && (
+        <Card title="This Day in History" color="#FFB000">
+          <Text style={s.big}>{d.history.when}</Text>
+          <Text style={s.body}>{d.history.text}</Text>
+          <Btn label="Read more" onPress={() => open(d.history?.source)} color={C.blue} />
+        </Card>
+      )}
+
       {!!d.family?.text && (
         <Card title="From Your Family" color="#FF7AB6">
           <Text style={s.big}>{d.family.text}</Text>

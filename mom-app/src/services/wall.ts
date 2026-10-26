@@ -60,10 +60,12 @@ export type Toggles = {
   weather: boolean; moon: boolean; map: boolean; clock: boolean;
   planes: boolean; born: boolean; word: boolean;
   cfact: boolean; ctoday: boolean; math: boolean; family: boolean; lake: boolean;
+  earth: boolean; yiddish: boolean; history: boolean;
 };
 export const DEFAULT_TOGGLES: Toggles = {
   weather: true, moon: true, map: true, clock: true, planes: true,
   born: true, word: true, cfact: true, ctoday: true, math: true, family: true, lake: true,
+  earth: true, yiddish: true, history: true,
 };
 
 export async function loadToggles(): Promise<Toggles> {
@@ -81,7 +83,8 @@ export async function applyToggles(t: Toggles): Promise<void> {
   // wall fetches nothing (blank weather, no daily slides).
   await send({ command: "server", url: BACKEND });
   await send({ command: "simple", simpleMode: true, planes: t.planes, tv: false, born: t.born,
-    word: t.word, cfact: t.cfact, ctoday: t.ctoday, math: t.math, family: t.family, lake: t.lake });
+    word: t.word, cfact: t.cfact, ctoday: t.ctoday, math: t.math, family: t.family, lake: t.lake,
+    earth: t.earth, yiddish: t.yiddish, history: t.history });   // wall 1.2.23+; older walls ignore
   await send({ command: "weather", lat: HOME.lat, lon: HOME.lon, showWeather: t.weather, showForecast: t.weather, showMoon: t.moon });
   await send({ command: "sky", showMap: t.map, showIss: false, vipAlert: false });
   await send({ command: "clock", showBigClock: t.clock });

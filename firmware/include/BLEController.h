@@ -182,6 +182,7 @@ struct MatrixSettings {
   // when none), and the daily slides below join the rotation.
   bool simpleMode = false;
   bool smPlanes = true, smTv = true;           // simple-mode-only toggles
+  bool smEarth = true, smYid = true, smHist = true;   // 1.2.23 Mom Wall fact-slide toggles
   bool smLake = true;                         // 1.2.4: Lake Norman slide on Mom Wall
   bool smBorn = true, smWord = true, smCFact = true, smCToday = true, smMath = true, smFamily = true;
   // 1.3.0 Trivia section (main walls, normal mode). Ignored in simple mode,
@@ -195,7 +196,8 @@ struct MatrixSettings {
   String dyDate, dyWord, dyPron, dyPos, dyDef, dyOrigin, dyEx;
   String dyBorn, dyBornDesc, dyCFact, dyCToday, dyCDesc, dyCKind, dyMathBig, dyMathText, dyFam, dyFamFrom;
   String dyEarthT, dyEarthTopic, dyEarthText;
-  String dySpT, dySpTopic, dySpText;   // 1.3.2 sports trivia (main walls)   // 1.2.21 geography / geology fact
+  String dySpT, dySpTopic, dySpText;
+  String dyYidT, dyYidWord, dyYidText, dyHisT, dyHisYear, dyHisText;   // 1.2.23 Learn Yiddish / This Day in History   // 1.3.2 sports trivia (main walls)   // 1.2.21 geography / geology fact
   int dyBornYear = 0, dyCTYear = 0;
 
   // Dog walk-by (a sprite of Adam's dachshund crosses the bottom of the panel)
@@ -686,6 +688,9 @@ inline void BLEController::handleJson(const String &raw) {
     g_settings.smMath     = doc["math"]       | g_settings.smMath;
     g_settings.smFamily   = doc["family"]     | g_settings.smFamily;
     g_settings.smLake     = doc["lake"]       | g_settings.smLake;
+    g_settings.smEarth    = doc["earth"]      | g_settings.smEarth;     // 1.2.23
+    g_settings.smYid      = doc["yiddish"]    | g_settings.smYid;
+    g_settings.smHist     = doc["history"]    | g_settings.smHist;
     // 1.2.2: a wall set up only with the Mom app never got the backend URL or
     // a location (the main app sends those), so it fetched nothing. Default
     // them when simple mode is on and they're unset.

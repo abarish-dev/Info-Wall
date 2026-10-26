@@ -28,6 +28,8 @@ inline void applyDaily(JsonObjectConst y) {
   g_settings.dyMathBig = s("mb"); g_settings.dyMathText = s("mt");
   g_settings.dyEarthT = s("gt"); g_settings.dyEarthTopic = s("gs"); g_settings.dyEarthText = s("gx");
   g_settings.dySpT = s("pt"); g_settings.dySpTopic = s("ps"); g_settings.dySpText = s("px");
+  g_settings.dyYidT = s("yt"); g_settings.dyYidWord = s("ys"); g_settings.dyYidText = s("yx");
+  g_settings.dyHisT = s("ht"); g_settings.dyHisYear = s("hs"); g_settings.dyHisText = s("hx");
   g_settings.dyFam = s("fm"); g_settings.dyFamFrom = s("ff");
 }
 
@@ -84,6 +86,7 @@ inline void serializeSettings(JsonDocument &d) {
              (g_settings.smWord ? 8 : 0) | (g_settings.smCFact ? 16 : 0) | (g_settings.smCToday ? 32 : 0) |
              (g_settings.smMath ? 64 : 0) | (g_settings.smFamily ? 128 : 0);
   d["smL"] = g_settings.smLake;
+  d["smX"] = (g_settings.smEarth ? 1 : 0) | (g_settings.smYid ? 2 : 0) | (g_settings.smHist ? 4 : 0);   // 1.2.23
   // 1.3.0 Trivia toggles + nightly update (absent in older saves -> defaults)
   d["tvF"] = (g_settings.tvOn ? 1 : 0) | (g_settings.tvBorn ? 2 : 0) | (g_settings.tvComposer ? 4 : 0) |
              (g_settings.tvMusicDay ? 8 : 0) | (g_settings.tvWord ? 16 : 0) | (g_settings.tvOrigin ? 32 : 0) |
@@ -177,6 +180,7 @@ inline void applySettings(JsonDocument &d) {
     g_settings.smCFact = f & 16; g_settings.smCToday = f & 32; g_settings.smMath = f & 64; g_settings.smFamily = f & 128;
   }
   g_settings.smLake = d["smL"] | true;   // 1.2.4, default on
+  { int x = d["smX"] | 7; g_settings.smEarth = x & 1; g_settings.smYid = x & 2; g_settings.smHist = x & 4; }   // 1.2.23
   {
     int f = d["tvF"] | 127;   // 1.3.0 default: all on except Math (128)
     g_settings.tvOn = f & 1; g_settings.tvBorn = f & 2; g_settings.tvComposer = f & 4; g_settings.tvMusicDay = f & 8;

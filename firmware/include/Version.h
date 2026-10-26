@@ -8,7 +8,7 @@
 #pragma once
 // Mom's Wall (simple channel) builds carry their own version line.
 #ifdef INFOWALL_SIMPLE_BUILD
-#define INFOWALL_FW_VERSION "1.2.22"
+#define INFOWALL_FW_VERSION "1.2.23"
 #else
 #define INFOWALL_FW_VERSION "1.3.2"
 #endif

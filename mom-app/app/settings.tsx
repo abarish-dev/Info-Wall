@@ -10,6 +10,7 @@ const ROWS: [keyof Toggles, string][] = [
   ["clock", "Big clock"], ["planes", "Planes overhead"],
   ["born", "Born today"], ["word", "Word of the day"], ["cfact", "Classical music fact"],
   ["ctoday", "Classical music on this day"], ["math", "Math of the day"], ["family", "Family message"], ["lake", "Lake Norman"],
+  ["earth", "Geography & geology facts"], ["yiddish", "Learn Yiddish"], ["history", "This day in history"],
 ];
 
 export default function Settings() {

@@ -10,6 +10,9 @@ export type Daily = {
   math: { big: string; text: string; source: string };
   born: null | { name: string; year: number; description: string; read_more: string;
     thumb?: string; age: number };
+  earth: { kind: string; title: string; topic: string; text: string; source: string };
+  yiddish: { title: string; word: string; meaning: string; source: string };
+  history: null | { title: string; year: number; when: string; text: string; source: string };
   family: { text?: string; from?: string; updated?: string };
 };
 

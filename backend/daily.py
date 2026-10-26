@@ -39,7 +39,9 @@ CFACTS = _load("classical_facts.json")
 COTD = _load("classical_on_this_day.json")
 MATH = _load("math_facts.json")
 EARTH = _load("earth_facts.json")
-SPORTS = _load("sports_facts.json")  # main walls 1.3.2: Olympics / NFL / MLB / UFC  # Mom Wall 1.2.21: geography + geology
+SPORTS = _load("sports_facts.json")
+YIDDISH = _load("yiddish_words.json")   # Mom Wall 1.2.23: Learn Yiddish
+HISTORY = _load("this_day_history.json")   # Mom Wall 1.2.23: This Day in History, keyed MM-DD  # main walls 1.3.2: Olympics / NFL / MLB / UFC  # Mom Wall 1.2.21: geography + geology
 
 _cache: dict = {}
 _lock = threading.Lock()
@@ -126,6 +128,26 @@ def pick_earth(d):
     lst = EARTH[kind]
     f = lst[((doy - 1) // 2) % len(lst)]
     return {"kind": kind, "title": kind.upper(), "topic": f["topic"], "text": f["text"], "source": f["source"]}
+
+
+def pick_yiddish(d):
+    """One Yiddish word a day, walking the list in order."""
+    f = YIDDISH[(_doy(d) - 1) % len(YIDDISH)]
+    return {"title": "LEARN YIDDISH", "word": f["word"], "meaning": f["meaning"], "source": f["source"]}
+
+
+_MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+
+def pick_history(d):
+    """World-history event for today's calendar date (one per MM-DD)."""
+    f = HISTORY.get(d.strftime("%m-%d"))
+    if not f:
+        return None
+    y = f["year"]
+    ys = f"{-y} BC" if y < 0 else (f"AD {y}" if y < 1000 else str(y))
+    return {"title": "THIS DAY IN HISTORY", "year": y, "when": f"{_MON[d.month - 1]} {d.day}, {ys}",
+            "text": f["text"], "source": f["source"]}
 
 
 SPORT_TITLES = {"olympics": "OLYMPIC TRIVIA", "nfl": "NFL TRIVIA", "mlb": "MLB TRIVIA", "ufc": "UFC TRIVIA"}
@@ -394,7 +416,8 @@ def daily(d: _dt.date | None = None) -> dict:
         if key in _cache:
             return _cache[key]
     out = {"date": key, "word": pick_word(d), "classical_fact": pick_fact(d),
-           "classical_today": pick_classical_today(d), "math": pick_math(d), "earth": pick_earth(d), "sports": pick_sports(d)}
+           "classical_today": pick_classical_today(d), "math": pick_math(d), "earth": pick_earth(d), "sports": pick_sports(d),
+           "yiddish": pick_yiddish(d), "history": pick_history(d)}
     try:
         out["born"] = pick_born(d)
     except Exception:  # noqa: BLE001
@@ -412,6 +435,7 @@ def device_daily(d: _dt.date | None = None, wall: str = "mom") -> dict:
     x = daily(d)
     w, m, b, ct, cf = x["word"], x["math"], x["born"], x["classical_today"], x["classical_fact"]
     fam = family_get(wall)
+    h = x.get("history")
     return {
         "d": x["date"],
         "w": ascii_(w["word"]), "wp": ascii_(w["pron"]), "ws": ascii_(w["pos"]),
@@ -425,5 +449,7 @@ def device_daily(d: _dt.date | None = None, wall: str = "mom") -> dict:
         "mb": ascii_(m["big"]), "mt": ascii_(m["text"]),
         "gt": ascii_(x["earth"]["title"]), "gs": ascii_(x["earth"]["topic"]), "gx": ascii_(x["earth"]["text"]),
         "pt": ascii_(x["sports"]["title"]), "ps": ascii_(x["sports"]["topic"]), "px": ascii_(x["sports"]["text"]),
+        "yt": ascii_(x["yiddish"]["title"]), "ys": ascii_(x["yiddish"]["word"]), "yx": ascii_(x["yiddish"]["meaning"]),
+        "ht": ascii_(h["title"]) if h else "", "hs": ascii_(h["when"]) if h else "", "hx": ascii_(h["text"]) if h else "",
         "fm": ascii_(fam.get("text", "")), "ff": ascii_(fam.get("from", "")),
     }

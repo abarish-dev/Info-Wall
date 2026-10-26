@@ -113,6 +113,29 @@ running) and notifies one network per frame, strongest first, deduped, max 15:
 `{"ws":[index,count,"SSID",rssi,secure]}` then `{"wsDone":count}` (`-1` = scan failed).
 Hidden networks are skipped; the app keeps a manual SSID field for them.
 
+## Mom Wall `simple` command (fw 1.2.0+, simple mode)
+
+Sent by the Mom app. Any subset of keys; missing keys keep their value.
+Persisted (`smF`, `smL`, and from 1.2.23 `smX`). Reply `{"simple":1|0}`.
+
+```json
+{ "command": "simple", "simpleMode": true, "planes": true, "tv": false, "born": true,
+  "word": true, "cfact": true, "ctoday": true, "math": true, "family": true, "lake": true,
+  "earth": true, "yiddish": true, "history": true }
+```
+
+| key | slide | default |
+|---|---|---|
+| `born` / `word` / `cfact` / `ctoday` / `math` / `family` | daily slides | on |
+| `lake` | Lake Norman (1.2.4+) | on |
+| `earth` | Geography / Geology fact (1.2.23+ toggle; slide since 1.2.21) | on |
+| `yiddish` | Learn Yiddish (1.2.23+; daily `yt`/`ys`/`yx`) | on |
+| `history` | This Day in History (1.2.23+; daily `ht`/`hs`/`hx`) | on |
+
+Walls before 1.2.23 ignore `earth`/`yiddish`/`history`. Mom Wall slide order
+ends: ... Lake Norman, Geography/Geology, Learn Yiddish, This Day in History.
+Main walls never show the Yiddish/History slides.
+
 ## Trivia section (fw 1.3.0+, main walls / normal mode)
 
 The Mom Wall daily slides, each on its own toggle, in the normal rotation.
